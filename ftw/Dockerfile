@@ -3,6 +3,8 @@
 
 FROM ghcr.io/coreruleset/go-ftw:0.4.9
 
+RUN sed -i 's/https/http/' /etc/apk/repositories
+
 RUN apk update && apk add curl
 
 
