@@ -1,9 +1,9 @@
 # ------------------------------------------------------------------------
-# OWASP ModSecurity Core Rule Set ver.4.0.0-rc1
+# OWASP CRS ver.4.9.0
 # Copyright (c) 2006-2020 Trustwave and contributors. All rights reserved.
-# Copyright (c) 2021-2022 Core Rule Set project. All rights reserved.
+# Copyright (c) 2021-2024 CRS project. All rights reserved.
 #
-# The OWASP ModSecurity Core Rule Set is distributed under
+# The OWASP CRS is distributed under
 # Apache Software License (ASL) version 2
 # Please see the enclosed LICENSE file for full details.
 # ------------------------------------------------------------------------
@@ -12,7 +12,7 @@
 #
 # -- [[ Introduction ]] --------------------------------------------------------
 #
-# The OWASP ModSecurity Core Rule Set (CRS) is a set of generic attack
+# The OWASP CRS is a set of generic attack
 # detection rules that provide a base level of protection for any web
 # application. They are written for the open source, cross-platform
 # ModSecurity Web Application Firewall.
@@ -180,6 +180,8 @@ SecDefaultAction "phase:2,log,auditlog,pass"
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.blocking_paranoia_level=1"
 
 
@@ -206,6 +208,8 @@ SecDefaultAction "phase:2,log,auditlog,pass"
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.detection_paranoia_level=1"
 
 
@@ -230,6 +234,8 @@ SecDefaultAction "phase:2,log,auditlog,pass"
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.enforce_bodyproc_urlencoded=1"
 
 
@@ -263,6 +269,8 @@ SecDefaultAction "phase:2,log,auditlog,pass"
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.critical_anomaly_score=5,\
 #    setvar:tx.error_anomaly_score=4,\
 #    setvar:tx.warning_anomaly_score=3,\
@@ -315,6 +323,8 @@ SecDefaultAction "phase:2,log,auditlog,pass"
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.inbound_anomaly_score_threshold=5,\
 #    setvar:tx.outbound_anomaly_score_threshold=4"
 
@@ -374,6 +384,8 @@ SecDefaultAction "phase:2,log,auditlog,pass"
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.reporting_level=4"
 
 
@@ -398,13 +410,36 @@ SecDefaultAction "phase:2,log,auditlog,pass"
 # does not get evaluated if the request is being blocked early. So when you
 # disabled early blocking again at some point in the future, then new alerts
 # from phase 2 might pop up.
-SecAction \
-    "id:900120,\
-    phase:1,\
-    pass,\
-    t:none,\
-    nolog,\
-    setvar:tx.early_blocking=1"
+#SecAction \
+#    "id:900120,\
+#    phase:1,\
+#    pass,\
+#    t:none,\
+#    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
+#    setvar:tx.early_blocking=1"
+
+
+#
+# -- [[ Initialize Default Collections ]] -----------------------------------
+#
+# CRS provides a centralized option to initialize and populate collections
+# meant to be used by plugins (E.g.DoS protection plugin).
+# By default, Global and IP collections (see rule 901320),
+# being not used by core rules, are not initialized.
+#
+# Uncomment this rule to change the default:
+#
+#SecAction \
+#    "id:900130,\
+#    phase:1,\
+#    pass,\
+#    t:none,\
+#    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
+#    setvar:tx.enable_default_collections=1"
 
 
 #
@@ -424,18 +459,24 @@ SecAction \
 # Example: for WebDAV, add the following methods: CHECKOUT COPY DELETE LOCK
 #          MERGE MKACTIVITY MKCOL MOVE PROPFIND PROPPATCH PUT UNLOCK
 # Uncomment this rule to change the default.
+#
+# GET, HEAD, POST and OPTIONS are seen as the minimal set of HTTP methods
+# from a security perspective. For static sites, removing the POST is
+# recommended. Add other HTTP methods as see fit (see above).
+#
 #SecAction \
 #    "id:900200,\
 #    phase:1,\
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:'tx.allowed_methods=GET HEAD POST OPTIONS'"
 
 # Content-Types that a client is allowed to send in a request.
-# Default: |application/x-www-form-urlencoded| |multipart/form-data| |multipart/related|
-# |text/xml| |application/xml| |application/soap+xml| |application/json|
-# |application/cloudevents+json| |application/cloudevents-batch+json|
+# Default: |application/x-www-form-urlencoded| |multipart/form-data| |text/xml|
+# |application/xml| |application/soap+xml| |application/json|
 #
 # Please note, that the rule where CRS uses this variable (920420) evaluates it with operator
 # `@within`, which is case sensitive, but uses t:lowercase. You must add your whole custom
@@ -449,6 +490,15 @@ SecAction \
 # content type may still be interpreted as JSON by a backend application but would not trigger the
 # JSON body parser at the WAF, leading to a bypass.
 #
+# When additional JSON content types are legitimately used in a deployment,
+# e.g. application/cloudevents+json, it is extremely important to ensure that a
+# rule exists to enable the engine's JSON body processor for these additional
+# JSON content types. Failure to do so can lead to a request body bypass. The
+# default JSON rule in modsecurity.conf-recommended (200001) will only activate
+# the JSON body processor for the specific content type application/json. The
+# optional modsecurity.conf-recommended rule 200006 can be used to enable the
+# JSON body processor for a wide variety of JSON content types.
+#
 # To prevent blocking request with not allowed content-type by default, you can create an exclusion
 # rule that removes rule 920420. For example:
 #SecRule REQUEST_HEADERS:Content-Type "@rx ^text/plain" \
@@ -457,9 +507,12 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
 #    ctl:ruleRemoveById=920420,\
+#    ver:'OWASP_CRS/4.9.0',\
 #    chain"
-#    SecRule REQUEST_URI "@rx ^/foo/bar" "t:none"
+#    SecRule REQUEST_URI "@rx ^/foo/bar" \
+#        "t:none"
 #
 # Uncomment this rule to change the default.
 #
@@ -469,11 +522,13 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
-#    setvar:'tx.allowed_request_content_type=|application/x-www-form-urlencoded| |multipart/form-data| |multipart/related| |text/xml| |application/xml| |application/soap+xml| |application/json| |application/cloudevents+json| |application/cloudevents-batch+json|'"
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
+#    setvar:'tx.allowed_request_content_type=|application/x-www-form-urlencoded| |multipart/form-data| |text/xml| |application/xml| |application/soap+xml| |application/json|'"
 
 # Allowed HTTP versions.
-# Default: HTTP/1.0 HTTP/1.1 HTTP/2 HTTP/2.0
-# Example for legacy clients: HTTP/0.9 HTTP/1.0 HTTP/1.1 HTTP/2 HTTP/2.0
+# Default: HTTP/1.0 HTTP/1.1 HTTP/2 HTTP/2.0 HTTP/3 HTTP/3.0
+# Example for legacy clients: HTTP/0.9 HTTP/1.0 HTTP/1.1 HTTP/2 HTTP/2.0 HTTP/3 HTTP/3.0
 # Note that some web server versions use 'HTTP/2', some 'HTTP/2.0', so
 # we include both version strings by default.
 # Uncomment this rule to change the default.
@@ -483,11 +538,13 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
-#    setvar:'tx.allowed_http_versions=HTTP/1.0 HTTP/1.1 HTTP/2 HTTP/2.0'"
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
+#    setvar:'tx.allowed_http_versions=HTTP/1.0 HTTP/1.1 HTTP/2 HTTP/2.0 HTTP/3 HTTP/3.0'"
 
 # Forbidden file extensions.
 # Guards against unintended exposure of development/configuration files.
-# Default: .asa/ .asax/ .ascx/ .backup/ .bak/ .bat/ .cdx/ .cer/ .cfg/ .cmd/ .com/ .config/ .conf/ .cs/ .csproj/ .csr/ .dat/ .db/ .dbf/ .dll/ .dos/ .htr/ .htw/ .ida/ .idc/ .idq/ .inc/ .ini/ .key/ .licx/ .lnk/ .log/ .mdb/ .old/ .pass/ .pdb/ .pol/ .printer/ .pwd/ .rdb/ .resources/ .resx/ .sql/ .swp/ .sys/ .vb/ .vbs/ .vbproj/ .vsdisco/ .webinfo/ .xsd/ .xsx/
+# Default: .asa/ .asax/ .ascx/ .backup/ .bak/ .bat/ .cdx/ .cer/ .cfg/ .cmd/ .com/ .config/ .conf/ .cs/ .csproj/ .csr/ .dat/ .db/ .dbf/ .dll/ .dos/ .htr/ .htw/ .ida/ .idc/ .idq/ .inc/ .ini/ .key/ .licx/ .lnk/ .log/ .mdb/ .old/ .pass/ .pdb/ .pem/ .pol/ .printer/ .pwd/ .rdb/ .resources/ .resx/ .sql/ .swp/ .sys/ .vb/ .vbs/ .vbproj/ .vsdisco/ .webinfo/ .xsd/ .xsx/
 # Example: .bak/ .config/ .conf/ .db/ .ini/ .log/ .old/ .pass/ .pdb/ .rdb/ .sql/
 # Note that .axd was removed due to false positives (see PR 1925).
 #
@@ -505,28 +562,43 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
-#    setvar:'tx.restricted_extensions=.asa/ .asax/ .ascx/ .backup/ .bak/ .bat/ .cdx/ .cer/ .cfg/ .cmd/ .com/ .config/ .conf/ .cs/ .csproj/ .csr/ .dat/ .db/ .dbf/ .dll/ .dos/ .htr/ .htw/ .ida/ .idc/ .idq/ .inc/ .ini/ .key/ .licx/ .lnk/ .log/ .mdb/ .old/ .pass/ .pdb/ .pol/ .printer/ .pwd/ .rdb/ .resources/ .resx/ .sql/ .swp/ .sys/ .vb/ .vbs/ .vbproj/ .vsdisco/ .webinfo/ .xsd/ .xsx/'"
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
+#    setvar:'tx.restricted_extensions=.asa/ .asax/ .ascx/ .backup/ .bak/ .bat/ .cdx/ .cer/ .cfg/ .cmd/ .com/ .config/ .conf/ .cs/ .csproj/ .csr/ .dat/ .db/ .dbf/ .dll/ .dos/ .htr/ .htw/ .ida/ .idc/ .idq/ .inc/ .ini/ .key/ .licx/ .lnk/ .log/ .mdb/ .old/ .pass/ .pdb/ .pem/ .pol/ .printer/ .pwd/ .rdb/ .resources/ .resx/ .sql/ .swp/ .sys/ .vb/ .vbs/ .vbproj/ .vsdisco/ .webinfo/ .xsd/ .xsx/'"
 
-# Forbidden request headers.
-# Header names should be lowercase, enclosed by /slashes/ as delimiters.
-# Default: /accept-charset/ /content-encoding/ /proxy/ /lock-token/ /content-range/ /if/
+# Restricted request headers.
+# The HTTP request headers that CRS restricts are split into two categories:
+# basic (always forbidden) and extended (may be forbidden). All header names
+# should be lowercase and enclosed by /slashes/ as delimiters.
 #
-# Note: Accept-Charset is a deprecated header that should not be used by clients and
-# ignored by servers. It can be used for a response WAF bypass, by asking for a charset
-# that the WAF cannot decode.
-# Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Charset
+# [ Basic ]
+# Includes deprecated headers and headers with known security risks. Always
+# forbidden.
+# Default: /content-encoding/ /proxy/ /lock-token/ /content-range/ /if/ /x-http-method-override/ /x-http-method/ /x-method-override/
 #
-# Note: Content-Encoding is used to list any encodings that have been applied to the
-# original payload. It is only used for compression, which isn't supported by CRS by
-# default since it blocks newlines and null bytes inside the request body. Most
-# compression algorithms require at least null bytes per RFC. Blocking it shouldn't
-# break anything and increases security since ModSecurity is incapable of properly
-# scanning compressed request bodies.
+# /content-encoding/
+#   Used to list any encodings that have been applied to the original payload.
+#   Only used for compression, which isn't supported by CRS by default since CRS
+#   blocks newlines and null bytes inside the request body. Most compression
+#   algorithms require at least null bytes per RFC. Blocking Content-Encoding
+#   shouldn't break anything and increases security since WAF engines, including
+#   ModSecurity, are typically incapable of properly scanning compressed request
+#   bodies.
 #
-# Note: Blocking Proxy header prevents 'httpoxy' vulnerability: https://httpoxy.org
+# /proxy/
+#   Blocking this prevents the 'httpoxy' vulnerability: https://httpoxy.org
 #
-# Note: Blocking the x-http-method-override,x-http-method and x-method-override headers
-# prevents attacks as described here: https://www.sidechannel.blog/en/http-method-override-what-it-is-and-how-a-pentester-can-use-it
+# /lock-token/
+#
+# /content-range/
+#
+# /if/
+#
+# /x-http-method-override/
+# /x-http-method/
+# /x-method-override/
+#   Blocking these headers prevents method override attacks, as described here:
+#   https://www.sidechannel.blog/en/http-method-override-what-it-is-and-how-a-pentester-can-use-it
 #
 # Uncomment this rule to change the default.
 #SecAction \
@@ -535,7 +607,35 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
-#    setvar:'tx.restricted_headers=/accept-charset/ /content-encoding/ /proxy/ /lock-token/ /content-range/ /if/ /x-http-method-override/ /x-http-method/ /x-method-override/'"
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
+#    setvar:'tx.restricted_headers_basic=/content-encoding/ /proxy/ /lock-token/ /content-range/ /if/ /x-http-method-override/ /x-http-method/ /x-method-override/'"
+#
+# [ Extended ]
+# Includes deprecated headers that are still in use (so false positives are
+# possible) and headers with possible security risks. Forbidden at a higher
+# paranoia level.
+# Default: /accept-charset/
+#
+# /accept-charset/
+#   Deprecated header that should not be used by clients and should be ignored
+#   by servers. Can be used for a response WAF bypass by asking for a charset
+#   that the WAF cannot decode. Considered to be a good indicator of suspicious
+#   behavior but produces too many false positives to be forbidden by default.
+#   References:
+#   https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Charset
+#   https://github.com/coreruleset/coreruleset/issues/3140
+#
+# Uncomment this rule to change the default.
+#SecAction \
+#    "id:900255,\
+#    phase:1,\
+#    pass,\
+#    t:none,\
+#    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
+#    setvar:'tx.restricted_headers_extended=/accept-charset/'"
 
 # Content-Types charsets that a client is allowed to send in a request.
 # The content-types are enclosed by |pipes| as delimiters to guarantee exact matches.
@@ -547,6 +647,8 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:'tx.allowed_request_content_type_charset=|utf-8| |iso-8859-1| |iso-8859-15| |windows-1252|'"
 
 #
@@ -562,6 +664,8 @@ SecAction \
 # Block request if number of arguments is too high
 # Default: unlimited
 # Example: 255
+# Note that a hard limit by the engine may also apply here (SecArgumentsLimit).
+# This would override this soft limit.
 # Uncomment this rule to set a limit.
 #SecAction \
 #    "id:900300,\
@@ -569,6 +673,8 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.max_num_args=255"
 
 # Block request if the length of any argument name is too high
@@ -581,6 +687,8 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.arg_name_length=100"
 
 # Block request if the length of any argument value is too high
@@ -593,6 +701,8 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.arg_length=400"
 
 # Block request if the total length of all combined arguments is too high
@@ -605,6 +715,8 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.total_arg_length=64000"
 
 # Block request if the file size of any individual uploaded file is too high
@@ -617,6 +729,8 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.max_file_size=1048576"
 
 # Block request if the total size of all combined uploaded files is too high
@@ -629,13 +743,15 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.combined_file_sizes=1048576"
 
 
 #
 # -- [[ Easing In / Sampling Percentage ]] -------------------------------------
 #
-# Adding the Core Rule Set to an existing productive site can lead to false
+# Adding the CRS to an existing productive site can lead to false
 # positives, unexpected performance issues and other undesired side effects.
 #
 # It can be beneficial to test the water first by enabling the CRS for a
@@ -667,6 +783,8 @@ SecAction \
 #    phase:1,\
 #    pass,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.sampling_percentage=100"
 
 
@@ -686,26 +804,31 @@ SecAction \
 #    pass,\
 #    t:none,\
 #    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
 #    setvar:tx.crs_validate_utf8_encoding=1"
 
-
+# -- [[ Skip Checking Responses ]] ------------------------------------------------
 #
-# -- [[ Collection timeout ]] --------------------------------------------------
+# CRS will perform analysis of the response contents if this is enabled and you have
+# the directive `SecResponseBodyAccess On`.
 #
-# Set the SecCollectionTimeout directive from the ModSecurity default (1 hour)
-# to a lower setting which is appropriate to most sites.
-# This increases performance by cleaning out stale collection (block) entries.
+# Warning: this feature is _enabled_ by default, but depending on your applications
+# you might be targeted in a Request Filter Denial of Service (RFDoS) attack.
 #
-# This value should be greater than or equal to any block durations or timeouts
-# set by plugins that make use of ModSecurity's persistent collections (e.g. the
-# DoS protection and IP reputation plugins).
+# References: https://blog.sicuranext.com/response-filter-denial-of-service-a-new-way-to-shutdown-a-website/
 #
-# Ref: https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)#SecCollectionTimeout
-
-# Please keep this directive uncommented.
-# Default: 600 (10 minutes)
-SecCollectionTimeout 600
-
+# Uncomment this rule to _skip checking responses_.
+#
+#SecAction \
+#    "id:900500,\
+#    phase:1,\
+#    pass,\
+#    t:none,\
+#    nolog,\
+#    tag:'OWASP_CRS',\
+#    ver:'OWASP_CRS/4.9.0',\
+#    setvar:tx.crs_skip_response_analysis=1"
 
 #
 # -- [[ End of setup ]] --------------------------------------------------------
@@ -724,4 +847,6 @@ SecAction \
     pass,\
     t:none,\
     nolog,\
-    setvar:tx.crs_setup_version=400"
+    tag:'OWASP_CRS',\
+    ver:'OWASP_CRS/4.9.0',\
+    setvar:tx.crs_setup_version=490"
