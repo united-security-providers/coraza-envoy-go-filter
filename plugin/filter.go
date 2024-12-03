@@ -272,10 +272,12 @@ func (f *filter) EncodeTrailers(trailerMap api.ResponseTrailerMap) api.StatusTyp
 	return api.Continue
 }
 
-func (f *filter) OnLog(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {}
-func (f *filter) OnLogDownstreamPeriodic(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {}
+func (f *filter) OnLog(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
+}
+func (f *filter) OnLogDownstreamPeriodic(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
+}
 func (f *filter) OnLogDownstreamStart(api.RequestHeaderMap) {}
-func (f *filter) OnStreamComplete() {}
+func (f *filter) OnStreamComplete()                         {}
 
 func (f *filter) OnDestroy(reason api.DestroyReason) {
 	tx := f.tx
