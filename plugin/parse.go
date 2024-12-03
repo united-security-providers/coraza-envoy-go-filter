@@ -100,7 +100,7 @@ func (p parser) Merge(parentConfig interface{}, childConfig interface{}) interfa
 }
 
 func errorCallback(error ctypes.MatchedRule) {
-	msg := error.ErrorLog(error.Rule().ID())
+	msg := error.ErrorLog()
 	switch error.Rule().Severity() {
 	case ctypes.RuleSeverityEmergency:
 		api.LogCritical(msg)
