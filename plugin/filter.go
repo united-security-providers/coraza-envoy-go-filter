@@ -69,10 +69,9 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	tx.ProcessConnection(srcIP, srcPort, destIP, destPort)
 	path := headerMap.Path()
 	method := headerMap.Method()
-	protocol := headerMap.Scheme()
-	//Maybe it's a bug? sometimes you can't get Protocol from Envoy
-	if len(protocol) == 0 {
-		f.callbacks.Log(api.Warn, BuildLoggerMessage().msg("Get protocol failed"))
+	protocol, ok := f.callbacks.StreamInfo().Protocol()
+	if !ok {
+		f.callbacks.Log(api.Warn, BuildLoggerMessage().msg("Protocol not set"))
 		protocol = "HTTP/2.0"
 	}
 	f.httpProtocol = protocol
@@ -297,5 +296,4 @@ func (f *filter) OnDestroy(reason api.DestroyReason) {
 }
 
 func main() {
-
 }
