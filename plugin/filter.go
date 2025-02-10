@@ -42,7 +42,7 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 		server, _, err = net.SplitHostPort(host)
 		if err != nil {
 			f.callbacks.Log(api.Info, BuildLoggerMessage().str("Host", host).err(err).msg("Failed to parse server name from Host"))
-			f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "Failed to parse server name from Host")
+			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -56,23 +56,22 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	srcPort, err := strconv.Atoi(srcPortString)
 	if err != nil {
 		f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("RemotePort formatting error"))
-		f.callbacks.SendLocalReply(http.StatusBadRequest, "", map[string]string{}, 0, "RemotePort formatting error")
+		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	destIP, destPortString, _ := net.SplitHostPort(f.callbacks.StreamInfo().DownstreamLocalAddress())
 	destPort, err := strconv.Atoi(destPortString)
 	if err != nil {
 		f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("LocalPort formatting error"))
-		f.callbacks.SendLocalReply(http.StatusBadRequest, "", map[string]string{}, 0, "LocalPort formatting error")
+		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	tx.ProcessConnection(srcIP, srcPort, destIP, destPort)
 	path := headerMap.Path()
 	method := headerMap.Method()
-	protocol := headerMap.Protocol()
-	//Maybe it's a bug? sometimes you can't get Protocol from Envoy
-	if len(protocol) == 0 {
-		f.callbacks.Log(api.Warn, BuildLoggerMessage().msg("Get protocol failed"))
+	protocol, ok := f.callbacks.StreamInfo().Protocol()
+	if !ok {
+		f.callbacks.Log(api.Warn, BuildLoggerMessage().msg("Protocol not set"))
 		protocol = "HTTP/2.0"
 	}
 	f.httpProtocol = protocol
@@ -85,7 +84,7 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	if interruption != nil {
 		f.isInterruption = true
 		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestHeaders failed"))
-		f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "Reject because of bad request header")
+		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	return api.Continue
@@ -93,7 +92,7 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 
 func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	if f.isInterruption {
-		f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "Interruption already handled")
+		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "interruption-already-handled")
 		return api.LocalReply
 	}
 	if f.processRequestBody {
@@ -117,7 +116,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody forbidden"))
-			f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "Reject because of bad request body")
+			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 		return api.Continue
@@ -133,7 +132,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("RequestBody is over limit"))
-			f.callbacks.SendLocalReply(http.StatusBadRequest, "", map[string]string{}, 0, "RequestBody is over limit")
+			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -147,7 +146,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody failed"))
-			f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "ProcessRequestBody failed")
+			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 		return api.Continue
@@ -182,7 +181,7 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody failed"))
-			f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "ProcessRequestBody failed")
+			f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -198,7 +197,7 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 	if interruption != nil {
 		f.isInterruption = true
 		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessResponseHeader failed"))
-		f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "Reject because of bad response header")
+		f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	return api.Continue
@@ -206,7 +205,7 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 
 func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	if f.isInterruption {
-		f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "Interruption already handled")
+		f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	if f.tx == nil {
@@ -229,7 +228,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			if interruption != nil {
 				f.isInterruption = true
 				f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessResponseBody forbidden"))
-				f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "ProcessResponseBody forbidden")
+				f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 				return api.LocalReply
 			}
 		}
@@ -244,7 +243,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ResponseBody is over limit"))
-			f.callbacks.SendLocalReply(http.StatusBadRequest, "", map[string]string{}, 0, "ResponseBody is over limit")
+			f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -260,7 +259,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.processResponseBody = true
 			buffer.Set(bytes.Repeat([]byte("\x00"), bodySize))
 			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("ProcessResponseBody failed"))
-			f.callbacks.SendLocalReply(http.StatusForbidden, "", map[string]string{}, 0, "Reject because of bad response body")
+			f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 		return api.Continue
@@ -272,8 +271,12 @@ func (f *filter) EncodeTrailers(trailerMap api.ResponseTrailerMap) api.StatusTyp
 	return api.Continue
 }
 
-func (f *filter) OnLog() {
+func (f *filter) OnLog(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
 }
+func (f *filter) OnLogDownstreamPeriodic(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
+}
+func (f *filter) OnLogDownstreamStart(api.RequestHeaderMap) {}
+func (f *filter) OnStreamComplete()                         {}
 
 func (f *filter) OnDestroy(reason api.DestroyReason) {
 	tx := f.tx
@@ -293,5 +296,4 @@ func (f *filter) OnDestroy(reason api.DestroyReason) {
 }
 
 func main() {
-
 }
