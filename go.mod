@@ -7,7 +7,7 @@ toolchain go1.22.9
 require (
 	github.com/cncf/xds/go v0.0.0-20230428030218-4003588d1b74
 	github.com/corazawaf/coraza/v3 v3.2.1
-	github.com/envoyproxy/envoy v1.32.0
+	github.com/envoyproxy/envoy v1.33.0
 	github.com/json-iterator/go v1.1.12
 	github.com/magefile/mage v1.15.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
