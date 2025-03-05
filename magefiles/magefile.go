@@ -3,10 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/magefile/mage/sh"
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/magefile/mage/sh"
 )
 
 var (
@@ -21,7 +22,7 @@ func Build() error {
 	if !strings.Contains(available_os, os) {
 		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
 	}
-	return sh.RunV("go", "build", "-o", "plugin.so", "-buildmode=c-shared", "./plugin")
+	return sh.RunV("go", "build", "-o", "coraza-waf.so", "-buildmode=c-shared", "./plugin")
 }
 
 // RunExample spins up the test environment, access at http://localhost:8080. Requires docker compose.
