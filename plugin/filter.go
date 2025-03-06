@@ -34,7 +34,16 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	if ok {
 		waf = f.conf.wafMaps[ruleName]
 	}
-	f.tx = waf.NewTransaction()
+
+	xReqId, exist := headerMap.Get("x-request-id")
+	if !exist {
+		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("Error getting x-request-id header"))
+		xReqId = ""
+	}
+
+	// the ID of the transaction is set to the ID of the request
+	// see errorCallback() in parse.go for more details
+	f.tx = waf.NewTransactionWithID(xReqId)
 	f.tx.AddRequestHeader("Host", host)
 	var server = host
 	var err error
