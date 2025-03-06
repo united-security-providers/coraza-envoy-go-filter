@@ -1,6 +1,9 @@
-# Envoy-Go-Waf
+# coraza-waf
 
-Web Application Firewall Envoy Go built on top of [Coraza](https://github.com/corazawaf/coraza). It can be loaded directly from Envoy.
+* [Coraza](https://github.com/corazawaf/coraza) Web Application Firewall implemented as Envoy Go Filter.
+* Coraza Plugins for GraphQL security.
+
+Used in USP Core WAAP.
 
 ## Getting started
 
@@ -23,11 +26,11 @@ Targets:
 go run mage.go build
 ```
 
-You will find the go waf plugin under `./plugin.so`.
+You will find the go waf plugin under `./coraza-waf.so`.
 
 ### Running the filter in an Envoy process
 
-In order to run the Envoy-Go-Waf we need to spin up an envoy configuration including this as the filter config
+In order to run the coraza-waf we need to spin up an envoy configuration including this as the filter config
 
 ```yaml
     ...
@@ -42,9 +45,9 @@ In order to run the Envoy-Go-Waf we need to spin up an envoy configuration inclu
                 - name: envoy.filters.http.golang
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                    library_id: example
-                    library_path: /etc/envoy/plugin.so
-                    plugin_name: waf-go-envoy
+                    library_id: coraza-waf
+                    library_path: /etc/envoy/coraza-waf.so
+                    plugin_name: coraza-waf
                     plugin_config:
                       "@type": type.googleapis.com/xds.type.v3.TypedStruct
                       value:
