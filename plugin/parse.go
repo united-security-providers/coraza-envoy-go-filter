@@ -40,7 +40,7 @@ type Directives struct {
 
 type HostDirectiveMap map[string]string
 
-type RuleLogEntry struct {
+type JSONRuleLogEntry struct {
 	RuleID          int      `json:"id"`
 	Category        string   `json:"category"`
 	Severity        string   `json:"severity"`
@@ -52,12 +52,12 @@ type RuleLogEntry struct {
 }
 
 type JSONErrorLogLine struct {
-	Url            string       `json:"request.path"`
-	Rule           RuleLogEntry `json:"crs.violated_rule"`
-	ClientIP       string       `json:"client.address"`
-	TransactionID  string       `json:"transaction.id"`
-	RuleSetVersion string       `json:"crs.version"`
-	RequestID      string       `json:"request.id"`
+	Url            string           `json:"request.path"`
+	Rule           JSONRuleLogEntry `json:"crs.violated_rule"`
+	ClientIP       string           `json:"client.address"`
+	TransactionID  string           `json:"transaction.id"`
+	RuleSetVersion string           `json:"crs.version"`
+	RequestID      string           `json:"request.id"`
 }
 
 var filePathPrefix = regexp.MustCompile(".*/")
@@ -145,7 +145,7 @@ func errorCallback(error ctypes.MatchedRule) {
 		TransactionID:  error.TransactionID(),
 		RuleSetVersion: error.Rule().Version(),
 		Url:            error.URI(),
-		Rule: RuleLogEntry{
+		Rule: JSONRuleLogEntry{
 			RuleID:          error.Rule().ID(),
 			Category:        category,
 			Severity:        strings.ToUpper(error.Rule().Severity().String()),
