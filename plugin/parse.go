@@ -51,7 +51,7 @@ type RuleLogEntry struct {
 	Tags            []string `json:"tags"`
 }
 
-type ErrorLogLine struct {
+type JSONErrorLogLine struct {
 	Url            string       `json:"request.path"`
 	Rule           RuleLogEntry `json:"crs.violated_rule"`
 	ClientIP       string       `json:"client.address"`
@@ -141,7 +141,7 @@ func errorCallback(error ctypes.MatchedRule) {
 		category = cfi
 	}
 
-	line := ErrorLogLine{
+	line := JSONErrorLogLine{
 		TransactionID:  error.TransactionID(),
 		RuleSetVersion: error.Rule().Version(),
 		Url:            error.URI(),
