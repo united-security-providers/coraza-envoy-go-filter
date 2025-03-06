@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	xds "github.com/cncf/xds/go/xds/type/v3"
@@ -8,8 +9,10 @@ import (
 	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"github.com/envoyproxy/envoy/contrib/golang/filters/http/source/go/pkg/http"
+	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 	"google.golang.org/protobuf/types/known/anypb"
+	"regexp"
 	"strings"
 )
 
@@ -36,6 +39,28 @@ type Directives struct {
 }
 
 type HostDirectiveMap map[string]string
+
+type JSONRuleLogEntry struct {
+	RuleID          int      `json:"id"`
+	Category        string   `json:"category"`
+	Severity        string   `json:"severity"`
+	Data            string   `json:"data"`
+	Message         string   `json:"message"`
+	MatchedData     string   `json:"matched_data"`
+	MatchedDataName string   `json:"matched_data_name"`
+	Tags            []string `json:"tags"`
+}
+
+type JSONErrorLogLine struct {
+	Url            string           `json:"request.path"`
+	Rule           JSONRuleLogEntry `json:"crs.violated_rule"`
+	ClientIP       string           `json:"client.address"`
+	TransactionID  string           `json:"transaction.id"`
+	RuleSetVersion string           `json:"crs.version"`
+	RequestID      string           `json:"request.id"`
+}
+
+var filePathPrefix = regexp.MustCompile(".*/")
 
 func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
 	configStruct := &xds.TypedStruct{}
@@ -100,7 +125,42 @@ func (p parser) Merge(parentConfig interface{}, childConfig interface{}) interfa
 }
 
 func errorCallback(error ctypes.MatchedRule) {
-	msg := error.ErrorLog()
+	// the transaction ID was set to the request ID on transaction initalization, see filter.go
+	// see https://github.com/corazawaf/coraza/discussions/1186
+	xReqID := error.TransactionID()
+	category := ""
+
+	if err := uuid.Validate(xReqID); err != nil {
+		// the request ID was not available and coraza has choosen a random ID
+		xReqID = ""
+	}
+	// determine category from configuration file information
+	cfi := filePathPrefix.ReplaceAllString(error.Rule().File(), "")
+	cfi = strings.ReplaceAll(cfi, ".conf", "")
+	if cfi != "" {
+		category = cfi
+	}
+
+	line := JSONErrorLogLine{
+		TransactionID:  error.TransactionID(),
+		RuleSetVersion: error.Rule().Version(),
+		Url:            error.URI(),
+		Rule: JSONRuleLogEntry{
+			RuleID:          error.Rule().ID(),
+			Category:        category,
+			Severity:        strings.ToUpper(error.Rule().Severity().String()),
+			Data:            error.Data(),
+			Message:         error.Message(),
+			MatchedData:     error.MatchedDatas()[0].Variable().Name(),
+			MatchedDataName: error.MatchedDatas()[0].Key(),
+			Tags:            error.Rule().Tags(),
+		},
+		ClientIP:  error.ClientIPAddress(),
+		RequestID: xReqID,
+	}
+	bytes, _ := json.Marshal(line)
+	msg := string(bytes)
+
 	switch error.Rule().Severity() {
 	case ctypes.RuleSeverityEmergency:
 		api.LogCritical(msg)
