@@ -1,4 +1,4 @@
-module waf-go-envoy
+module coraza-waf
 
 go 1.22
 

@@ -15,9 +15,9 @@ static_resources:
                   - name: envoy.filters.http.golang
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                      library_id: example
-                      library_path: /etc/envoy/plugin.so
-                      plugin_name: waf-go-envoy
+                      library_id: coraza-waf
+                      library_path: /etc/envoy/coraza-waf.so
+                      plugin_name: coraza-waf
                       plugin_config:
                           "@type": type.googleapis.com/xds.type.v3.TypedStruct
                           value:

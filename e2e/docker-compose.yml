@@ -10,7 +10,7 @@ services:
       - /etc/envoy/envoy.yaml
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ../plugin.so:/etc/envoy/plugin.so
+      - ../coraza-waf.so:/etc/envoy/coraza-waf.so
     ports:
       - 8081:8081
       - 9999:9999

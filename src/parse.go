@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	http.RegisterHttpFilterFactoryAndConfigParser("waf-go-envoy", configFactory(), &parser{})
+	http.RegisterHttpFilterFactoryAndConfigParser("coraza-waf", configFactory(), &parser{})
 }
 
 type parser struct {

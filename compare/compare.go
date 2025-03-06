@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	collect "coraza-waf/compare/collectPlugin"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -9,7 +10,6 @@ import (
 	"os/exec"
 	"strconv"
 	"time"
-	collect "waf-go-envoy/compare/collectPlugin"
 )
 
 type testingInfo struct {
@@ -182,7 +182,7 @@ func testEnvoyGoOne(isBigBody bool, qps int, duration string, monitorTime time.D
 }
 
 func startEnvoyDockerGO() {
-	command := exec.Command("docker", "run", "--rm", "-d", "-e", "GODEBUG=cgocheck=0", "-v", "./envoy_go/envoy.yaml:/etc/envoy/envoy.yaml", "-v", "./envoy_go/plugin.so:/etc/envoy/plugin.so", "-p", "10000:10000", "envoyproxy/envoy:contrib-dev", "envoy", "-c", "/etc/envoy/envoy.yaml")
+	command := exec.Command("docker", "run", "--rm", "-d", "-e", "GODEBUG=cgocheck=0", "-v", "./envoy_go/envoy.yaml:/etc/envoy/envoy.yaml", "-v", "./envoy_go/coraza-waf.so:/etc/envoy/coraza-waf.so", "-p", "10000:10000", "envoyproxy/envoy:contrib-dev", "envoy", "-c", "/etc/envoy/envoy.yaml")
 	_, err := command.CombinedOutput()
 	if err != nil {
 		panic(err)

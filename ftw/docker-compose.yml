@@ -23,7 +23,7 @@ services:
       - /etc/envoy/logs/envoy.log
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ../plugin.so:/etc/envoy/plugin.so
+      - ../coraza-waf.so:/etc/envoy/coraza-waf.so
       - ./logs:/etc/envoy/logs:rw
     ports:
       - 8090:8090
