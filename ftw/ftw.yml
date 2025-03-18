@@ -3,8 +3,11 @@ logfile: '/etc/envoy/logs/ftw.log'
 maxmarkerretries: 10
 testoverride:
   input:
+    virtual_host_mode: true
     dest_addr: envoy
     port: 8090
+    headers:
+      Host: "foo.example.com"
   ignore:
     # Envoy not compatible tests
     '911100-5': 'Invalid HTTP method. Rejected by Envoy with Error 400'
