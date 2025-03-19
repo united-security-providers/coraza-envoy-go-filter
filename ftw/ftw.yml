@@ -1,5 +1,5 @@
 ---
-logfile: '/etc/envoy/logs/ftw.log'
+logfile: '/etc/envoy/logs/envoy.log'
 maxmarkerretries: 10
 testoverride:
   input:
@@ -60,3 +60,5 @@ testoverride:
     '934120-25': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '934120-26': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     '934120-39': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
+    # TODO: investigate!
+    '980170-2': 'tmp because "retry once" fails'

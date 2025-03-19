@@ -30,20 +30,9 @@ services:
     environment:
       - GODEBUG=cgocheck=0
 
-  goFilter-logs:
-    depends_on:
-      - envoy
-    image: debian:11-slim
-    entrypoint: bash
-    command:
-      - -c
-      - tail -c +0 -f /etc/envoy/logs/envoy.log | grep --line-buffered  "\[critical\]\[golang\]" > /etc/envoy/logs/ftw.log
-    volumes:
-      - ./logs:/etc/envoy/logs:rw
-
   ftw:
     depends_on:
-      - goFilter-logs
+      - envoy
     build:
       context: .
       dockerfile: ./Dockerfile
