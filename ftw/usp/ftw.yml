@@ -1,0 +1,3 @@
+---
+logfile: '/etc/envoy/logs/envoy.log'
+maxmarkerretries: 10
