@@ -93,21 +93,20 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		}
 		config.wafMaps = wafMaps
 	} else {
-		return nil, errors.New("directives is not exist")
+		return nil, errors.New("directives does not exist")
 	}
 	if defaultDirectiveString, ok := v.AsMap()["default_directive"].(string); ok {
 		_, ok := config.directives[defaultDirectiveString]
 		if !ok {
-			return nil, errors.New("default_directive is not exist")
+			return nil, errors.New("default_directive does not exist")
 		}
 		config.defaultDirective = defaultDirectiveString
 	} else {
-		return nil, errors.New("default_directive is not exist")
+		return nil, errors.New("default_directive does not exist")
 	}
 
 	// host_directives_map is not set, however we still need to initialize an empty host mapping
 	if v.AsMap()["host_directive_map"] == nil {
-		api.LogInfo("host_directives_map is not set at all!, init empty host map")
 		hostDirectiveMap := make(HostDirectiveMap)
 		config.hostDirectiveMap = hostDirectiveMap
 
@@ -115,9 +114,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		// try to read host_directives_map as JSON string
 		if hostDirectiveMapString, ok := v.AsMap()["host_directive_map"].(string); ok {
 			hostDirectiveMap := make(HostDirectiveMap)
-			api.LogInfo("json.Unmarshal host_directives_map")
 			err := json.UnmarshalFromString(hostDirectiveMapString, &hostDirectiveMap)
-			api.LogInfo("json.Unmarshal host_directives_map success!")
 			if err != nil {
 				return nil, err
 			}
