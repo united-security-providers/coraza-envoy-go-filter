@@ -80,6 +80,18 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 			return nil, errors.New("directives is empty")
 		}
 		config.directives = wafDirectives
+
+		// parse the WAFs into config.wafMaps in any case
+		wafMaps := make(wafMaps)
+		for wafName, wafRules := range config.directives {
+			wafConfig := coraza.NewWAFConfig().WithErrorCallback(errorCallback).WithRootFS(root).WithDirectives(strings.Join(wafRules.SimpleDirectives, "\n"))
+			waf, err := coraza.NewWAF(wafConfig)
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("%s mapping waf init error:%s", wafName, err.Error()))
+			}
+			wafMaps[wafName] = waf
+		}
+		config.wafMaps = wafMaps
 	} else {
 		return nil, errors.New("directives is not exist")
 	}
@@ -93,30 +105,34 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		return nil, errors.New("default_directive is not exist")
 	}
 
-	if hostDirectiveMapString, ok := v.AsMap()["host_directive_map"].(string); ok {
+	// host_directives_map is not set, however we still need to initialize an empty host mapping
+	if v.AsMap()["host_directive_map"] == nil {
+		api.LogInfo("host_directives_map is not set at all!, init empty host map")
 		hostDirectiveMap := make(HostDirectiveMap)
-		err := json.UnmarshalFromString(hostDirectiveMapString, &hostDirectiveMap)
-		if err != nil {
-			return nil, err
-		}
-		for host, rule := range hostDirectiveMap {
-			_, ok := config.directives[rule]
-			if !ok {
-				return nil, errors.New(fmt.Sprintf("The rule corresponding to %s does not exist", host))
-			}
-		}
 		config.hostDirectiveMap = hostDirectiveMap
-		wafMaps := make(wafMaps)
-		for wafName, wafRules := range config.directives {
-			wafConfig := coraza.NewWAFConfig().WithErrorCallback(errorCallback).WithRootFS(root).WithDirectives(strings.Join(wafRules.SimpleDirectives, "\n"))
-			waf, err := coraza.NewWAF(wafConfig)
+
+	} else {
+		// try to read host_directives_map as JSON string
+		if hostDirectiveMapString, ok := v.AsMap()["host_directive_map"].(string); ok {
+			hostDirectiveMap := make(HostDirectiveMap)
+			api.LogInfo("json.Unmarshal host_directives_map")
+			err := json.UnmarshalFromString(hostDirectiveMapString, &hostDirectiveMap)
+			api.LogInfo("json.Unmarshal host_directives_map success!")
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("%s mapping waf init error:%s", wafName, err.Error()))
+				return nil, err
 			}
-			wafMaps[wafName] = waf
+			for host, rule := range hostDirectiveMap {
+				_, ok := config.directives[rule]
+				if !ok {
+					return nil, errors.New(fmt.Sprintf("The rule corresponding to %s does not exist", host))
+				}
+			}
+			config.hostDirectiveMap = hostDirectiveMap
+		} else {
+			return nil, errors.New("host_directive_map is not a JSON string")
 		}
-		config.wafMaps = wafMaps
 	}
+
 	return &config, nil
 }
 
