@@ -98,7 +98,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	if defaultDirectiveString, ok := v.AsMap()["default_directive"].(string); ok {
 		_, ok := config.directives[defaultDirectiveString]
 		if !ok {
-			return nil, errors.New("default_directive does not exist")
+			return nil, errors.New("the referenced default_directive does not exist in directives")
 		}
 		config.defaultDirective = defaultDirectiveString
 	} else {
@@ -121,7 +121,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 			for host, rule := range hostDirectiveMap {
 				_, ok := config.directives[rule]
 				if !ok {
-					return nil, errors.New(fmt.Sprintf("The rule corresponding to %s does not exist", host))
+					return nil, errors.New(fmt.Sprintf("the referenced directive '%s' for host %s does not exist", rule, host))
 				}
 			}
 			config.hostDirectiveMap = hostDirectiveMap
