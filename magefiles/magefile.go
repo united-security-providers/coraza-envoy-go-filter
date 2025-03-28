@@ -22,7 +22,7 @@ func Build() error {
 	if !strings.Contains(available_os, os) {
 		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
 	}
-	return sh.RunV("go", "build", "-o", "coraza-waf.so", "-buildmode=c-shared", "./src")
+	return sh.RunV("go", "build", "-o", "coraza-waf.so", "-buildmode=c-shared", "-tags=coraza.rule.multiphase_evaluation", "./src")
 }
 
 // RunExample spins up the test environment, access at http://localhost:8080. Requires docker compose.
