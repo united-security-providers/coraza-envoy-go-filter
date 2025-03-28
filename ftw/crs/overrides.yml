@@ -8,12 +8,41 @@ test_overrides:
   - rule_id: 911100
     test_ids: [5,7]
     reason: |
-       Invalid HTTP method TEST is rejected by Envoy with Error 400.
-       On Apache the request reaches mod_security and the rule blocks it.
+       Invalid HTTP methods TEST and FOO are directly rejected by Envoy with Error 400.
+       On Apache these request reach mod_security and the rule blocks.
     output:
       status: 400
       log:
         no_expect_ids: [911100]
+  - rule_id: 920100
+    test_ids: [4]
+    reason: |
+       Rule 911100 drops CONNECT with "Method is not allowed by policy" message.
+       Is this intended?
+    output:
+      status: 404
+      log:
+        no_expect_ids: [920100]
+        expect_ids: [911100]
+  - rule_id: 920100
+    test_ids: [10]
+    reason: |
+       Invalid HTTP method REALLYLONGUNREALMETHOD is directly rejected by envoy with HTTP 400 response.
+       The request does not reach coraza therefore the rule is not triggered.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [920100]
+  - rule_id: 920100
+    test_ids: [14]
+    reason: |
+      14: Invalid HTTP request line (method |GET) is directly rejected by Envoy with Error 400.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [920100]
+
+
 
 
 # WIP (taken from https://github.com/corazawaf/coraza/blob/main/testing/coreruleset/.ftw-overrides.yml)

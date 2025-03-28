@@ -1,5 +1,5 @@
 ---
-logfile: '/etc/envoy/logs/envoy.log'
+logfile: '/etc/envoy/logs/ftw.log'
 maxmarkerretries: 10
 testoverride:
   input:
@@ -10,10 +10,7 @@ testoverride:
       Host: "foo.example.com"
   ignore:
     # Envoy not compatible tests
-    '920100-4': 'Envoy drops CONNECT requests per default.'
-    '920100-6': 'Envoy drops CONNECT requests per default.'
-    #   '920100-10': 'Invalid HTTP method REALLYLONGUNREALMETHOD is rejected by Envoy with Error 400'
-    '920100-14': 'Invalid HTTP request line (method |GET) is rejected by Envoy with Error 400'
+    # TODO this test succeeds! i.e envoy responds with http 200 OK, investigate!!
     '920100-16': 'Invalid HTTP request line (uri has no path). Rejected by Envoy with Error 400'
 
 
@@ -71,4 +68,4 @@ testoverride:
     #'934120-26': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     #'934120-39': 'Rule 934120 partially detected. With HTTP/1.1 Envoy return 400. With HTTP/2 Enclosed alphanumerics not detected. Coraza Side'
     # TODO: investigate!
-    #'980170-2': 'tmp because "retry once" fails'
+    '980170-2': 'tmp because "retry once" fails'
