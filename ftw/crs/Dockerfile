@@ -17,6 +17,7 @@ RUN cd coreruleset && tar -xf v4.9.0.tar.gz --strip-components 1
 RUN  cd coreruleset/tests/regression/tests/ && find .  -type f -name '*.yaml' -exec sed -i 's/HTTP\/1.0/HTTP\/1.1/g' {} \;
 
 COPY ./crs/ftw.yml /workspace/ftw.yml
+COPY ./crs/overrides.yml /workspace/overrides.yml
 COPY ./crs/tests.sh /workspace/tests.sh
 
 RUN chmod +x /workspace/tests.sh

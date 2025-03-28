@@ -32,4 +32,4 @@ FTW_CLOUDMODE=${FTW_CLOUDMODE:-false}
 
 FTW_INCLUDE=$([ "${FTW_INCLUDE}" == "" ] && echo "" || echo "-i ${FTW_INCLUDE}")
 
-/ftw run -d coreruleset/tests/regression/tests --config ftw.yml --read-timeout=10s --cloud=$FTW_CLOUDMODE $FTW_INCLUDE || exit 1
+/ftw run -d ./coreruleset/tests/regression/tests --config ftw.yml --overrides overrides.yml --read-timeout=10s --cloud=$FTW_CLOUDMODE $FTW_INCLUDE  || exit 1
