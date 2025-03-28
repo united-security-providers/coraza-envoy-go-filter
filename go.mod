@@ -5,13 +5,14 @@ go 1.22.0
 toolchain go1.22.9
 
 require (
-	github.com/cncf/xds/go v0.0.0-20230428030218-4003588d1b74
-	github.com/corazawaf/coraza/v3 v3.3.2
-	github.com/envoyproxy/envoy v1.33.0
+	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42
+	github.com/corazawaf/coraza/v3 v3.3.3
+	github.com/envoyproxy/envoy v1.33.2
+	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/magefile/mage v1.15.1-0.20241126214340-bdc92f694516
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	google.golang.org/protobuf v1.36.1
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
