@@ -1,5 +1,5 @@
 services:
-  httpbin:
+  albedo:
     image: ghcr.io/coreruleset/albedo:0.1.0
     environment:
       - MAX_BODY_SIZE=15728640 # 15 MiB
@@ -16,8 +16,8 @@ services:
   envoy:
     depends_on:
       - chown
-      - httpbin
-    image: envoyproxy/envoy:contrib-dev
+      - albedo
+    image: reg-bob.u-s-p.local/envoyproxy/envoy:contrib-dev
     command:
       - -c
       - /etc/envoy/envoy.yaml
@@ -40,7 +40,7 @@ services:
     entrypoint: bash
     command:
       - -c
-      - tail -c +0 -f /etc/envoy/logs/envoy.log | grep --line-buffered  "\[critical\]\[golang\]" > /etc/envoy/logs/ftw.log
+      - tail -c +0 -f /etc/envoy/logs/envoy.log | grep --line-buffered  "\[golang\]" > /etc/envoy/logs/ftw.log
     volumes:
       - ./logs:/etc/envoy/logs:rw
 
