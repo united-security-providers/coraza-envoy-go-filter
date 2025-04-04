@@ -5,6 +5,7 @@ meta:
   annotations:
     - purpose: "Overrides for CRS test suite running against Coraza deployed as a Go filter"
 test_overrides:
+  # Tests not compatible with Envoy
   - rule_id: 911100
     test_ids: [5,7]
     reason: |
@@ -14,16 +15,6 @@ test_overrides:
       status: 400
       log:
         no_expect_ids: [911100]
-  - rule_id: 920100
-    test_ids: [4]
-    reason: |
-       Rule 911100 drops CONNECT with "Method is not allowed by policy" message.
-       Is this intended?
-    output:
-      status: 404
-      log:
-        no_expect_ids: [920100]
-        expect_ids: [911100]
   - rule_id: 920100
     test_ids: [10]
     reason: |
@@ -36,11 +27,126 @@ test_overrides:
   - rule_id: 920100
     test_ids: [14]
     reason: |
-      14: Invalid HTTP request line (method |GET) is directly rejected by Envoy with Error 400.
+       Invalid HTTP request line (method |GET) is directly rejected by Envoy with Error 400.
     output:
       status: 400
       log:
         no_expect_ids: [920100]
+  - rule_id: 920181
+    test_ids: [1]
+    reason: |
+      HTTP POST request with both Content-Length and Transfer-Encoding chunked headers is rejected by envoy with an HTTP 400 Bad Request response.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [920181]
+  - rule_id: 920210
+    test_ids: [2,3,4,6,7]
+    reason: |
+      Envoy removes the Connection header, thats why the rule not matches.
+      See: https://github.com/istio/istio/issues/14075#issuecomment-492941926
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920181]
+  - rule_id: 920280
+    test_ids: [3]
+    reason: |
+      Test expects error 400 (Apache doesn't allow HTTP/0.9).
+      But Envoy responds with 426 Upgrade Required.
+    output:
+      log:
+        status: 426
+        no_expect_ids: [920280]
+
+  # Tests that are different because of our testing setup
+  - rule_id: 920280
+    test_ids: [1]
+    reason: |
+      920280-1 tests an empty Host: header which can only be done with HTTP/1.0.
+      But we overwrite both, the Host and the protocol in our test setup.
+    output:
+      log:
+        status: 200
+        no_expect_ids: [920280]
+  - rule_id: 920274
+    test_ids: [1]
+    reason: |
+      Host validation on Apache is the reason the test expects status 400.
+      But here go-ftw rewrites the Host header so the request suceeds.
+      Envoy Populates the :path header, therefore invalid character are detected and
+      Coraza correctly triggers the rule 920274.
+    output:
+      log:
+        status: 200
+        expect_ids: [920274]
+
+  # Tests not entirely clear why the behave different...
+  # Wrong in CRS? Just different to Apache?
+  - rule_id: 920274
+    test_ids: [2,3,5]
+    reason: |
+      False Positive: Envoy Populates the :path header, therefore invalid character are detected and
+      Coraza correctly triggers the rule 920274.
+      TODO why do these tests not expect the rule to match (and sometimes status 400)?
+          Some header validation blocks early on apache?
+    output:
+      log:
+        status: 200
+        expect_ids: [920274]
+  - rule_id: 920100
+    test_ids: [4]
+    reason: |
+       Rule 911100 matches with "Method is not allowed by policy" message.
+       Rule 920100 matches with "Invalid HTTP Request Line"
+       Rule 920350 matches with "Host header is a numeric IP address"
+       Is this intended?
+       Envoy responds with 404 not found
+    output:
+      status: 404
+      log:
+        expect_ids: [911100, 920100, 920350]
+  - rule_id: 920100
+    test_ids: [6]
+    reason: |
+       Rule 911100 matches with "Method is not allowed by policy" message.
+       Rule 920100 matches with "Invalid HTTP Request Line"
+       Is this intended?
+       Envoy responds with 404 not found
+    output:
+      status: 404
+      log:
+        expect_ids: [911100, 920100]
+  - rule_id: 920100
+    test_ids: [16]
+    reason: |
+      Invalid HTTP request line: URI has scheme and authority but no path
+      -> suceessfull on envoy TODO: check out why
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920100]
+  - rule_id: 920171
+    test_ids: [2,3]
+    reason: |
+      Rule 920273 matches, Invalid character in request (outside of very strict set)
+      But not 920171.
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920171]
+        expect_ids: [920273]
+  - rule_id: 920270
+    test_ids: [4]
+    reason: |
+      The test expects response code 400, but we get 200 on envoy.
+      Instead Rule 920274 matches, Invalid character in request headers (outside of very strict set).
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920270]
+        expect_ids: [920274]
+
 
 
 
@@ -55,12 +161,6 @@ test_overrides:
  #     status: 200
  #     log:
  #       no_expect_ids: [920100]
- # - rule_id: 920270
- #   test_ids: [4]
- #   reason: "Rule works, Apache test expects status 400"
- #   output:
- #     log:
- #       expect_ids: [920270]
  # - rule_id: 920274
  #   test_ids: [1]
  #   reason: "Host validation. Apache expects status 400. Coraza correctly triggers the rule 920274"
