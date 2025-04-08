@@ -10,7 +10,7 @@ test_overrides:
     test_ids: [5,7]
     reason: |
        Invalid HTTP methods TEST and FOO are directly rejected by Envoy with Error 400.
-       On Apache these request reach mod_security and the rule blocks.
+       On Apache these request reach mod_security and the rule matches.
     output:
       status: 400
       log:
@@ -43,7 +43,7 @@ test_overrides:
   - rule_id: 920210
     test_ids: [2,3,4,6,7]
     reason: |
-      Envoy removes the Connection header, thats why the rule not matches.
+      Envoy removes the Connection header, thats why the rule doesn't match.
       See: https://github.com/istio/istio/issues/14075#issuecomment-492941926
     output:
       status: 200
@@ -55,9 +55,148 @@ test_overrides:
       Test expects error 400 (Apache doesn't allow HTTP/0.9).
       But Envoy responds with 426 Upgrade Required.
     output:
+      status: 426
       log:
-        status: 426
         no_expect_ids: [920280]
+  - rule_id: 920430
+    test_ids: [3]
+    reason: |
+      Test expects error 400 (Apache doesn't allow HTTP/0.9).
+      But Envoy responds with 426 Upgrade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [920430]
+  - rule_id: 920430
+    test_ids: [5]
+    reason: |
+      Test expects error 400 because request line without version will be interpreted as HTTP/0.9.
+      But Envoy responds with 426 Upgrade Required.
+      The original test expects an error because go-ftw can't handle the response from Apache.
+    output:
+      status: 426
+      expect_error: false
+      log:
+        no_expect_ids: [920430]
+  - rule_id: 920430
+    test_ids: [8,9]
+    reason: |
+      Tests expects the rule in the logs of the unallowed protocols (HTTP/4.0, HTTP/0.8).
+      But Envoy responds with 426 Upgrade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [920430]
+  - rule_id: 930110
+    test_ids: [7]
+    reason: |
+      Test doesn't expect the ID because Apache strips away .. from the path.
+      Envoy doesn't so the rule matches. Envoy responds with 301 Moved Permanently.
+    output:
+      status: 301
+      log:
+        expect_ids: [930110]
+  - rule_id: 932161
+    test_ids: [7,9,10,11,12]
+    reason: |
+      These tests try to do RCE injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [932161]
+  - rule_id: 932237
+    test_ids: [6,8,18]
+    reason: |
+      These tests try to do RCE injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+      TODO: in test 932237-7 the reverer header is set to "id" and reaches coraza, find out why this is not sanitized by envoy....
+    output:
+      log:
+        no_expect_ids: [932237]
+  - rule_id: 932239
+    test_ids: [6,7,19,27,29]
+    reason: |
+      These tests try to do RCE injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [932237]
+  - rule_id: 932300
+    test_ids: [10]
+    reason: |
+      The match_regex is changed to make it LogFormat agnostic and because Envoy encodes < and >.
+    output:
+      log:
+        expect_ids: [932300]
+        match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS:textarea:.*MAIL FROM:.*Smith@bar.com'
+  - rule_id: 934120
+    test_ids: [23,24,25,26,39]
+    reason: |
+      Envoy's http connection manager rejects these requests with: "dispatch error: http/1.1 protocol error: HPE_INVALID_URL". Requests don't reach Coraza not and the rule is not triggered.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [934120]
+  - rule_id: 941101
+    test_ids: [1]
+    reason: |
+      These tests try to do XSS injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [941101]
+  - rule_id: 941110
+    test_ids: [4]
+    reason: |
+      These tests try to do XSS injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [941110]
+  - rule_id: 944200
+    test_ids: [1]
+    reason: |
+      Original test uses HTTP/1.0, so Envoy responds with HTTP 426 Uprade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [944200]
+  - rule_id: 949110
+    test_ids: [4]
+    reason: |
+       Invalid HTTP method REALLYLONGUNREALMETHOD is directly rejected by envoy with HTTP 400 response.
+       The request does not reach coraza therefore the rule is not triggered.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [949110]
+  - rule_id: 980170
+    test_ids: [2]
+    reason: |
+      Envoy replaces the numeric Host header therefore the rule is not triggered.
+    output:
+      retry_once: false
+      log:
+        no_expect_ids: [980170]
+
+
+
+  # Tests not compatible with Coraza
+  # partially taken from https://github.com/corazawaf/coraza/blob/main/testing/coreruleset/.ftw-overrides.yml
+  - rule_id: 922130
+    test_ids: [3,5,6]
+    reason: |
+      Valid Multipart parsing payloads. Ensure Coraza does not trigger rules 200002 (REQBODY_ERROR), 200003 (MULTIPART_STRICT_ERROR), 922130.
+    output:
+      log:
+        no_expect_ids: [200002,200003,922130]
+  - rule_id: 922130
+    test_ids: [1,2,7]
+    reason: |
+      Multipart parsing tests. 922130 rule is not reached, Coraza triggers rule 200003 (MULTIPART_STRICT_ERROR) at parsing time"
+    output:
+      log:
+        expect_ids: [200002,200003]
 
   # Tests that are different because of our testing setup
   - rule_id: 920280
@@ -65,6 +204,7 @@ test_overrides:
     reason: |
       920280-1 tests an empty Host: header which can only be done with HTTP/1.0.
       But we overwrite both, the Host and the protocol in our test setup.
+      Note that once the change that tests default to HTTP/1.1 is released, it's likely that envoy then responds with 426 Upgrade Required.
     output:
       log:
         status: 200
@@ -80,6 +220,49 @@ test_overrides:
       log:
         status: 200
         expect_ids: [920274]
+  - rule_id: 920290
+    test_ids: [1,4]
+    reason: |
+      On Apache the requests are jejected with error 400 because of the empty Host Header.
+      Here go-ftw sets the host header correctly.
+    output:
+      log:
+        status: 200
+        no_expect_ids: [920290]
+  - rule_id: 920350
+    test_ids: [1,3,4,5,6]
+    reason: |
+      Rule 920350 tests that the Host header is not a numeric IP address.
+      These tests check different combinations of IPv4 and IPv6 addresses.
+      But here, go-ftw sets the host header to foo.example.com.
+    output:
+      log:
+        status: 200
+        no_expect_ids: [920350]
+  - rule_id: 931130
+    test_ids: [9,11,15]
+    reason: |
+      Original tests are negative cases with a valid hosts. but in the test setup
+      the Host is rewritten to foo.example.com.
+      This is why "(RFI) Attack: Off-Domain Reference/Link" rule is triggered.
+      TODO: 920274 and 920273 seem to be triggered almost always, should we do expectations
+      only for the rules under test?
+      TODO: it would be much nicer to override input-> uri but somehow it's not working..
+    output:
+      log:
+        expect_ids: [931130,920273,920274]
+  - rule_id: 943110
+    test_ids: [4]
+    reason: |
+      Original tests is a negative cases with a valid host and referer. But in the test setup
+      the Host is rewritten to foo.example.com and the referer is sanitized.
+      This is why "SessionID Parameter Name with Off-Domain Referer" is triggered.
+    output:
+      log:
+        expect_ids: [943110]
+
+
+
 
   # Tests not entirely clear why the behave different...
   # Wrong in CRS? Just different to Apache?
@@ -130,7 +313,7 @@ test_overrides:
     test_ids: [2,3]
     reason: |
       Rule 920273 matches, Invalid character in request (outside of very strict set)
-      But not 920171.
+      But not 920171. TODO why?
     output:
       status: 200
       log:
@@ -140,70 +323,19 @@ test_overrides:
     test_ids: [4]
     reason: |
       The test expects response code 400, but we get 200 on envoy.
-      Instead Rule 920274 matches, Invalid character in request headers (outside of very strict set).
+      Instead of 920270, rule 920274 matches, Invalid character in request headers (outside of very strict set).
     output:
       status: 200
       log:
         no_expect_ids: [920270]
         expect_ids: [920274]
+  - rule_id: 922130
+    test_ids: [4]
+    reason: |
+      The match_regex is changed to make it LogFormat agnostic. Rule 922130 is triggered.
+      TODO: find out why so many other rules trigger? (SQLi)
+    output:
+      log:
+        expect_ids: [920273,922130,930120,932160,932200,933100,933150,933151,942370,942520,942431,942460,942432]
+        match_regex: 'id.*922130.*"Multipart header contains characters outside of valid range".*'
 
-
-
-
-
-# WIP (taken from https://github.com/corazawaf/coraza/blob/main/testing/coreruleset/.ftw-overrides.yml)
- # - rule_id: 920100
- #   test_ids: [8]
- #   reason: |
- #     On Apache is not allowed to put a colon in the path. Go/http allows it.
- #     Note that the colon is a legal character in a regular path segment, according to the RFC.
- #   output:
- #     status: 200
- #     log:
- #       no_expect_ids: [920100]
- # - rule_id: 920274
- #   test_ids: [1]
- #   reason: "Host validation. Apache expects status 400. Coraza correctly triggers the rule 920274"
- #   output:
- #     log:
- #       expect_ids: [920274]
- # - rule_id: 920290
- #   test_ids: [1]
- #   reason: "TODO"
- #   output:
- #     log:
- #       expect_ids: [920280] # TODO: understand why 920280 (Missing Host Header) is triggered and not 920290 (Empty Host header). See what go-ftw sends.
- # - rule_id: 920290
- #   test_ids: [4]
- #   reason: "TODO"
- #   output:
- #     log:
- #       expect_ids: [920280] # TODO: understand why 920280 (Missing Host Header) is triggered and not 920290 (Empty Host header). See what go-ftw sends.
- # - rule_id: 920430
- #   test_ids: [8]
- #   reason: "Go/http does not allow HTTP/3.0 - 505 HTTP Version Not Supported"
- #   output:
- #     status: 505
- #     log:
- #       no_expect_ids: [920430]
-
- # - rule_id: 922130
- #   test_ids: [1,2,7]
- #   reason: "Multipart parsing tests. 922130 rule is not reached, Coraza triggers rule 200003 (MULTIPART_STRICT_ERROR) at parsing time"
- #   output:
- #     log:
- #       expect_ids: [200003]
- # - rule_id: 922130
- #   test_ids: [4]
- #   reason: |
- #     Multipart parsing tests. A space caracther is not in the valid range. 0x20 character raises MULTIPART_STRICT_ERROR (see multipart_error.yaml engine test),
- #     But 922130-4 test does not. In this case, rule 922130 is matched.
- #   output:
- #     log:
- #       expect_ids: [922130]
- # - rule_id: 922130
- #   test_ids: [3,5,6]
- #   reason: "Valid Multipart parsing payloads. Coraza should not trigger rules 200002 (REQBODY_ERROR), 200003 (MULTIPART_STRICT_ERROR), 922130"
- #   output:
- #     log:
- #       no_expect_ids: [200002,200003,922130]
