@@ -6,6 +6,8 @@ meta:
     - purpose: "Overrides for CRS test suite running against Coraza deployed as a Go filter"
 test_overrides:
   # Tests not compatible with Envoy
+  #
+  # directly rejected by Envoy
   - rule_id: 911100
     test_ids: [5,7]
     reason: |
@@ -24,6 +26,15 @@ test_overrides:
       status: 400
       log:
         no_expect_ids: [920100]
+  - rule_id: 949110
+    test_ids: [4]
+    reason: |
+       Invalid HTTP method REALLYLONGUNREALMETHOD is directly rejected by envoy with HTTP 400 response.
+       The request does not reach coraza therefore the rule is not triggered.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [949110]
   - rule_id: 920100
     test_ids: [14]
     reason: |
@@ -40,15 +51,15 @@ test_overrides:
       status: 400
       log:
         no_expect_ids: [920181]
-  - rule_id: 920210
-    test_ids: [2,3,4,6,7]
+  - rule_id: 934120
+    test_ids: [23,24,25,26,39]
     reason: |
-      Envoy removes the Connection header, thats why the rule doesn't match.
-      See: https://github.com/istio/istio/issues/14075#issuecomment-492941926
+      Envoy's http connection manager rejects these requests with: "dispatch error: http/1.1 protocol error: HPE_INVALID_URL". Requests don't reach Coraza not and the rule is not triggered.
     output:
-      status: 200
+      status: 400
       log:
-        no_expect_ids: [920181]
+        no_expect_ids: [934120]
+  # protocol enforcement
   - rule_id: 920280
     test_ids: [3]
     reason: |
@@ -87,15 +98,15 @@ test_overrides:
       status: 426
       log:
         no_expect_ids: [920430]
-  - rule_id: 930110
-    test_ids: [7]
+  - rule_id: 944200
+    test_ids: [1]
     reason: |
-      Test doesn't expect the ID because Apache strips away .. from the path.
-      Envoy doesn't so the rule matches. Envoy responds with 301 Moved Permanently.
+      Original test uses HTTP/1.0, so Envoy responds with HTTP 426 Uprade Required.
     output:
-      status: 301
+      status: 426
       log:
-        expect_ids: [930110]
+        no_expect_ids: [944200]
+  # header sanitizing
   - rule_id: 932161
     test_ids: [7,9,10,11,12]
     reason: |
@@ -121,22 +132,6 @@ test_overrides:
     output:
       log:
         no_expect_ids: [932237]
-  - rule_id: 932300
-    test_ids: [10]
-    reason: |
-      The match_regex is changed to make it LogFormat agnostic and because Envoy encodes < and >.
-    output:
-      log:
-        expect_ids: [932300]
-        match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS:textarea:.*MAIL FROM:.*Smith@bar.com'
-  - rule_id: 934120
-    test_ids: [23,24,25,26,39]
-    reason: |
-      Envoy's http connection manager rejects these requests with: "dispatch error: http/1.1 protocol error: HPE_INVALID_URL". Requests don't reach Coraza not and the rule is not triggered.
-    output:
-      status: 400
-      log:
-        no_expect_ids: [934120]
   - rule_id: 941101
     test_ids: [1]
     reason: |
@@ -153,36 +148,36 @@ test_overrides:
     output:
       log:
         no_expect_ids: [941110]
-  - rule_id: 944200
-    test_ids: [1]
+  - rule_id: 920210
+    test_ids: [2,3,4,6,7]
     reason: |
-      Original test uses HTTP/1.0, so Envoy responds with HTTP 426 Uprade Required.
+      Envoy removes the Connection header, thats why the rule doesn't match.
+      See: https://github.com/istio/istio/issues/14075#issuecomment-492941926
     output:
-      status: 426
+      status: 200
       log:
-        no_expect_ids: [944200]
-  - rule_id: 949110
-    test_ids: [4]
+        no_expect_ids: [920181]
+  # other Envoy specific
+  - rule_id: 930110
+    test_ids: [7]
     reason: |
-       Invalid HTTP method REALLYLONGUNREALMETHOD is directly rejected by envoy with HTTP 400 response.
-       The request does not reach coraza therefore the rule is not triggered.
+      Test doesn't expect the ID because Apache strips away .. from the path.
+      Envoy doesn't so the rule matches. Envoy responds with 301 Moved Permanently.
     output:
-      status: 400
+      status: 301
       log:
-        no_expect_ids: [949110]
-  - rule_id: 980170
-    test_ids: [2]
+        expect_ids: [930110]
+  - rule_id: 932300
+    test_ids: [10]
     reason: |
-      Envoy replaces the numeric Host header therefore the rule is not triggered.
+      The match_regex is changed to make it LogFormat agnostic and because Envoy encodes < and >.
     output:
-      retry_once: false
       log:
-        no_expect_ids: [980170]
-
+        expect_ids: [932300]
+        match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS:textarea:.*MAIL FROM:.*Smith@bar.com'
 
 
   # Tests not compatible with Coraza
-  # partially taken from https://github.com/corazawaf/coraza/blob/main/testing/coreruleset/.ftw-overrides.yml
   - rule_id: 922130
     test_ids: [3,5,6]
     reason: |
@@ -198,7 +193,9 @@ test_overrides:
       log:
         expect_ids: [200002,200003]
 
+
   # Tests that are different because of our testing setup
+  # In most cases this is because we overwrite the host header
   - rule_id: 920280
     test_ids: [1]
     reason: |
@@ -260,8 +257,14 @@ test_overrides:
     output:
       log:
         expect_ids: [943110]
-
-
+  - rule_id: 980170
+    test_ids: [2]
+    reason: |
+      Test setup replaces the numeric Host header therefore the rule is not triggered.
+    output:
+      retry_once: false
+      log:
+        no_expect_ids: [980170]
 
 
   # Tests not entirely clear why the behave different...
