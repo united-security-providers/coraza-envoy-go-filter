@@ -265,6 +265,17 @@ test_overrides:
       retry_once: false
       log:
         no_expect_ids: [980170]
+  - rule_id: 920270
+    test_ids: [4]
+    reason: |
+      The test expects response code 400 because apache drops the request due to the % character in the host header.
+      In the test setup the Host header is replaced so we get an HTTP 200 response instead.
+      The rewriting is also the reason why the rule doesn't match (no more % character).
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920270]
+        expect_ids: [920274]
 
 
   # Tests not entirely clear why the behave different...
@@ -272,10 +283,8 @@ test_overrides:
   - rule_id: 920274
     test_ids: [2,3,5]
     reason: |
-      False Positive: Envoy Populates the :path header, therefore invalid character are detected and
+      False Positives: Envoy Populates the :path header, therefore invalid characters are detected and
       Coraza correctly triggers the rule 920274.
-      TODO why do these tests not expect the rule to match (and sometimes status 400)?
-          Some header validation blocks early on apache?
     output:
       log:
         status: 200
@@ -283,11 +292,10 @@ test_overrides:
   - rule_id: 920100
     test_ids: [4]
     reason: |
+       Envoy sets the CONNECT target in to the :authority header, thats why no route is found.
        Rule 911100 matches with "Method is not allowed by policy" message.
        Rule 920100 matches with "Invalid HTTP Request Line"
        Rule 920350 matches with "Host header is a numeric IP address"
-       Is this intended?
-       Envoy responds with 404 not found
     output:
       status: 404
       log:
@@ -297,8 +305,7 @@ test_overrides:
     reason: |
        Rule 911100 matches with "Method is not allowed by policy" message.
        Rule 920100 matches with "Invalid HTTP Request Line"
-       Is this intended?
-       Envoy responds with 404 not found
+       Envoy sets the CONNECT target in to the :authority header, thats why no route is found.
     output:
       status: 404
       log:
@@ -307,7 +314,7 @@ test_overrides:
     test_ids: [16]
     reason: |
       Invalid HTTP request line: URI has scheme and authority but no path
-      -> suceessfull on envoy TODO: check out why
+      -> Envoy correctly sets the path to / so the request succeeds.
     output:
       status: 200
       log:
@@ -315,28 +322,20 @@ test_overrides:
   - rule_id: 920171
     test_ids: [2,3]
     reason: |
+      proxy-wasm says: Rule 920171 not detected. GET/HEAD with body. Coraza side.
+      Is it because Envoy doesn't read the body on HEAD request and removes the TE header on GET?
       Rule 920273 matches, Invalid character in request (outside of very strict set)
-      But not 920171. TODO why?
     output:
       status: 200
       log:
         no_expect_ids: [920171]
         expect_ids: [920273]
-  - rule_id: 920270
-    test_ids: [4]
-    reason: |
-      The test expects response code 400, but we get 200 on envoy.
-      Instead of 920270, rule 920274 matches, Invalid character in request headers (outside of very strict set).
-    output:
-      status: 200
-      log:
-        no_expect_ids: [920270]
-        expect_ids: [920274]
   - rule_id: 922130
     test_ids: [4]
     reason: |
       The match_regex is changed to make it LogFormat agnostic. Rule 922130 is triggered.
-      TODO: find out why so many other rules trigger? (SQLi)
+      TODO: The Payload triggers a lot of other rules like SQLI, PHP, RCE and LFI.
+      -> Should we expect only the rule under test?
     output:
       log:
         expect_ids: [920273,922130,930120,932160,932200,933100,933150,933151,942370,942520,942431,942460,942432]
