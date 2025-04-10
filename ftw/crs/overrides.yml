@@ -242,12 +242,11 @@ test_overrides:
       Original tests are negative cases with a valid hosts. but in the test setup
       the Host is rewritten to foo.example.com.
       This is why "(RFI) Attack: Off-Domain Reference/Link" rule is triggered.
-      TODO: 920274 and 920273 seem to be triggered almost always, should we do expectations
       only for the rules under test?
       TODO: it would be much nicer to override input-> uri but somehow it's not working..
     output:
       log:
-        expect_ids: [931130,920273,920274]
+        expect_ids: [931130]
   - rule_id: 943110
     test_ids: [4]
     reason: |
@@ -293,23 +292,20 @@ test_overrides:
     test_ids: [4]
     reason: |
        Envoy sets the CONNECT target in to the :authority header, thats why no route is found.
-       Rule 911100 matches with "Method is not allowed by policy" message.
        Rule 920100 matches with "Invalid HTTP Request Line"
-       Rule 920350 matches with "Host header is a numeric IP address"
     output:
       status: 404
       log:
-        expect_ids: [911100, 920100, 920350]
+        expect_ids: [920100]
   - rule_id: 920100
     test_ids: [6]
     reason: |
-       Rule 911100 matches with "Method is not allowed by policy" message.
        Rule 920100 matches with "Invalid HTTP Request Line"
        Envoy sets the CONNECT target in to the :authority header, thats why no route is found.
     output:
       status: 404
       log:
-        expect_ids: [911100, 920100]
+        expect_ids: [920100]
   - rule_id: 920100
     test_ids: [16]
     reason: |
@@ -324,20 +320,16 @@ test_overrides:
     reason: |
       proxy-wasm says: Rule 920171 not detected. GET/HEAD with body. Coraza side.
       Is it because Envoy doesn't read the body on HEAD request and removes the TE header on GET?
-      Rule 920273 matches, Invalid character in request (outside of very strict set)
     output:
       status: 200
       log:
         no_expect_ids: [920171]
-        expect_ids: [920273]
   - rule_id: 922130
     test_ids: [4]
     reason: |
       The match_regex is changed to make it LogFormat agnostic. Rule 922130 is triggered.
-      TODO: The Payload triggers a lot of other rules like SQLI, PHP, RCE and LFI.
-      -> Should we expect only the rule under test?
     output:
       log:
-        expect_ids: [920273,922130,930120,932160,932200,933100,933150,933151,942370,942520,942431,942460,942432]
+        expect_ids: [922130]
         match_regex: 'id.*922130.*"Multipart header contains characters outside of valid range".*'
 
