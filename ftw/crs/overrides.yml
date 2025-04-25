@@ -174,7 +174,7 @@ test_overrides:
     output:
       log:
         expect_ids: [932300]
-        match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS:textarea:.*MAIL FROM:.*Smith@bar.com'
+        match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS_POST:textarea:.*MAIL FROM:.*Smith@bar.com'
 
 
   # Tests not compatible with Coraza
@@ -192,6 +192,22 @@ test_overrides:
     output:
       log:
         expect_ids: [200002,200003]
+  - rule_id: 932200
+    test_ids: [13]
+    reason: |
+      The match_regex is changed to match against ARGS_GET instead of ARGS because coraza-waf is built with multi phase evaluation on.
+    output:
+      log:
+        expect_ids: [932200]
+        match_regex: 'found within ARGS_GET:host:'
+  - rule_id: 933120
+    test_ids: [2]
+    reason: |
+      The match_regex is changed to match against ARGS_POST instead of ARGS because coraza-waf is built with multi phase evaluation on.
+    output:
+      log:
+        expect_ids: [933120]
+        match_regex: 'session.referer_check found within ARGS_POST:var:'
 
 
   # Tests that are different because of our testing setup
