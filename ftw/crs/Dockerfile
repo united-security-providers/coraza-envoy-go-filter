@@ -10,11 +10,8 @@ RUN apk update && apk add curl
 WORKDIR /workspace
 
 # Download CRS
-ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.9.0.tar.gz /workspace/coreruleset/
-RUN cd coreruleset && tar -xf v4.9.0.tar.gz --strip-components 1
-
-# patch to use HTTP/1.1 instead of HTTP/1.0
-RUN  cd coreruleset/tests/regression/tests/ && find .  -type f -name '*.yaml' -exec sed -i 's/HTTP\/1.0/HTTP\/1.1/g' {} \;
+ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.14.0.tar.gz /workspace/coreruleset/
+RUN cd coreruleset && tar -xf v4.14.0.tar.gz --strip-components 1
 
 COPY ./crs/ftw.yml /workspace/ftw.yml
 COPY ./crs/overrides.yml /workspace/overrides.yml
