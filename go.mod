@@ -7,7 +7,7 @@ toolchain go1.22.9
 require (
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42
 	github.com/corazawaf/coraza/v3 v3.3.3
-	github.com/envoyproxy/envoy v1.33.2
+	github.com/envoyproxy/envoy v1.34.0
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/magefile/mage v1.15.1-0.20241126214340-bdc92f694516
