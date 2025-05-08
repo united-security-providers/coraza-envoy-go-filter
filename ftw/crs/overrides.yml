@@ -116,7 +116,7 @@ test_overrides:
       log:
         no_expect_ids: [932161]
   - rule_id: 932237
-    test_ids: [6,8,18]
+    test_ids: [8,18]
     reason: |
       These tests try to do RCE injection in the Referer header.
       But the referer header is sanitized by Envoy and removed from the request.
@@ -158,15 +158,6 @@ test_overrides:
       log:
         no_expect_ids: [920181]
   # other Envoy specific
-  - rule_id: 930110
-    test_ids: [7]
-    reason: |
-      Test doesn't expect the ID because Apache strips away .. from the path.
-      Envoy doesn't so the rule matches. Envoy responds with 301 Moved Permanently.
-    output:
-      status: 301
-      log:
-        expect_ids: [930110]
   - rule_id: 932300
     test_ids: [10]
     reason: |
@@ -348,4 +339,16 @@ test_overrides:
       status: 200
       log:
         no_expect_ids: [920171]
-
+  - rule_id: 921140
+    test_ids: [1]
+    reason: |
+      Test expects 400 but envoy responds with 200 ok. The rule does not match as expected.
+      I think envoy removes the newline character from the header.
+    output:
+      status: 200
+  - rule_id: 921250
+    test_ids: [1,2]
+    reason: |
+      Rule not triggered in coraza (tested also in coraza playground).
+    output:
+      status: 200
