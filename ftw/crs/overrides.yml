@@ -346,9 +346,3 @@ test_overrides:
       I think envoy removes the newline character from the header.
     output:
       status: 200
-  - rule_id: 921250
-    test_ids: [1,2]
-    reason: |
-      Rule not triggered in coraza (tested also in coraza playground).
-    output:
-      status: 200
