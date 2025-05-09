@@ -7,6 +7,7 @@
 
 |  ID  | Type | Branch | Backports | Description |
 |------|------|--------|-----------|-------------|
+| | | | 2025/05/09 | **released v0.0.2** |
 | #290849 | U | main | - | Updated CRS to version 4.14, update envoy to v1.34. |
 | | | | 2025/04/11 | **released v0.0.1** |
 | #290724 | B | main | - | Fixed go-ftw testbench. |
