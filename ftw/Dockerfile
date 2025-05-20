@@ -13,9 +13,9 @@ WORKDIR /workspace
 ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.14.0.tar.gz /workspace/coreruleset/
 RUN cd coreruleset && tar -xf v4.14.0.tar.gz --strip-components 1
 
-COPY ./crs/ftw.yml /workspace/ftw.yml
-COPY ./crs/overrides.yml /workspace/overrides.yml
-COPY ./crs/tests.sh /workspace/tests.sh
+COPY ./ftw.yml /workspace/ftw.yml
+COPY ./overrides.yml /workspace/overrides.yml
+COPY ./tests.sh /workspace/tests.sh
 
 RUN chmod +x /workspace/tests.sh
 

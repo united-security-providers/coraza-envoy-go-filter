@@ -50,19 +50,7 @@ services:
       - goFilter-logs
     build:
       context: .
-      dockerfile: ./crs/Dockerfile
-    environment:
-      - FTW_CLOUDMODE
-      - FTW_INCLUDE
-    volumes:
-      - ./logs:/etc/envoy/logs:ro
-
-  ftw-usp:
-    depends_on:
-      - goFilter-logs
-    build:
-      context: .
-      dockerfile: ./usp/Dockerfile
+      dockerfile: ./Dockerfile
     environment:
       - FTW_CLOUDMODE
       - FTW_INCLUDE
