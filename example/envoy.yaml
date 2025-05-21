@@ -66,6 +66,7 @@ static_resources:
                         - match:
                             prefix: "/"
                           route:
+                            host_rewrite_literal: 0.0.0.0:8080
                             cluster: service_gin
 
   clusters:
@@ -80,8 +81,8 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 172.17.0.1
-                      port_value: 8081
+                      address: 10.5.0.5
+                      port_value: 8080
 admin:
   access_log_path: /dev/null
   address:

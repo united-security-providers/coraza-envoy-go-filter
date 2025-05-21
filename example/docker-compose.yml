@@ -5,6 +5,9 @@ services:
       - MAX_BODY_SIZE=15728640 # 15 MiB
     ports:
       - 8081:8080
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.5
 
   chown:
     image: alpine:3.16
@@ -14,9 +17,10 @@ services:
       - chown -R 101:101 /etc/envoy/logs
     volumes:
       - ./logs:/etc/envoy/logs:rw
-      
+
   envoy:
     depends_on:
+      - chown
       - httpbin
     image: envoyproxy/envoy:contrib-dev
     command:
@@ -34,3 +38,14 @@ services:
       - 9999:9999
     environment:
       - GODEBUG=cgocheck=0
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.6
+
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
