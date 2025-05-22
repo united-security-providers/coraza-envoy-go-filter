@@ -1,9 +1,6 @@
-# coraza-waf
+# coraza-envoy-go-filter
 
 * [Coraza](https://github.com/corazawaf/coraza) Web Application Firewall implemented as Envoy Go Filter.
-* Coraza Plugins for GraphQL security.
-
-Used in USP Core WAAP.
 
 ## Getting started
 
@@ -30,7 +27,7 @@ You will find the go waf plugin under `./coraza-waf.so`.
 
 ### Running the filter in an Envoy process
 
-In order to run the coraza-waf we need to spin up an envoy configuration including this as the filter config
+In order to run the coraza go filter, we need to spin up an envoy configuration including this as the filter config
 
 ```yaml
     ...
@@ -120,7 +117,7 @@ Loading some pieces:
 
 #### Recommendations using CRS with Envoy Go
 
-- In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./wasmplugin/rules/crs-setup.conf.example)).
+- In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./src/rules/crs-setup.conf.example)).
 
 ### Running go-ftw (CRS Regression tests)
 
@@ -130,15 +127,10 @@ The following command runs the [go-ftw](https://github.com/coreruleset/go-ftw) t
 go run mage.go ftw
 ```
 
-Take a look at its config file [ftw.yml](./ftw/ftw.yml) for details about tests currently excluded.
+Take a look at its config [ftw.yml](./ftw/ftw.yml) and [overrides.yml](./ftw/overrides.yml) file for details about tests currently excluded and overriden.
 
 One can also run a single test by executing:
 
 ```bash
 FTW_INCLUDE=920410 go run mage.go ftw
 ```
-
-### Use Compare
-If you want to compare the performance of two plugins, just take a look at the online documentation below
-
-[Comparison report of two waf plugins](https://docs.google.com/document/d/1ksDaNjpklyaKJXL0AhYYMFJshTO90QtWSu5px5g3ONw/edit?usp=sharing)
