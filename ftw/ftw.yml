@@ -1,0 +1,13 @@
+---
+logfile: '/etc/envoy/logs/ftw.log'
+maxmarkerretries: 10
+testoverride:
+  input:
+    virtual_host_mode: true
+    dest_addr: envoy
+    port: 8090
+    headers:
+      Host: "foo.example.com"
+  ignore:
+    '921250-1': 'Upstream bug in coraza. Test is ignored until it is fixed there'
+    '921250-2': 'Upstream bug in coraza. Test is ignored until it is fixed there'

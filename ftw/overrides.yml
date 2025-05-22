@@ -1,0 +1,348 @@
+version: "v0.0.0"
+meta:
+  engine: "coraza"
+  platform: "go"
+  annotations:
+    - purpose: "Overrides for CRS test suite running against Coraza deployed as a Go filter"
+test_overrides:
+  # Tests not compatible with Envoy
+  #
+  # directly rejected by Envoy
+  - rule_id: 911100
+    test_ids: [5,7]
+    reason: |
+       Invalid HTTP methods TEST and FOO are directly rejected by Envoy with Error 400.
+       On Apache these request reach mod_security and the rule matches.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [911100]
+  - rule_id: 920100
+    test_ids: [10]
+    reason: |
+       Invalid HTTP method REALLYLONGUNREALMETHOD is directly rejected by envoy with HTTP 400 response.
+       The request does not reach coraza therefore the rule is not triggered.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [920100]
+  - rule_id: 949110
+    test_ids: [4]
+    reason: |
+       Invalid HTTP method REALLYLONGUNREALMETHOD is directly rejected by envoy with HTTP 400 response.
+       The request does not reach coraza therefore the rule is not triggered.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [949110]
+  - rule_id: 920100
+    test_ids: [14]
+    reason: |
+       Invalid HTTP request line (method |GET) is directly rejected by Envoy with Error 400.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [920100]
+  - rule_id: 920181
+    test_ids: [1]
+    reason: |
+      HTTP POST request with both Content-Length and Transfer-Encoding chunked headers is rejected by envoy with an HTTP 400 Bad Request response.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [920181]
+  - rule_id: 934120
+    test_ids: [23,24,25,26,39]
+    reason: |
+      Envoy's http connection manager rejects these requests with: "dispatch error: http/1.1 protocol error: HPE_INVALID_URL". Requests don't reach Coraza not and the rule is not triggered.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [934120]
+  # protocol enforcement
+  - rule_id: 920280
+    test_ids: [3]
+    reason: |
+      Test expects error 400 (Apache doesn't allow HTTP/0.9).
+      But Envoy responds with 426 Upgrade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [920280]
+  - rule_id: 920430
+    test_ids: [3]
+    reason: |
+      Test expects error 400 (Apache doesn't allow HTTP/0.9).
+      But Envoy responds with 426 Upgrade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [920430]
+  - rule_id: 920430
+    test_ids: [5]
+    reason: |
+      Test expects error 400 because request line without version will be interpreted as HTTP/0.9.
+      But Envoy responds with 426 Upgrade Required.
+      The original test expects an error because go-ftw can't handle the response from Apache.
+    output:
+      status: 426
+      expect_error: false
+      log:
+        no_expect_ids: [920430]
+  - rule_id: 920430
+    test_ids: [8,9]
+    reason: |
+      Tests expects the rule in the logs of the unallowed protocols (HTTP/4.0, HTTP/0.8).
+      But Envoy responds with 426 Upgrade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [920430]
+  - rule_id: 944200
+    test_ids: [1]
+    reason: |
+      Original test uses HTTP/1.0, so Envoy responds with HTTP 426 Uprade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [944200]
+  # header sanitizing
+  - rule_id: 932161
+    test_ids: [7,9,10,11,12]
+    reason: |
+      These tests try to do RCE injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [932161]
+  - rule_id: 932237
+    test_ids: [8,18]
+    reason: |
+      These tests try to do RCE injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+      TODO: in test 932237-7 the reverer header is set to "id" and reaches coraza, find out why this is not sanitized by envoy....
+    output:
+      log:
+        no_expect_ids: [932237]
+  - rule_id: 932239
+    test_ids: [6,7,19,27,29]
+    reason: |
+      These tests try to do RCE injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [932237]
+  - rule_id: 941101
+    test_ids: [1]
+    reason: |
+      These tests try to do XSS injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [941101]
+  - rule_id: 941110
+    test_ids: [4]
+    reason: |
+      These tests try to do XSS injection in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [941110]
+  - rule_id: 920210
+    test_ids: [2,3,4,6,7]
+    reason: |
+      Envoy removes the Connection header, thats why the rule doesn't match.
+      See: https://github.com/istio/istio/issues/14075#issuecomment-492941926
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920181]
+  # other Envoy specific
+  - rule_id: 932300
+    test_ids: [10]
+    reason: |
+      The match_regex is changed to make it LogFormat agnostic and because Envoy encodes < and >.
+    output:
+      log:
+        expect_ids: [932300]
+        match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS_POST:textarea:.*MAIL FROM:.*Smith@bar.com'
+  - rule_id: 920274
+    test_ids: [2,3,5]
+    reason: |
+      False Positives: Envoy Populates the :path header, therefore invalid characters are detected and
+      Coraza correctly triggers the rule 920274.
+    output:
+      log:
+        status: 200
+        expect_ids: [920274]
+  - rule_id: 920100
+    test_ids: [4]
+    reason: |
+       Envoy sets the CONNECT target in to the :authority header, thats why no route is found.
+       Rule 920100 matches with "Invalid HTTP Request Line"
+    output:
+      status: 404
+      log:
+        expect_ids: [920100]
+  - rule_id: 920100
+    test_ids: [6]
+    reason: |
+       Rule 920100 matches with "Invalid HTTP Request Line"
+       Envoy sets the CONNECT target in to the :authority header, thats why no route is found.
+    output:
+      status: 404
+      log:
+        expect_ids: [920100]
+  - rule_id: 920100
+    test_ids: [16]
+    reason: |
+      Invalid HTTP request line: URI has scheme and authority but no path
+      -> Envoy correctly sets the path to / so the request succeeds.
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920100]
+
+
+  # Tests not compatible with Coraza
+  - rule_id: 922130
+    test_ids: [3,5,6]
+    reason: |
+      Valid Multipart parsing payloads. Ensure Coraza does not trigger rules 200002 (REQBODY_ERROR), 200003 (MULTIPART_STRICT_ERROR), 922130.
+    output:
+      log:
+        no_expect_ids: [200002,200003,922130]
+  - rule_id: 922130
+    test_ids: [1,2,7]
+    reason: |
+      Multipart parsing tests. 922130 rule is not reached, Coraza triggers rule 200003 (MULTIPART_STRICT_ERROR) at parsing time"
+    output:
+      log:
+        expect_ids: [200002,200003]
+  - rule_id: 932200
+    test_ids: [13]
+    reason: |
+      The match_regex is changed to match against ARGS_GET instead of ARGS because coraza-waf is built with multi phase evaluation on.
+    output:
+      log:
+        expect_ids: [932200]
+        match_regex: 'found within ARGS_GET:host:'
+  - rule_id: 933120
+    test_ids: [2]
+    reason: |
+      The match_regex is changed to match against ARGS_POST instead of ARGS because coraza-waf is built with multi phase evaluation on.
+    output:
+      log:
+        expect_ids: [933120]
+        match_regex: 'session.referer_check found within ARGS_POST:var:'
+
+
+  # Tests that are different because of our testing setup
+  # In most cases this is because we overwrite the host header
+  - rule_id: 920280
+    test_ids: [1]
+    reason: |
+      920280-1 tests an empty Host: header which can only be done with HTTP/1.0.
+      But we overwrite both, the Host and the protocol in our test setup.
+      Note that once the change that tests default to HTTP/1.1 is released, it's likely that envoy then responds with 426 Upgrade Required.
+    output:
+      log:
+        status: 200
+        no_expect_ids: [920280]
+  - rule_id: 920274
+    test_ids: [1]
+    reason: |
+      Host validation on Apache is the reason the test expects status 400.
+      But here go-ftw rewrites the Host header so the request suceeds.
+      Envoy Populates the :path header, therefore invalid character are detected and
+      Coraza correctly triggers the rule 920274.
+    output:
+      log:
+        status: 200
+        expect_ids: [920274]
+  - rule_id: 920290
+    test_ids: [1,4]
+    reason: |
+      On Apache the requests are jejected with error 400 because of the empty Host Header.
+      Here go-ftw sets the host header correctly.
+    output:
+      log:
+        status: 200
+        no_expect_ids: [920290]
+  - rule_id: 920350
+    test_ids: [1,3,4,5,6]
+    reason: |
+      Rule 920350 tests that the Host header is not a numeric IP address.
+      These tests check different combinations of IPv4 and IPv6 addresses.
+      But here, go-ftw sets the host header to foo.example.com.
+    output:
+      log:
+        status: 200
+        no_expect_ids: [920350]
+  - rule_id: 931130
+    test_ids: [9,11,15]
+    reason: |
+      Original tests are negative cases with a valid hosts. but in the test setup
+      the Host is rewritten to foo.example.com.
+      This is why "(RFI) Attack: Off-Domain Reference/Link" rule is triggered.
+      only for the rules under test?
+      TODO: it would be much nicer to override input-> uri but somehow it's not working..
+    output:
+      log:
+        expect_ids: [931130]
+  - rule_id: 943110
+    test_ids: [4]
+    reason: |
+      Original tests is a negative cases with a valid host and referer. But in the test setup
+      the Host is rewritten to foo.example.com and the referer is sanitized.
+      This is why "SessionID Parameter Name with Off-Domain Referer" is triggered.
+    output:
+      log:
+        expect_ids: [943110]
+  - rule_id: 980170
+    test_ids: [2]
+    reason: |
+      Test setup replaces the numeric Host header therefore the rule is not triggered.
+    output:
+      retry_once: false
+      log:
+        no_expect_ids: [980170]
+  - rule_id: 920270
+    test_ids: [4]
+    reason: |
+      The test expects response code 400 because apache drops the request due to the % character in the host header.
+      In the test setup the Host header is replaced so we get an HTTP 200 response instead.
+      The rewriting is also the reason why the rule doesn't match (no more % character).
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920270]
+        expect_ids: [920274]
+  - rule_id: 922130
+    test_ids: [4]
+    reason: |
+      The match_regex is changed to make it LogFormat agnostic. Rule 922130 is triggered.
+    output:
+      log:
+        expect_ids: [922130]
+        match_regex: 'id.*922130.*"Multipart header contains characters outside of valid range".*'
+
+
+  # Tests not entirely clear why the behave different...
+  # Wrong in CRS? Just different to Apache?
+  - rule_id: 920171
+    test_ids: [2,3]
+    reason: |
+      proxy-wasm says: Rule 920171 not detected. GET/HEAD with body. Coraza side.
+      Is it because Envoy doesn't read the body on HEAD request and removes the TE header on GET?
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920171]
+  - rule_id: 921140
+    test_ids: [1]
+    reason: |
+      Test expects 400 but envoy responds with 200 ok. The rule does not match as expected.
+      I think envoy removes the newline character from the header.
+    output:
+      status: 200

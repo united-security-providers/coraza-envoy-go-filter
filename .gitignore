@@ -1,0 +1,7 @@
+.idea
+*.iml
+out
+gen
+coraza-waf.so
+ftw/logs
+example/logs

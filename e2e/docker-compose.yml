@@ -1,0 +1,24 @@
+services:
+  httpbin:
+    image: mccutchen/go-httpbin:v2.5.0
+  envoy:
+    depends_on:
+      - httpbin
+    image: envoyproxy/envoy:contrib-dev
+    command:
+      - -c
+      - /etc/envoy/envoy.yaml
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+      - ../coraza-waf.so:/etc/envoy/coraza-waf.so
+    ports:
+      - 8081:8081
+      - 9999:9999
+    environment:
+      - GODEBUG=cgocheck=0
+  tests:
+    depends_on:
+      - envoy
+    build:
+      context: .
+      dockerfile: ./Dockerfile.curl
