@@ -64,7 +64,7 @@ func Ftw() error {
 	if os.Getenv("ENVOY_NOWASM") == "true" {
 		env["ENVOY_CONFIG"] = "/conf/envoy-config-nowasm.yaml"
 	}
-	task := "ftw"
+	task := "ftw-crs"
 	if os.Getenv("MEMSTATS") == "true" {
 		task = "ftw-memstats"
 	}

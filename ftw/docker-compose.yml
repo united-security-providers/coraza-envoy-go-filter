@@ -17,7 +17,7 @@ services:
     depends_on:
       - chown
       - albedo
-    image: reg-bob.u-s-p.local/envoyproxy/envoy:contrib-dev
+    image: envoyproxy/envoy:contrib-dev
     command:
       - -c
       - /etc/envoy/envoy.yaml
