@@ -1,3 +1,4 @@
+---
 services:
   albedo:
     image: ghcr.io/coreruleset/albedo:0.1.0
