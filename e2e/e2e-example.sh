@@ -1,6 +1,8 @@
 #!/bin/bash
 # Copyright 2022 The OWASP Coraza contributors
+# Copyright © 2025 United Security Providers AG, Switzerland
 # SPDX-License-Identifier: Apache-2.0
+
 ENVOY_HOST=${ENVOY_HOST:-"localhost:8081"}
 HTTPBIN_HOST=${HTTPBIN_HOST:-"localhost:8080"}
 TIMEOUT_SECS=${TIMEOUT_SECS:-5}

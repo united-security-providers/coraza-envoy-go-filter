@@ -1,5 +1,7 @@
 #!/bin/sh
 # Copyright 2022 The OWASP Coraza contributors
+# Copyright © 2023 Axkea, spacewander
+# Copyright © 2025 United Security Providers AG, Switzerland
 # SPDX-License-Identifier: Apache-2.0
 
 cd /workspace

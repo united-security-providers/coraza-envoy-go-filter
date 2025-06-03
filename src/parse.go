@@ -1,9 +1,16 @@
+//  Copyright © 2023 Axkea, spacewander
+//  Copyright © 2025 United Security Providers AG, Switzerland
+//  SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
+
 	xds "github.com/cncf/xds/go/xds/type/v3"
 	"github.com/corazawaf/coraza/v3"
 	ctypes "github.com/corazawaf/coraza/v3/types"
@@ -12,8 +19,6 @@ import (
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 	"google.golang.org/protobuf/types/known/anypb"
-	"regexp"
-	"strings"
 )
 
 func init() {
