@@ -26,3 +26,9 @@ jobs:
         with:
           version: latest
           args: ftw
+      -
+        name: Run Mage (run e2e tests)
+        uses: magefile/mage-action@v3
+        with:
+          version: latest
+          args: e2e
