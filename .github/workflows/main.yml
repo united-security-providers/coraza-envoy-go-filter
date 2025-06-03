@@ -1,0 +1,34 @@
+name: mage
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  mage:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Set up Go
+        uses: actions/setup-go@v5
+      -
+        name: Run Mage (Build shared object)
+        uses: magefile/mage-action@v3
+        with:
+          version: latest
+          args: build
+      -
+        name: Run Mage (run FTW tests)
+        uses: magefile/mage-action@v3
+        with:
+          version: latest
+          args: ftw
+      -
+        name: Run Mage (run e2e tests)
+        uses: magefile/mage-action@v3
+        with:
+          version: latest
+          args: e2e
