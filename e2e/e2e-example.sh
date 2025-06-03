@@ -141,7 +141,7 @@ check_status "${envoy_url_echo}" 403 -X POST --data "1%27%20ORDER%20BY%203--%2B"
 # Triggers a CRS scanner detection rule (913100)
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing CRS rule 913100"
-check_status "${envoy_url_echo}" 403 --user-agent "Grabber/0.1 (X11; U; Linux i686; en-US; rv:1.7)" -H "Host: localhost" -H "Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5"
+check_status "${envoy_url_echo}" 403 --user-agent "gobuster/3.2.0 (X11; U; Linux i686; en-US; rv:1.7)" -H "Host: localhost" -H "Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5"
 
 # True negative GET request with an usual user-agent
 ((step+=1))
