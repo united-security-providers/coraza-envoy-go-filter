@@ -1,10 +1,14 @@
+//  Copyright © 2023 Axkea, spacewander
+//  Copyright © 2025 United Security Providers AG, Switzerland
+//  SPDX-License-Identifier: Apache-2.0
 //go:build ignore
 
 package main
 
 import (
-	"github.com/magefile/mage/mage"
 	"os"
+
+	"github.com/magefile/mage/mage"
 )
 
 func main() {

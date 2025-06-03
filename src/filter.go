@@ -1,13 +1,18 @@
+//  Copyright © 2023 Axkea, spacewander
+//  Copyright © 2025 United Security Providers AG, Switzerland
+//  SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
 	"bytes"
-	"github.com/corazawaf/coraza/v3/types"
-	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/corazawaf/coraza/v3/types"
+	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
 
 const HOSTPOSTSEPARATOR string = ":"
