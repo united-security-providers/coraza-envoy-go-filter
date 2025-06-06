@@ -4,7 +4,7 @@
 ---
 services:
   httpbin:
-    image: mccutchen/go-httpbin:v2.5.0
+    image: mccutchen/go-httpbin:2.18.1
   envoy:
     depends_on:
       - httpbin
