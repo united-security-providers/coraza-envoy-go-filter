@@ -4,7 +4,7 @@
 ---
 services:
   albedo:
-    image: ghcr.io/coreruleset/albedo:0.1.0
+    image: ghcr.io/coreruleset/albedo:0.2.0
     environment:
       - MAX_BODY_SIZE=15728640 # 15 MiB
 
