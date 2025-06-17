@@ -255,7 +255,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	if bodySize > 0 {
 		ResponseBodyBuffer := buffer.Bytes()
 		interruption, buffered, err := tx.WriteResponseBody(ResponseBodyBuffer)
-		f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(buffered)).msg("Buffering response data"))
+		f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(buffered)).msg("Buffered response data"))
 		if err != nil {
 			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to write response body"))
 			return api.Continue
