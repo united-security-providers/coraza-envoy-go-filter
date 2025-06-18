@@ -18,15 +18,15 @@ import (
 const HOSTPOSTSEPARATOR string = ":"
 
 type filter struct {
-	callbacks                 api.FilterCallbackHandler
-	conf                      configuration
-	wafMaps                   wafMaps
-	tx                        types.Transaction
-	httpProtocol              string
-	isInterruption            bool
-	processRequestBody        bool
-	processResponseBody       bool
-	nullResponseBodyProcessed bool
+	callbacks                   api.FilterCallbackHandler
+	conf                        configuration
+	wafMaps                     wafMaps
+	tx                          types.Transaction
+	httpProtocol                string
+	isInterruption              bool
+	processRequestBody          bool
+	processResponseBody         bool
+	withNoResponseBodyProcessed bool
 }
 
 func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) api.StatusType {
@@ -236,11 +236,11 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(bodySize)).msg("Processing incoming response data"))
 	if !tx.IsResponseBodyAccessible() {
 		f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("Skipping response body inspection, SecResponseBodyAccess is off"))
-		if !f.nullResponseBodyProcessed {
+		if !f.withNoResponseBodyProcessed {
 			// According to documentation, it is recommended to call this method even if it has no body.
 			// It permits to execute rules belonging to request body phase, but not necesarily processing the response body.
 			interruption, err := tx.ProcessResponseBody()
-			f.nullResponseBodyProcessed = true
+			f.withNoResponseBodyProcessed = true
 			if err != nil {
 				f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("ProcessResponseBody error"))
 				return api.Continue
