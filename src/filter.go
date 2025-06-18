@@ -225,6 +225,9 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
+	if f.withNoResponseBodyProcessed {
+		return api.Continue
+	}
 	if f.tx == nil {
 		return api.Continue
 	}
