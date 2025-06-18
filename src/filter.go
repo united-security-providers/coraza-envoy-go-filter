@@ -137,9 +137,11 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.Continue
 	}
 	bodySize := buffer.Len()
+	f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(bodySize)).msg("Processing incoming request data"))
 	if bodySize > 0 {
 		bytes := buffer.Bytes()
-		interruption, _, err := tx.WriteRequestBody(bytes)
+		interruption, buffered, err := tx.WriteRequestBody(bytes)
+		f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(buffered)).msg("Buffered request data"))
 		if err != nil {
 			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to write request body"))
 			return api.Continue
