@@ -244,6 +244,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			// It permits to execute rules belonging to request body phase, but not necesarily processing the response body.
 			interruption, err := tx.ProcessResponseBody()
 			f.withNoResponseBodyProcessed = true
+			f.processResponseBody = true
 			if err != nil {
 				f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("ProcessResponseBody error"))
 				return api.Continue
