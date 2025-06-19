@@ -224,7 +224,7 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 	 * eventually changes the status code
 	 */
 	if !endStream && tx.IsResponseBodyAccessible() {
-		f.callbacks.Log(api.Debug, BuildLoggerMessage().err(err).msg("Buffering response headers"))
+		f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("Buffering response headers"))
 		return api.StopAndBuffer
 	}
 
