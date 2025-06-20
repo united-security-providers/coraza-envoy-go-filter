@@ -217,6 +217,17 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 		f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
+
+	/* if this is not the end of the stream (i.e there is a body) and response
+	 * body processing is enabled, we need to buffer the headers to avoid envoy
+	 * already sending them downstream to the client before the body processing
+	 * eventually changes the status code
+	 */
+	if !endStream && tx.IsResponseBodyAccessible() {
+		f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("Buffering response headers"))
+		return api.StopAndBuffer
+	}
+
 	return api.Continue
 }
 
