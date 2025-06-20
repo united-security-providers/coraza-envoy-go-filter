@@ -80,7 +80,7 @@ function check_body() {
 }
 
 step=1
-total_steps=12
+total_steps=13
 
 ## Testing that basic coraza phases are working
 
@@ -128,6 +128,11 @@ check_body "${envoy_url_unfiltered}" false -X POST -H 'Content-Type: application
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive"
 check_body "${envoy_url_echo}" true -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
 
+# Testing status code is correct on response body detection
+((step+=1))
+echo "[${step}/${total_steps}] (onResponseBody) Testing true positive status is correct"
+check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
+
 ## Testing extra requests examples from the readme and some CRS rules in anomaly score mode.
 
 # Testing XSS detection during phase 1
@@ -149,5 +154,8 @@ check_status "${envoy_url_echo}" 403 --user-agent "gobuster/3.2.0 (X11; U; Linux
 ((step+=1))
 echo "[${step}/${total_steps}] True negative GET request with user-agent"
 check_status "${envoy_url_echo}" 200 --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+
+
+
 
 echo "[Done] All tests passed"
