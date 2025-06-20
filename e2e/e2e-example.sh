@@ -113,7 +113,7 @@ echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (bo
 check_status "${envoy_url_unfiltered}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayload}"
 
 # Testing body detection when reaching SecRequestBodyLimit
-# It's important that the pattern triggerin the rule is within SecRequestBodyLimit
+# It's important that the pattern triggering the rule is within SecRequestBodyLimit
 # we send 55 bytes in total here, and the malicious payload starts after 20 bytes
 # SecRequestBodyLimit is set to 40 so it includes the payload
 ((step+=1))
