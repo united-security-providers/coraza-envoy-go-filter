@@ -146,10 +146,14 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to write request body"))
 			return api.Continue
 		}
+
+		/* WriteRequestBody triggers ProcessRequestBody if the bodylimit (SecRequestBodyLimit) is reached.
+		 * This means if we receive an interruption here it was evaluated and interrupted by request body processing.
+		 */
 		if interruption != nil {
 			f.isInterruption = true
-			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("RequestBody is over limit"))
-			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
+			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("WriteRequestBody interrupted"))
+			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -277,10 +281,13 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to write response body"))
 			return api.Continue
 		}
+		/* WriteResponseBody triggers ProcessResponseBody if the bodylimit (SecResponseBodyLimit) is reached.
+		 * This means if we receive an interruption here it was evaluated and interrupted by response body processing.
+		 */
 		if interruption != nil {
 			f.isInterruption = true
-			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ResponseBody is over limit"))
-			f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
+			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("WriteResponseBody interrupted"))
+			f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}

@@ -44,6 +44,9 @@ func E2e() error {
 	if err := sh.RunV("docker", "compose", "--file", "e2e/docker-compose.yml", "build", "--pull"); err != nil {
 		return err
 	}
+	defer func() {
+		_ = sh.RunV("docker", "compose", "--file", "e2e/docker-compose.yml", "down", "-v")
+	}()
 	return sh.RunV("docker", "compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit", "tests")
 }
 

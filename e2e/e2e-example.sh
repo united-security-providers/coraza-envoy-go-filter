@@ -80,7 +80,7 @@ function check_body() {
 }
 
 step=1
-total_steps=13
+total_steps=15
 
 ## Testing that basic coraza phases are working
 
@@ -112,6 +112,14 @@ check_status "${envoy_url_echo}" 200 -X POST -H 'Content-Type: application/x-www
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body)"
 check_status "${envoy_url_unfiltered}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayload}"
 
+# Testing body detection when reaching SecRequestBodyLimit
+# It's important that the pattern triggering the rule is within SecRequestBodyLimit
+# we send 55 bytes in total here, and the malicious payload starts after 20 bytes
+# SecRequestBodyLimit is set to 40 so it includes the payload
+((step+=1))
+echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when reaching SecRequestBodyLimit"
+check_status "${envoy_url_unfiltered}/post" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "prefix is 20 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
+
 # Testing response headers detection
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseHeaders) Testing true positive"
@@ -132,6 +140,14 @@ check_body "${envoy_url_echo}" true -X POST -H 'Content-Type: application/x-www-
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive status is correct"
 check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
+
+# Testing status code is correct on response body detection when reaching bodylimit
+# It's important that the malicious payload is detectable within SecResponseBodyLimit
+# The generated response is 727 bytes, SecResponsBodyLimit is set to 700 bytes
+((step+=1))
+echo "[${step}/${total_steps}] (onResponseBody) Testing true positive status is correct when reaching SecResponseBodyLimit"
+check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "${truePositiveBodyPayloadForResponseBody}"
+
 
 ## Testing extra requests examples from the readme and some CRS rules in anomaly score mode.
 
