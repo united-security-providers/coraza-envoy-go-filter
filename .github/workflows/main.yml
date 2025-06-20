@@ -18,6 +18,7 @@ jobs:
         name: Run Mage (Build shared object)
         uses: magefile/mage-action@v3
         with:
+          cache-binary: false
           version: latest
           args: build
       -
