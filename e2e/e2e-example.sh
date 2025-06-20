@@ -80,7 +80,7 @@ function check_body() {
 }
 
 step=1
-total_steps=14
+total_steps=15
 
 ## Testing that basic coraza phases are working
 
@@ -111,6 +111,14 @@ check_status "${envoy_url_echo}" 200 -X POST -H 'Content-Type: application/x-www
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body)"
 check_status "${envoy_url_unfiltered}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayload}"
+
+# Testing body detection when reaching SecRequestBodyLimit
+# It's important that the pattern triggerin the rule is within SecRequestBodyLimit
+# we send 55 bytes in total here, and the malicious payload starts after 20 bytes
+# SecRequestBodyLimit is set to 40 so it includes the payload
+((step+=1))
+echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when reaching SecRequestBodyLimit"
+check_status "${envoy_url_unfiltered}/post" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "prefix is 20 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
 
 # Testing response headers detection
 ((step+=1))
