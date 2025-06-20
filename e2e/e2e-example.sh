@@ -80,7 +80,7 @@ function check_body() {
 }
 
 step=1
-total_steps=13
+total_steps=14
 
 ## Testing that basic coraza phases are working
 
@@ -132,6 +132,14 @@ check_body "${envoy_url_echo}" true -X POST -H 'Content-Type: application/x-www-
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive status is correct"
 check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
+
+# Testing status code is correct on response body detection when reaching bodylimit
+# It's important that the malicious payload is detectable within SecResponseBodyLimit
+# The generated response is 665 bytes, SecResponsBodyLimit is set to 600 bytes
+((step+=1))
+echo "[${step}/${total_steps}] (onResponseBody) Testing true positive status is correct when reaching SecResponseBodyLimit"
+check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "${truePositiveBodyPayloadForResponseBody}"
+
 
 ## Testing extra requests examples from the readme and some CRS rules in anomaly score mode.
 
