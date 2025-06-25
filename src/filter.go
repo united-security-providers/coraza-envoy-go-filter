@@ -99,7 +99,7 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	if interruption != nil {
 		f.isInterruption = true
 		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestHeaders failed"))
-		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+		f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	return api.Continue
@@ -131,7 +131,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody forbidden"))
-			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+			f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 		return api.Continue
@@ -153,7 +153,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("WriteRequestBody interrupted"))
-			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+			f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -167,7 +167,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody failed"))
-			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+			f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 		return api.Continue
@@ -202,7 +202,7 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody failed"))
-			f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+			f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -218,7 +218,7 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 	if interruption != nil {
 		f.isInterruption = true
 		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessResponseHeader failed"))
-		f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+		f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 
@@ -267,7 +267,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			if interruption != nil {
 				f.isInterruption = true
 				f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessResponseBody forbidden"))
-				f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+				f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 				return api.LocalReply
 			}
 		}
@@ -287,7 +287,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		if interruption != nil {
 			f.isInterruption = true
 			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("WriteResponseBody interrupted"))
-			f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+			f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -303,7 +303,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.processResponseBody = true
 			buffer.Set(bytes.Repeat([]byte("\x00"), bodySize))
 			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("ProcessResponseBody failed"))
-			f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+			f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 		return api.Continue
