@@ -80,7 +80,7 @@ function check_body() {
 }
 
 step=1
-total_steps=15
+total_steps=19
 
 ## Testing that basic coraza phases are working
 
@@ -112,13 +112,28 @@ check_status "${envoy_url_echo}" 200 -X POST -H 'Content-Type: application/x-www
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body)"
 check_status "${envoy_url_unfiltered}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayload}"
 
-# Testing body detection when reaching SecRequestBodyLimit
+# Testing body detection when reaching SecRequestBodyLimit (ProcessPartial)
 # It's important that the pattern triggering the rule is within SecRequestBodyLimit
 # we send 55 bytes in total here, and the malicious payload starts after 20 bytes
 # SecRequestBodyLimit is set to 40 so it includes the payload
 ((step+=1))
-echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when reaching SecRequestBodyLimit"
+echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when inside SecRequestBodyLimit"
 check_status "${envoy_url_unfiltered}/post" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "prefix is 20 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
+
+# Testing body detection when reaching SecRequestBodyLimit (ProcessPartial)
+# In this test the the pattern triggering the rule is NOT within SecRequestBodyLimit
+# SecRequestBodyLimit is set to 40 and the malicious payload starts after 58 bytes
+((step+=1))
+echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when outside SecRequestBodyLimit"
+check_status "${envoy_url_unfiltered}/post" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "this very long prefix is just a little more than 40 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
+
+# Testing request is rejected when SecRequestBodyLimitAction is set to reject
+# and the request body exceeds the configured limit
+# SecRequestBodyLimit is set to 40 and we send 49 bytes
+((step+=1))
+echo "[${step}/${total_steps}] (onRequestBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
+check_status "${envoy_url_unfiltered}/post" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: baz.example.com' --data "this payload is just a little more than 40 bytes"
+
 
 # Testing response headers detection
 ((step+=1))
@@ -141,12 +156,31 @@ check_body "${envoy_url_echo}" true -X POST -H 'Content-Type: application/x-www-
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive status is correct"
 check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
 
-# Testing status code is correct on response body detection when reaching bodylimit
+# Testing response body detection when reaching SecResponseBodyLimit (ProcessPartial)
 # It's important that the malicious payload is detectable within SecResponseBodyLimit
 # The generated response is 727 bytes, SecResponsBodyLimit is set to 700 bytes
+# TODO: change expected response status code after issue is fixed:
+# https://github.com/united-security-providers/coraza-envoy-go-filter/issues/11
 ((step+=1))
-echo "[${step}/${total_steps}] (onResponseBody) Testing true positive status is correct when reaching SecResponseBodyLimit"
+echo "[${step}/${total_steps}] (onResponseBody) Testing true positive response (body) when inside SecResponseBodyLimit"
 check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "${truePositiveBodyPayloadForResponseBody}"
+
+# Testing response body detection when reaching SecResponseBodyLimit (ProcessPartial)
+# In this test the the malicious payload is NOT detectable within SecResponseBodyLimit
+# SecResponsBodyLimit is set to 700 bytes, the prefix ensures that the payload
+# is behind 700 bytes in the response
+((step+=1))
+echo "[${step}/${total_steps}] (onResponseBody) Testing true positive response (body) when inside SecResponseBodyLimit"
+check_status "${envoy_url_echo}" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "this long prefix ensures that the payload is outside the parseable response because it is 105 bytes long${truePositiveBodyPayloadForResponseBody}"
+
+# Testing response is rejected when SecResponseBodyLimitAction is set to reject
+# and the response body exceeds the configured limit
+# The generated response is 80 bytes, SecResponsBodyLimit is set to 70 bytes
+# TODO: change expected response status code after issue is fixed:
+# https://github.com/united-security-providers/coraza-envoy-go-filter/issues/11
+((step+=1))
+echo "[${step}/${total_steps}] (onRequestBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
+check_status "${envoy_url_unfiltered}/bytes/80" 403 -H 'Host: baz.example.com'
 
 
 ## Testing extra requests examples from the readme and some CRS rules in anomaly score mode.
