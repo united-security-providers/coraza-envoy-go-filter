@@ -132,7 +132,7 @@ check_status "${envoy_url_unfiltered}/post" 200 -X POST -H 'Content-Type: applic
 # SecRequestBodyLimit is set to 40 and we send 49 bytes
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
-check_status "${envoy_url_unfiltered}/post" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: baz.example.com' --data "this payload is just a little more than 40 bytes"
+check_status "${envoy_url_unfiltered}/post" 413 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: baz.example.com' --data "this payload is just a little more than 40 bytes"
 
 
 # Testing response headers detection
@@ -140,7 +140,6 @@ check_status "${envoy_url_unfiltered}/post" 403 -X POST -H 'Content-Type: applic
 echo "[${step}/${total_steps}] (onResponseHeaders) Testing true positive"
 check_status "${envoy_url_filtered_resp_header}" 403
 
-# TODO(M4tteoP): Update response body e2e after https://github.com/corazawaf/coraza-proxy-wasm/issues/26
 # Testing response body true negative
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true negative"
@@ -159,8 +158,6 @@ check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www
 # Testing response body detection when reaching SecResponseBodyLimit (ProcessPartial)
 # It's important that the malicious payload is detectable within SecResponseBodyLimit
 # The generated response is 727 bytes, SecResponsBodyLimit is set to 700 bytes
-# TODO: change expected response status code after issue is fixed:
-# https://github.com/united-security-providers/coraza-envoy-go-filter/issues/11
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive response (body) when inside SecResponseBodyLimit"
 check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "${truePositiveBodyPayloadForResponseBody}"
@@ -176,11 +173,11 @@ check_status "${envoy_url_echo}" 200 -X POST -H 'Content-Type: application/x-www
 # Testing response is rejected when SecResponseBodyLimitAction is set to reject
 # and the response body exceeds the configured limit
 # The generated response is 80 bytes, SecResponsBodyLimit is set to 70 bytes
-# TODO: change expected response status code after issue is fixed:
-# https://github.com/united-security-providers/coraza-envoy-go-filter/issues/11
+# TODO: the expected response 413 is a bug in coraza, needs to be changed when its fixed
+# https://github.com/corazawaf/coraza/issues/1377
 ((step+=1))
-echo "[${step}/${total_steps}] (onRequestBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
-check_status "${envoy_url_unfiltered}/bytes/80" 403 -H 'Host: baz.example.com'
+echo "[${step}/${total_steps}] (onRespnseBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
+check_status "${envoy_url_unfiltered}/bytes/80" 413 -H 'Host: baz.example.com'
 
 
 ## Testing extra requests examples from the readme and some CRS rules in anomaly score mode.
