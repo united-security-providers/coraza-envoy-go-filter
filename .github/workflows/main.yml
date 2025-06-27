@@ -5,34 +5,38 @@ on:
   push:
 
 jobs:
-  scan:
+  vulnerability_scan:
     runs-on: ubuntu-latest
     steps:
       - name: Scan source for Vulnerabilities (govulncheck)
         uses: golang/govulncheck-action@v1
         with: 
           go-package: -mode=source -show verbose ./src/
-          repo-checkout: false
+          repo-checkout: true
           go-version-input: 1.24.2
           go-version-file: go.mod
-  mage:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
       - name: Set up Go
         uses: actions/setup-go@v5
-      - name: Run Mage (Build shared object)
+      - name: Build shared object
         uses: magefile/mage-action@v3
         with:
           version: latest
           args: build
-      - name: Run Mage (run FTW tests)
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Run FTW tests
         uses: magefile/mage-action@v3
         with:
           version: latest
           args: ftw
-      - name: Run Mage (run e2e tests)
+      - name: Run e2e tests
         uses: magefile/mage-action@v3
         with:
           version: latest
