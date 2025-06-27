@@ -14,6 +14,8 @@ jobs:
         uses: actions/setup-go@v5
       - name: Scan source for Vulnerabilities (govulncheck)
         uses: golang/govulncheck-action@v1
+        with: 
+          go-package: ./src/
       - name: Run Mage (Build shared object)
         uses: magefile/mage-action@v3
         with:
