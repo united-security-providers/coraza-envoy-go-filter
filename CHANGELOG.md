@@ -5,6 +5,7 @@
 _First release._
 
 ## Changed
+- Update go to version 1.24.4 ([#14](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/14)) ([daum3ns](https://github.com/daum3ns))
 - Return status code from coraza interruption ([#11](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/11)) ([daum3ns](https://github.com/daum3ns))
 - Update Core Rule Set to version 4.14, update envoy to v1.34 (#X) ([daum3ns](https://github.com/daum3ns))
 - Update dependencies: coraza v3.3.3 and protobuf v1.36.6 (#X) ([daum3ns](https://github.com/daum3ns))
