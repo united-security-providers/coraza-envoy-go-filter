@@ -17,6 +17,7 @@ jobs:
         with: 
           go-package: -mode=source -show verbose ./src/
           repo-checkout: false
+          go-version-file: go.mod
       - name: Run Mage (Build shared object)
         uses: magefile/mage-action@v3
         with:
@@ -27,6 +28,7 @@ jobs:
         with: 
           go-package: -mode=binary -show verbose ./coraza-waf.so
           repo-checkout: false
+          go-version-file: go.mod
       - name: Run Mage (run FTW tests)
         uses: magefile/mage-action@v3
         with:
