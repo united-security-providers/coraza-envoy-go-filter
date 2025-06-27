@@ -16,6 +16,7 @@ jobs:
         uses: golang/govulncheck-action@v1
         with: 
           go-package: -mode=source -show verbose ./src/
+          epo-checkout: false
       - name: Run Mage (Build shared object)
         uses: magefile/mage-action@v3
         with:
@@ -25,6 +26,7 @@ jobs:
         uses: golang/govulncheck-action@v1
         with: 
           go-package: -mode=binary -show verbose ./coraza-waf.so
+          epo-checkout: false
       - name: Run Mage (run FTW tests)
         uses: magefile/mage-action@v3
         with:
