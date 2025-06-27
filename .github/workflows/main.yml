@@ -17,6 +17,7 @@ jobs:
         with: 
           go-package: -mode=source -show verbose ./src/
           repo-checkout: false
+          go-version-input: 1.24.2
           go-version-file: go.mod
       - name: Run Mage (Build shared object)
         uses: magefile/mage-action@v3
