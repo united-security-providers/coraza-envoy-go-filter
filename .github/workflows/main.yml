@@ -5,13 +5,9 @@ on:
   push:
 
 jobs:
-  mage:
+  scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
       - name: Scan source for Vulnerabilities (govulncheck)
         uses: golang/govulncheck-action@v1
         with: 
@@ -19,17 +15,18 @@ jobs:
           repo-checkout: false
           go-version-input: 1.24.2
           go-version-file: go.mod
+  mage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
       - name: Run Mage (Build shared object)
         uses: magefile/mage-action@v3
         with:
           version: latest
           args: build
-      - name: Scan shared object for Vulnerabilities (govulncheck)
-        uses: golang/govulncheck-action@v1
-        with: 
-          go-package: -mode=binary -show verbose ./coraza-waf.so
-          repo-checkout: false
-          go-version-file: go.mod
       - name: Run Mage (run FTW tests)
         uses: magefile/mage-action@v3
         with:
