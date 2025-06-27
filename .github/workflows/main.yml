@@ -1,4 +1,4 @@
-name: mage
+name: Vulnerability Scan, Build, Test
 
 on:
   pull_request:
@@ -8,27 +8,23 @@ jobs:
   mage:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: Checkout sources
         uses: actions/checkout@v4
-      -
-        name: Set up Go
+      - name: Set up Go
         uses: actions/setup-go@v5
-      -
-        name: Run Mage (Build shared object)
+      - name: Scan source for Vulnerabilities (govulncheck)
+        uses: golang/govulncheck-action@v1
+      - name: Run Mage (Build shared object)
         uses: magefile/mage-action@v3
         with:
-          cache-binary: false
           version: latest
           args: build
-      -
-        name: Run Mage (run FTW tests)
+      - name: Run Mage (run FTW tests)
         uses: magefile/mage-action@v3
         with:
           version: latest
           args: ftw
-      -
-        name: Run Mage (run e2e tests)
+      - name: Run Mage (run e2e tests)
         uses: magefile/mage-action@v3
         with:
           version: latest
