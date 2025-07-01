@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	xds "github.com/cncf/xds/go/xds/type/v3"
@@ -33,6 +34,7 @@ type configuration struct {
 	defaultDirective string
 	hostDirectiveMap HostDirectiveMap
 	wafMaps          wafMaps
+	logFormat        string
 }
 
 type wafMaps map[string]coraza.WAF
@@ -66,6 +68,7 @@ type JSONErrorLogLine struct {
 }
 
 var filePathPrefix = regexp.MustCompile(".*/")
+var logFormat string
 
 func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
 	configStruct := &xds.TypedStruct{}
@@ -135,6 +138,20 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		}
 	}
 
+	// read log format
+	if logFormatString, ok := v.AsMap()["log_format"].(string); ok {
+		if strings.ToLower(logFormatString) == "json" || strings.ToLower(logFormatString) == "plain" {
+			config.logFormat = strings.ToLower(logFormatString)
+			logFormat = strings.ToLower(logFormatString)
+		} else {
+			return nil, errors.New("Invalid log_format. Only 'json' and 'plain' is supported")
+		}
+	} else {
+		config.logFormat = "plain"
+		logFormat = "plain"
+		api.LogInfo(BuildLoggerMessage().msg("No log_format provided. Using default 'plain'"))
+	}
+
 	return &config, nil
 }
 
@@ -143,6 +160,8 @@ func (p parser) Merge(parentConfig interface{}, childConfig interface{}) interfa
 }
 
 func errorCallback(error ctypes.MatchedRule) {
+	var msg string
+
 	// the transaction ID was set to the request ID on transaction initalization, see filter.go
 	// see https://github.com/corazawaf/coraza/discussions/1186
 	xReqID := error.TransactionID()
@@ -159,25 +178,44 @@ func errorCallback(error ctypes.MatchedRule) {
 		category = cfi
 	}
 
-	line := JSONErrorLogLine{
-		TransactionID:  error.TransactionID(),
-		RuleSetVersion: error.Rule().Version(),
-		Url:            error.URI(),
-		Rule: JSONRuleLogEntry{
-			RuleID:          error.Rule().ID(),
-			Category:        category,
-			Severity:        strings.ToUpper(error.Rule().Severity().String()),
-			Data:            error.Data(),
-			Message:         error.Message(),
-			MatchedData:     error.MatchedDatas()[0].Variable().Name(),
-			MatchedDataName: error.MatchedDatas()[0].Key(),
-			Tags:            error.Rule().Tags(),
-		},
-		ClientIP:  error.ClientIPAddress(),
-		RequestID: xReqID,
+	if logFormat == "json" {
+		line := JSONErrorLogLine{
+			TransactionID:  error.TransactionID(),
+			RuleSetVersion: error.Rule().Version(),
+			Url:            error.URI(),
+			Rule: JSONRuleLogEntry{
+				RuleID:          error.Rule().ID(),
+				Category:        category,
+				Severity:        strings.ToUpper(error.Rule().Severity().String()),
+				Data:            error.Data(),
+				Message:         error.Message(),
+				MatchedData:     error.MatchedDatas()[0].Variable().Name(),
+				MatchedDataName: error.MatchedDatas()[0].Key(),
+				Tags:            error.Rule().Tags(),
+			},
+			ClientIP:  error.ClientIPAddress(),
+			RequestID: xReqID,
+		}
+		bytes, _ := json.Marshal(line)
+		msg = string(bytes)
+	} else {
+		msg = BuildLoggerMessage().
+			str("client_ip", error.ClientIPAddress()).
+			str("uri", error.URI()).
+			str("transaction_id", error.TransactionID()).
+			str("rule_id", strconv.Itoa(error.Rule().ID())).
+			str("category", category).
+			str("severity", strings.ToUpper(error.Rule().Severity().String())).
+			str("data", error.Data()).
+			str("message", error.Message()).
+			str("matched_data", error.MatchedDatas()[0].Variable().Name()).
+			str("matched_data_name", error.MatchedDatas()[0].Key()).
+			str("tags", strings.Join(error.Rule().Tags(), ", ")).
+			str("crs_version", error.Rule().Version()).
+			str("request_id", xReqID).
+			msg("")
+
 	}
-	bytes, _ := json.Marshal(line)
-	msg := string(bytes)
 
 	switch error.Rule().Severity() {
 	case ctypes.RuleSeverityEmergency:
