@@ -149,7 +149,9 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	} else {
 		config.logFormat = "plain"
 		logFormat = "plain"
-		api.LogInfo(BuildLoggerMessage().msg("No log_format provided. Using default 'plain'"))
+		logger := BuildLoggerMessage(logFormat)
+		logger.msg("No log_format provided. Using default 'plain'")
+		api.LogInfo(logger.output())
 	}
 
 	return &config, nil
@@ -199,22 +201,21 @@ func errorCallback(error ctypes.MatchedRule) {
 		bytes, _ := json.Marshal(line)
 		msg = string(bytes)
 	} else {
-		msg = BuildLoggerMessage().
-			str("client_ip", error.ClientIPAddress()).
-			str("uri", error.URI()).
-			str("transaction_id", error.TransactionID()).
-			str("rule_id", strconv.Itoa(error.Rule().ID())).
-			str("category", category).
-			str("severity", strings.ToUpper(error.Rule().Severity().String())).
-			str("data", error.Data()).
-			str("message", error.Message()).
-			str("matched_data", error.MatchedDatas()[0].Variable().Name()).
-			str("matched_data_name", error.MatchedDatas()[0].Key()).
-			str("tags", strings.Join(error.Rule().Tags(), ", ")).
-			str("crs_version", error.Rule().Version()).
-			str("request_id", xReqID).
-			msg("")
-
+		logger := BuildLoggerMessage(logFormat)
+		logger.str("client_ip", error.ClientIPAddress())
+		logger.str("uri", error.URI())
+		logger.str("transaction_id", error.TransactionID())
+		logger.str("rule_id", strconv.Itoa(error.Rule().ID()))
+		logger.str("category", category)
+		logger.str("severity", strings.ToUpper(error.Rule().Severity().String()))
+		logger.str("data", error.Data())
+		logger.str("message", error.Message())
+		logger.str("matched_data", error.MatchedDatas()[0].Variable().Name())
+		logger.str("matched_data_name", error.MatchedDatas()[0].Key())
+		logger.str("tags", strings.Join(error.Rule().Tags(), ", "))
+		logger.str("crs_version", error.Rule().Version())
+		logger.str("request_id", xReqID)
+		msg = logger.output()
 	}
 
 	switch error.Rule().Severity() {
