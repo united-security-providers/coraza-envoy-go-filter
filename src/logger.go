@@ -11,29 +11,29 @@ import (
 
 // BuildLoggerMessage creates a new logger with the specified configuration
 // logformat can be "plain" or "json"
-func BuildLoggerMessage(logformat string) messageTemplate {
+func BuildLoggerMessage(logformat string) LogMessageBuilder {
 	buff := make([]byte, 0)
-	return &defaultMessage{
+	return &BasicLogMessage{
 		buff:   buff,
 		data:   make(map[string]interface{}),
 		format: logformat,
 	}
 }
 
-type messageTemplate interface {
-	msg(msg string) messageTemplate
-	str(key, val string) messageTemplate
-	err(err error) messageTemplate
+type LogMessageBuilder interface {
+	msg(msg string) LogMessageBuilder
+	str(key, val string) LogMessageBuilder
+	err(err error) LogMessageBuilder
 	output() string
 }
 
-type defaultMessage struct {
+type BasicLogMessage struct {
 	buff   []byte                 // buffer for plaintext output
 	data   map[string]interface{} // data for json output
 	format string                 // store the logformat
 }
 
-func (d *defaultMessage) msg(msg string) messageTemplate {
+func (d *BasicLogMessage) msg(msg string) LogMessageBuilder {
 	d.buff = append(d.buff, ' ')
 	d.buff = append(d.buff, "msg="...)
 	d.buff = append(d.buff, msg...)
@@ -41,7 +41,7 @@ func (d *defaultMessage) msg(msg string) messageTemplate {
 	return d
 }
 
-func (d *defaultMessage) str(key, val string) messageTemplate {
+func (d *BasicLogMessage) str(key, val string) LogMessageBuilder {
 	d.buff = append(d.buff, ' ')
 	d.buff = append(d.buff, key...)
 	d.buff = append(d.buff, '=')
@@ -50,7 +50,7 @@ func (d *defaultMessage) str(key, val string) messageTemplate {
 	return d
 }
 
-func (d *defaultMessage) err(err error) messageTemplate {
+func (d *BasicLogMessage) err(err error) LogMessageBuilder {
 	if err == nil {
 		return d
 	}
@@ -62,7 +62,7 @@ func (d *defaultMessage) err(err error) messageTemplate {
 }
 
 // output returns the log message in the configured format
-func (d *defaultMessage) output() string {
+func (d *BasicLogMessage) output() string {
 	if d.format == "json" {
 		jsonData, err := json.Marshal(d.data)
 		if err != nil {
