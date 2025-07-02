@@ -1,0 +1,18 @@
+name: Nightly Vulnerability Scan
+
+on:
+  schedule:
+    - cron: '0 23 * * 1-5'
+jobs:
+  vulnerability_scan:
+    name: Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan source for Vulnerabilities (govulncheck)
+        uses: golang/govulncheck-action@v1
+        with:
+          go-package: -mode=source -show verbose ./src/
+          repo-checkout: true
+          # we need to set a version here until https://github.com/golang/go/issues/70036 is fixed..
+          go-version-input: 1.24.4
+          go-version-file: go.mod
