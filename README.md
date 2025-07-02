@@ -119,6 +119,8 @@ Loading some pieces:
 
 - In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./src/rules/crs-setup.conf.example)).
 
+## Testing
+
 ### Running go-ftw (CRS Regression tests)
 
 The following command runs the [go-ftw](https://github.com/coreruleset/go-ftw) test suite against the filter with the CRS fully loaded.
@@ -134,3 +136,27 @@ One can also run a single test by executing:
 ```bash
 FTW_INCLUDE=920410 go run mage.go ftw
 ```
+
+
+### Running e2e tests
+
+The following command runs a small set of end to end tests against the filter with the CRS fully loaded.
+
+```bash
+go run mage.go e2e
+```
+
+## Log format
+
+By the dafault the filter writes plain text logs. 
+The log format can be changed to json using the log_format configuraion option:
+```yaml
+                    plugin_config:
+                      "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                      value:
+                        log_format: "json"
+                        directives: |
+                             [ ... ....  ]
+                        default_directive: "waf1"
+```
+
