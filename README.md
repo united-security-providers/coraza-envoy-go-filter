@@ -149,7 +149,7 @@ go run mage.go e2e
 ## Log format
 
 By the dafault the filter writes plain text logs. 
-The log format can be changed to json using the log_format configuraion option:
+The log format can be changed to json using the `log_format` configuraion option:
 ```yaml
                     plugin_config:
                       "@type": type.googleapis.com/xds.type.v3.TypedStruct
