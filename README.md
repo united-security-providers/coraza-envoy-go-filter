@@ -160,3 +160,28 @@ The log format can be changed to json using the `log_format` configuraion option
                         default_directive: "waf1"
 ```
 
+**Note that this setting does not automatically set the AuditLog Engine to JSON**
+
+If an audit log in json is desired, it must be configured with SecLang. For example:
+```yaml
+
+                      plugin_config:
+                          "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                          value:
+                              log_format: "json"
+                              directives: |
+                                {
+                                  "waf1":{
+                                        "simple_directives":[
+                                              [ ..... ]
+                                              "SecAuditLog /etc/envoy/logs/audit.log",
+                                              "SecAuditLogParts ABCFHKZ",
+                                              "SecAuditEngine RelevantOnly",
+                                              "SecAuditLogRelevantStatus ^(?:5|4)",
+                                              "SecAuditLogFormat JSON",
+                                              [ ..... ]
+                                        ]
+                                    },
+                                }
+                              default_directive: "waf1"
+```
