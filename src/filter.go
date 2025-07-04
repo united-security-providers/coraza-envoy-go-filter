@@ -43,7 +43,9 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 
 	xReqId, exist := headerMap.Get("x-request-id")
 	if !exist {
-		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("Error getting x-request-id header"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Error getting x-request-id header")
+		f.callbacks.Log(api.Info, logger.output())
 		xReqId = ""
 	}
 
@@ -56,7 +58,11 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	if strings.Contains(host, HOSTPOSTSEPARATOR) {
 		server, _, err = net.SplitHostPort(host)
 		if err != nil {
-			f.callbacks.Log(api.Info, BuildLoggerMessage().str("Host", host).err(err).msg("Failed to parse server name from Host"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.str("Host", host)
+			logger.err(err)
+			logger.msg("Failed to parse server name from Host")
+			f.callbacks.Log(api.Info, logger.output())
 			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
@@ -70,14 +76,20 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	srcIP, srcPortString, _ := net.SplitHostPort(f.callbacks.StreamInfo().DownstreamRemoteAddress())
 	srcPort, err := strconv.Atoi(srcPortString)
 	if err != nil {
-		f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("RemotePort formatting error"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.err(err)
+		logger.msg("RemotePort formatting error")
+		f.callbacks.Log(api.Info, logger.output())
 		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	destIP, destPortString, _ := net.SplitHostPort(f.callbacks.StreamInfo().DownstreamLocalAddress())
 	destPort, err := strconv.Atoi(destPortString)
 	if err != nil {
-		f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("LocalPort formatting error"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.err(err)
+		logger.msg("LocalPort formatting error")
+		f.callbacks.Log(api.Info, logger.output())
 		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
@@ -86,7 +98,9 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	method := headerMap.Method()
 	protocol, ok := f.callbacks.StreamInfo().Protocol()
 	if !ok {
-		f.callbacks.Log(api.Warn, BuildLoggerMessage().msg("Protocol not set"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Protocol not set")
+		f.callbacks.Log(api.Warn, logger.output())
 		protocol = "HTTP/2.0"
 	}
 	f.httpProtocol = protocol
@@ -98,7 +112,9 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
 		f.isInterruption = true
-		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestHeaders failed"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("ProcessRequestHeaders failed")
+		f.callbacks.Log(api.Info, logger.output())
 		f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
@@ -121,29 +137,45 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.Continue
 	}
 	if !tx.IsRequestBodyAccessible() {
-		f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("Skipping request body inspection, SecRequestBodyAccess is off"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Skipping request body inspection, SecRequestBodyAccess is off")
+		f.callbacks.Log(api.Debug, logger.output())
 		f.processRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
-			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to process request body"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.err(err)
+			logger.msg("Failed to process request body")
+			f.callbacks.Log(api.Info, logger.output())
 			return api.Continue
 		}
 		if interruption != nil {
 			f.isInterruption = true
-			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody forbidden"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.msg("ProcessRequestBody forbidden")
+			f.callbacks.Log(api.Info, logger.output())
 			f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 		return api.Continue
 	}
 	bodySize := buffer.Len()
-	f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(bodySize)).msg("Processing incoming request data"))
+	logger := BuildLoggerMessage(f.conf.logFormat)
+	logger.str("size", strconv.Itoa(bodySize))
+	logger.msg("Processing incoming request data")
+	f.callbacks.Log(api.Trace, logger.output())
 	if bodySize > 0 {
 		bytes := buffer.Bytes()
 		interruption, buffered, err := tx.WriteRequestBody(bytes)
-		f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(buffered)).msg("Buffered request data"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.str("size", strconv.Itoa(buffered))
+		logger.msg("Buffered request data")
+		f.callbacks.Log(api.Trace, logger.output())
 		if err != nil {
-			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to write request body"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.err(err)
+			logger.msg("Failed to write request body")
+			f.callbacks.Log(api.Info, logger.output())
 			return api.Continue
 		}
 
@@ -152,7 +184,9 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		 */
 		if interruption != nil {
 			f.isInterruption = true
-			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("WriteRequestBody interrupted"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.msg("WriteRequestBody interrupted")
+			f.callbacks.Log(api.Info, logger.output())
 			f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
@@ -161,12 +195,17 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		f.processRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
-			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to process request body"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.err(err)
+			logger.msg("Failed to process request body")
+			f.callbacks.Log(api.Info, logger.output())
 			return api.Continue
 		}
 		if interruption != nil {
 			f.isInterruption = true
-			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody failed"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.msg("ProcessRequestBody failed")
+			f.callbacks.Log(api.Info, logger.output())
 			f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
@@ -181,7 +220,9 @@ func (f *filter) DecodeTrailers(trailerMap api.RequestTrailerMap) api.StatusType
 
 func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) api.StatusType {
 	if f.isInterruption {
-		f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("Interruption already handled, sending downstream the local response"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Interruption already handled, sending downstream the local response")
+		f.callbacks.Log(api.Debug, logger.output())
 		return api.Continue
 	}
 	if f.tx == nil {
@@ -192,16 +233,23 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 		return api.Continue
 	}
 	if !f.processRequestBody {
-		f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("ProcessRequestBodyInPause3"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("ProcessRequestBody in phase3")
+		f.callbacks.Log(api.Debug, logger.output())
 		f.processRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
-			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to process request body"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.err(err)
+			logger.msg("Failed to process request body")
+			f.callbacks.Log(api.Info, logger.output())
 			return api.Continue
 		}
 		if interruption != nil {
 			f.isInterruption = true
-			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessRequestBody failed"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.msg("ProcessRequestBody failed")
+			f.callbacks.Log(api.Info, logger.output())
 			f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
@@ -217,7 +265,9 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 	interruption := tx.ProcessResponseHeaders(int(code), f.httpProtocol)
 	if interruption != nil {
 		f.isInterruption = true
-		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessResponseHeader failed"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("ProcessResponseHeader failed")
+		f.callbacks.Log(api.Info, logger.output())
 		f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
@@ -228,7 +278,9 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 	 * eventually changes the status code
 	 */
 	if !endStream && tx.IsResponseBodyAccessible() {
-		f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("Buffering response headers"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Buffering response headers")
+		f.callbacks.Log(api.Debug, logger.output())
 		return api.StopAndBuffer
 	}
 
@@ -251,9 +303,14 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	if tx.IsRuleEngineOff() {
 		return api.Continue
 	}
-	f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(bodySize)).msg("Processing incoming response data"))
+	logger := BuildLoggerMessage(f.conf.logFormat)
+	logger.str("size", strconv.Itoa(bodySize))
+	logger.msg("Processing incoming response data")
+	f.callbacks.Log(api.Trace, logger.output())
 	if !tx.IsResponseBodyAccessible() {
-		f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("Skipping response body inspection, SecResponseBodyAccess is off"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Skipping response body inspection, SecResponseBodyAccess is off")
+		f.callbacks.Log(api.Debug, logger.output())
 		if !f.withNoResponseBodyProcessed {
 			// According to documentation, it is recommended to call this method even if it has no body.
 			// It permits to execute rules belonging to request body phase, but not necesarily processing the response body.
@@ -261,12 +318,17 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.withNoResponseBodyProcessed = true
 			f.processResponseBody = true
 			if err != nil {
-				f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("ProcessResponseBody error"))
+				logger := BuildLoggerMessage(f.conf.logFormat)
+				logger.err(err)
+				logger.msg("ProcessResponseBody error")
+				f.callbacks.Log(api.Info, logger.output())
 				return api.Continue
 			}
 			if interruption != nil {
 				f.isInterruption = true
-				f.callbacks.Log(api.Info, BuildLoggerMessage().msg("ProcessResponseBody forbidden"))
+				logger := BuildLoggerMessage(f.conf.logFormat)
+				logger.msg("ProcessResponseBody forbidden")
+				f.callbacks.Log(api.Info, logger.output())
 				f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 				return api.LocalReply
 			}
@@ -276,9 +338,15 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	if bodySize > 0 {
 		ResponseBodyBuffer := buffer.Bytes()
 		interruption, buffered, err := tx.WriteResponseBody(ResponseBodyBuffer)
-		f.callbacks.Log(api.Trace, BuildLoggerMessage().str("size", strconv.Itoa(buffered)).msg("Buffered response data"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.str("size", strconv.Itoa(buffered))
+		logger.msg("Buffered response data")
+		f.callbacks.Log(api.Trace, logger.output())
 		if err != nil {
-			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Failed to write response body"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.err(err)
+			logger.msg("Failed to write response body")
+			f.callbacks.Log(api.Info, logger.output())
 			return api.Continue
 		}
 		/* WriteResponseBody triggers ProcessResponseBody if the bodylimit (SecResponseBodyLimit) is reached.
@@ -286,7 +354,9 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		 */
 		if interruption != nil {
 			f.isInterruption = true
-			f.callbacks.Log(api.Info, BuildLoggerMessage().msg("WriteResponseBody interrupted"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.msg("WriteResponseBody interrupted")
+			f.callbacks.Log(api.Info, logger.output())
 			f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
@@ -295,14 +365,20 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		f.processResponseBody = true
 		interruption, err := tx.ProcessResponseBody()
 		if err != nil {
-			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("ProcessResponseBody error"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.err(err)
+			logger.msg("ProcessResponseBody error")
+			f.callbacks.Log(api.Info, logger.output())
 			return api.Continue
 		}
 		if interruption != nil {
 			f.isInterruption = true
 			f.processResponseBody = true
 			buffer.Set(bytes.Repeat([]byte("\x00"), bodySize))
-			f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("ProcessResponseBody failed"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.err(err)
+			logger.msg("ProcessResponseBody failed")
+			f.callbacks.Log(api.Info, logger.output())
 			f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
@@ -326,16 +402,23 @@ func (f *filter) OnDestroy(reason api.DestroyReason) {
 	tx := f.tx
 	if tx != nil {
 		if !f.processResponseBody {
-			f.callbacks.Log(api.Debug, BuildLoggerMessage().msg("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced. Further logs are for detection only purposes"))
+			logger := BuildLoggerMessage(f.conf.logFormat)
+			logger.msg("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced. Further logs are for detection only purposes")
+			f.callbacks.Log(api.Debug, logger.output())
 			f.processResponseBody = true
 			_, err := tx.ProcessResponseBody()
 			if err != nil {
-				f.callbacks.Log(api.Info, BuildLoggerMessage().err(err).msg("Process response body onDestroy error"))
+				logger := BuildLoggerMessage(f.conf.logFormat)
+				logger.err(err)
+				logger.msg("Process response body onDestroy error")
+				f.callbacks.Log(api.Info, logger.output())
 			}
 		}
 		f.tx.ProcessLogging()
 		_ = f.tx.Close()
-		f.callbacks.Log(api.Info, BuildLoggerMessage().msg("Finished"))
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Finished")
+		f.callbacks.Log(api.Info, logger.output())
 	}
 }
 
