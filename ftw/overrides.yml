@@ -152,6 +152,15 @@ test_overrides:
     output:
       log:
         no_expect_ids: [941110]
+  - rule_id: 942280
+    test_ids: [3]
+    reason: |
+      These tests try to do an SQL delay atack in the Referer header.
+      But the referer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [942280]
+
   - rule_id: 920210
     test_ids: [2,3,4,6,7]
     reason: |
