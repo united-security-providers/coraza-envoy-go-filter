@@ -15,6 +15,25 @@ import (
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
 
+// enum for connection state, used to detect websocket connections
+type ConnectionState int
+
+const (
+	HTTP ConnectionState = iota
+	UpgradeWebsocketRequested
+	WebsocketConnection
+)
+
+func (connectionState ConnectionState) String() string {
+	return connectionStateName[connectionState]
+}
+
+var connectionStateName = map[ConnectionState]string{
+	HTTP:                      "http",
+	UpgradeWebsocketRequested: "websocket upgrade requested",
+	WebsocketConnection:       "websocket connection",
+}
+
 const HOSTPOSTSEPARATOR string = ":"
 
 type filter struct {
@@ -27,9 +46,17 @@ type filter struct {
 	processRequestBody          bool
 	processResponseBody         bool
 	withNoResponseBodyProcessed bool
+	connection                  ConnectionState
 }
 
 func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) api.StatusType {
+	f.connection = HTTP
+
+	logger := BuildLoggerMessage(f.conf.logFormat)
+	logger.str("f.connection", f.connection.String())
+	logger.msg("DecodeHeaders enter")
+	f.callbacks.Log(api.Debug, logger.output())
+
 	var host string
 	host = headerMap.Host()
 	if len(host) == 0 {
@@ -105,10 +132,27 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	}
 	f.httpProtocol = protocol
 	tx.ProcessURI(path, method, protocol)
+
+	upgrade_websocket_header := false
+	connection_upgrade_header := false
 	headerMap.Range(func(key, value string) bool {
+		// check for WS upgrade request
+		if key == "upgrade" && strings.Contains(strings.ToLower(value), "websocket") {
+			upgrade_websocket_header = true
+		}
+		if key == "connection" && strings.Contains(strings.ToLower(value), "upgrade") {
+			connection_upgrade_header = true
+
+		}
 		tx.AddRequestHeader(key, value)
 		return true
 	})
+	if upgrade_websocket_header && connection_upgrade_header {
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("detected websocket upgrade request")
+		f.callbacks.Log(api.Debug, logger.output())
+		f.connection = UpgradeWebsocketRequested
+	}
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
 		f.isInterruption = true
@@ -122,6 +166,11 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 }
 
 func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	logger := BuildLoggerMessage(f.conf.logFormat)
+	logger.str("f.connection", f.connection.String())
+	logger.msg("DecodeData enter")
+	f.callbacks.Log(api.Debug, logger.output())
+
 	if f.isInterruption {
 		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "interruption-already-handled")
 		return api.LocalReply
@@ -160,7 +209,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.Continue
 	}
 	bodySize := buffer.Len()
-	logger := BuildLoggerMessage(f.conf.logFormat)
+	logger = BuildLoggerMessage(f.conf.logFormat)
 	logger.str("size", strconv.Itoa(bodySize))
 	logger.msg("Processing incoming request data")
 	f.callbacks.Log(api.Trace, logger.output())
@@ -211,14 +260,26 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		}
 		return api.Continue
 	}
-	return api.StopAndBuffer
+
+	// only buffer the body if it is an HTTP connection
+	if f.connection == HTTP {
+		logger = BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Buffering request body data")
+		f.callbacks.Log(api.Debug, logger.output())
+		return api.StopAndBuffer
+	}
+	return api.Continue
 }
 
 func (f *filter) DecodeTrailers(trailerMap api.RequestTrailerMap) api.StatusType {
 	return api.Continue
 }
 
-func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) api.StatusType {
+func (f *filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) api.StatusType {
+	logger := BuildLoggerMessage(f.conf.logFormat)
+	logger.str("f.connection", f.connection.String())
+	logger.msg("EncodeHeaders enter")
+	f.callbacks.Log(api.Debug, logger.output())
 	if f.isInterruption {
 		logger := BuildLoggerMessage(f.conf.logFormat)
 		logger.msg("Interruption already handled, sending downstream the local response")
@@ -258,10 +319,28 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 	if !b {
 		code = 0
 	}
+	upgrade_websocket_header := false
+	connection_upgrade_header := false
 	headerMap.Range(func(key, value string) bool {
+		// check for WS upgrade response
+		if f.connection == UpgradeWebsocketRequested {
+			if key == "upgrade" && strings.Contains(strings.ToLower(value), "websocket") {
+				upgrade_websocket_header = true
+			}
+			if key == "connection" && strings.Contains(strings.ToLower(value), "upgrade") {
+				connection_upgrade_header = true
+
+			}
+		}
 		tx.AddResponseHeader(key, value)
 		return true
 	})
+	if upgrade_websocket_header && connection_upgrade_header {
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("detected websocket upgrade response")
+		f.callbacks.Log(api.Debug, logger.output())
+		f.connection = WebsocketConnection
+	}
 	interruption := tx.ProcessResponseHeaders(int(code), f.httpProtocol)
 	if interruption != nil {
 		f.isInterruption = true
@@ -277,7 +356,7 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 	 * already sending them downstream to the client before the body processing
 	 * eventually changes the status code
 	 */
-	if !endStream && tx.IsResponseBodyAccessible() {
+	if !endStream && tx.IsResponseBodyAccessible() && f.connection == HTTP {
 		logger := BuildLoggerMessage(f.conf.logFormat)
 		logger.msg("Buffering response headers")
 		f.callbacks.Log(api.Debug, logger.output())
@@ -288,6 +367,18 @@ func (f filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) a
 }
 
 func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	logger := BuildLoggerMessage(f.conf.logFormat)
+	logger.str("f.connection", f.connection.String())
+	logger.msg("EncodeData enter")
+	f.callbacks.Log(api.Debug, logger.output())
+
+	// immediately return if its a websocket request as we can't handle the binary body data
+	if f.connection == WebsocketConnection {
+		logger := BuildLoggerMessage(f.conf.logFormat)
+		logger.msg("Skip response body processing because this is a websocket request")
+		f.callbacks.Log(api.Debug, logger.output())
+		return api.Continue
+	}
 	if f.isInterruption {
 		f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
@@ -303,7 +394,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	if tx.IsRuleEngineOff() {
 		return api.Continue
 	}
-	logger := BuildLoggerMessage(f.conf.logFormat)
+	logger = BuildLoggerMessage(f.conf.logFormat)
 	logger.str("size", strconv.Itoa(bodySize))
 	logger.msg("Processing incoming response data")
 	f.callbacks.Log(api.Trace, logger.output())
