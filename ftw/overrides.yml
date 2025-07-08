@@ -238,7 +238,7 @@ test_overrides:
     output:
       log:
         expect_ids: [933120]
-        match_regex: 'session.referer_check found within ARGS_POST:var:'
+        match_regex: 'session.referer_check=t found within ARGS_POST:var:'
 
 
   # Tests that are different because of our testing setup
