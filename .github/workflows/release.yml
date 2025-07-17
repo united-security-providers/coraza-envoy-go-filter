@@ -1,0 +1,52 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - 'release-*'
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5
+      - name: Build shared object
+        uses: magefile/mage-action@v3
+        with:
+          version: latest
+          args: build
+      - name: Run FTW tests
+        uses: magefile/mage-action@v3
+        with:
+          version: latest
+          args: ftw
+      - name: Run e2e tests
+        uses: magefile/mage-action@v3
+        with:
+          version: latest
+          args: e2e
+      - name: Release Candidate
+        uses: softprops/action-gh-release@v2
+        if: contains(github.ref_name, '-rc')
+        with:
+          body_path: body_path: ${{ github.workspace }}-CHANGELOG.md
+          generate_release_notes: true
+          prerelease: true
+          files: |
+            CHANGELOG.md
+            LICENSE
+            coraza-waf.so
+      - name: Final Release
+        uses: softprops/action-gh-release@v2
+        if: !contains(github.ref_name, '-rc')
+        with:
+          body_path: body_path: ${{ github.workspace }}-CHANGELOG.md
+          generate_release_notes: true
+          prerelease: false
+          files: |
+            CHANGELOG.md
+            LICENSE
+            coraza-waf.so
