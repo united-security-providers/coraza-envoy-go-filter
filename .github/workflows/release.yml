@@ -30,7 +30,7 @@ jobs:
           args: e2e
       - name: Release Candidate
         uses: softprops/action-gh-release@v2
-        if: contains(github.ref_name, '-rc')
+        if: ${{ contains(github.ref_name, '-rc') }}
         with:
           body_path: ${{ github.workspace }}-CHANGELOG.md
           generate_release_notes: true
@@ -41,7 +41,7 @@ jobs:
             coraza-waf.so
       - name: Final Release
         uses: softprops/action-gh-release@v2
-        if: !contains(github.ref_name, '-rc')
+        if: ${{ !contains(github.ref_name, '-rc') }}
         with:
           body_path: ${{ github.workspace }}-CHANGELOG.md
           generate_release_notes: true
