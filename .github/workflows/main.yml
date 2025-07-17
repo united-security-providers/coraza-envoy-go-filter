@@ -7,6 +7,7 @@ on:
 jobs:
   vulnerability_scan:
     name: Vulnerability Scan
+    if: ${{ github.ref_type != 'tag' }}
     runs-on: ubuntu-latest
     steps:
       - name: Scan source for Vulnerabilities (govulncheck)
@@ -19,6 +20,7 @@ jobs:
           go-version-file: go.mod
   run_tests:
     name: Testbench
+    if: ${{ github.ref_type != 'tag' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
