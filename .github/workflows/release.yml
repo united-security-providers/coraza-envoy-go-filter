@@ -32,7 +32,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: contains(github.ref_name, '-rc')
         with:
-          body_path: body_path: ${{ github.workspace }}-CHANGELOG.md
+          body_path: ${{ github.workspace }}-CHANGELOG.md
           generate_release_notes: true
           prerelease: true
           files: |
@@ -43,7 +43,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: !contains(github.ref_name, '-rc')
         with:
-          body_path: body_path: ${{ github.workspace }}-CHANGELOG.md
+          body_path: ${{ github.workspace }}-CHANGELOG.md
           generate_release_notes: true
           prerelease: false
           files: |
