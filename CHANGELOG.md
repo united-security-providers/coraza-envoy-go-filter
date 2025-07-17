@@ -5,10 +5,11 @@
 _First release._
 
 ### Changed
+- Update CRS to version 4.16.0 ([#20](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/20)) ([daum3ns](https://github.com/daum3ns))
 - Make log format configurable ([#9](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/9)) ([daum3ns](https://github.com/daum3ns))
 - Update go to version 1.24.4 ([#14](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/14)) ([daum3ns](https://github.com/daum3ns))
 - Return status code from coraza interruption ([#11](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/11)) ([daum3ns](https://github.com/daum3ns))
-- Update Core Rule Set to version 4.14, update envoy to v1.34 (#X) ([daum3ns](https://github.com/daum3ns))
+- Update envoy to v1.34 (#X) ([daum3ns](https://github.com/daum3ns))
 - Update dependencies: coraza v3.3.3 and protobuf v1.36.6 (#X) ([daum3ns](https://github.com/daum3ns))
 
 
