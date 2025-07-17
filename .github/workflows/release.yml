@@ -2,8 +2,6 @@ name: Create Release
 
 on:
   push:
-    branches:
-      - 'release-*'
     tags:
       - "v*.*.*"
 
@@ -35,7 +33,7 @@ jobs:
         if: ${{ contains(github.ref_name, '-rc') }}
         with:
           body_path: CHANGELOG.md
-          generate_release_notes: true
+          generate_release_notes: false
           prerelease: true
           files: |
             CHANGELOG.md
@@ -45,8 +43,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: ${{ !contains(github.ref_name, '-rc') }}
         with:
-          body_path: ${{ github.workspace }}-CHANGELOG.md
-          generate_release_notes: true
+          body_path: CHANGELOG.md
+          generate_release_notes: false
           prerelease: false
           files: |
             CHANGELOG.md
