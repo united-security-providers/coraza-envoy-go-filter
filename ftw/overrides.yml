@@ -115,7 +115,7 @@ test_overrides:
     test_ids: [7,9,10,11,12]
     reason: |
       These tests try to do RCE injection in the Referer header.
-      But the referer header is sanitized by Envoy and removed from the request.
+      But the referrer header is sanitized by Envoy and removed from the request.
     output:
       log:
         no_expect_ids: [932161]
@@ -123,7 +123,7 @@ test_overrides:
     test_ids: [8,18]
     reason: |
       These tests try to do RCE injection in the Referer header.
-      But the referer header is sanitized by Envoy and removed from the request.
+      But the referrer header is sanitized by Envoy and removed from the request.
       TODO: in test 932237-7 the reverer header is set to "id" and reaches coraza, find out why this is not sanitized by envoy....
     output:
       log:
@@ -132,7 +132,7 @@ test_overrides:
     test_ids: [6,7,19,27,29]
     reason: |
       These tests try to do RCE injection in the Referer header.
-      But the referer header is sanitized by Envoy and removed from the request.
+      But the referrer header is sanitized by Envoy and removed from the request.
     output:
       log:
         no_expect_ids: [932237]
@@ -140,7 +140,7 @@ test_overrides:
     test_ids: [1]
     reason: |
       These tests try to do XSS injection in the Referer header.
-      But the referer header is sanitized by Envoy and removed from the request.
+      But the referrer header is sanitized by Envoy and removed from the request.
     output:
       log:
         no_expect_ids: [941101]
@@ -148,15 +148,15 @@ test_overrides:
     test_ids: [4]
     reason: |
       These tests try to do XSS injection in the Referer header.
-      But the referer header is sanitized by Envoy and removed from the request.
+      But the referrer header is sanitized by Envoy and removed from the request.
     output:
       log:
         no_expect_ids: [941110]
   - rule_id: 942280
     test_ids: [3]
     reason: |
-      These tests try to do an SQL delay atack in the Referer header.
-      But the referer header is sanitized by Envoy and removed from the request.
+      These tests try to do an SQL delay attack in the Referrer header.
+      But the referrer header is sanitized by Envoy and removed from the request.
     output:
       log:
         no_expect_ids: [942280]
@@ -306,8 +306,8 @@ test_overrides:
   - rule_id: 943110
     test_ids: [4]
     reason: |
-      Original tests is a negative cases with a valid host and referer. But in the test setup
-      the Host is rewritten to foo.example.com and the referer is sanitized.
+      Original tests is a negative cases with a valid host and referrer. But in the test setup
+      the Host is rewritten to foo.example.com and the referrer is sanitized.
       This is why "SessionID Parameter Name with Off-Domain Referer" is triggered.
     output:
       log:
