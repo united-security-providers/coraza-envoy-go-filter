@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.0] - In progress
+## [1.0.0] - 2025-07-15
 
 _First release._
 
