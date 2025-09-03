@@ -10,8 +10,8 @@ RUN apk update && apk add curl
 WORKDIR /workspace
 
 # Download CRS
-ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.16.0.tar.gz /workspace/coreruleset/
-RUN cd coreruleset && tar -xf v4.16.0.tar.gz --strip-components 1
+ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.17.1.tar.gz /workspace/coreruleset/
+RUN cd coreruleset && tar -xf v4.17.1.tar.gz --strip-components 1
 
 COPY ./ftw.yml /workspace/ftw.yml
 COPY ./overrides.yml /workspace/overrides.yml
