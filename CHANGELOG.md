@@ -1,6 +1,6 @@
 # Changelog
 
-## [v1.0.1-rc0] - In Progress
+## [v1.0.1] - In Progress
 
 ### Changed
 - Update CRS to version 4.17.1 ([#23](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/23)) ([daum3ns](https://github.com/daum3ns))
