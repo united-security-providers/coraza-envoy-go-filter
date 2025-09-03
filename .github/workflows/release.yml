@@ -29,11 +29,14 @@ jobs:
         with:
           version: latest
           args: e2e
+      - name: Generate Release Notes
+        id: notes
+        uses: theory/changelog-version-notes-action@v0.1.3
       - name: Release Candidate
         uses: softprops/action-gh-release@v2
         if: ${{ contains(github.ref_name, '-rc') }}
         with:
-          body_path: CHANGELOG.md
+          body_path: '${{ steps.notes.outputs.file }}'
           generate_release_notes: false
           prerelease: true
           files: |
@@ -44,7 +47,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: ${{ !contains(github.ref_name, '-rc') }}
         with:
-          body_path: CHANGELOG.md
+          body_path: '${{ steps.notes.outputs.file }}'
           generate_release_notes: false
           prerelease: false
           files: |
