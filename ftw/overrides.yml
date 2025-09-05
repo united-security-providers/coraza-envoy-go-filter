@@ -110,6 +110,15 @@ test_overrides:
       status: 426
       log:
         no_expect_ids: [944200]
+  - rule_id: 941210
+    test_ids: [6]
+    reason: |
+      Original test uses HTTP/1.0, so Envoy responds with HTTP 426 Uprade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [941210]
+
   # header sanitizing
   - rule_id: 932161
     test_ids: [7,9,10,11,12]
@@ -119,6 +128,14 @@ test_overrides:
     output:
       log:
         no_expect_ids: [932161]
+  - rule_id: 932207
+    test_ids: [1,2,7]
+    reason: |
+      The test tries to do RCE injection in the Referer header.
+      But the referrer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [932207]
   - rule_id: 932237
     test_ids: [8,18]
     reason: |
