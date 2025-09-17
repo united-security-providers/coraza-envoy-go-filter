@@ -24,6 +24,31 @@ const (
 	WebsocketConnection
 )
 
+type RequestPhase int
+
+const (
+	PhaseUnknown RequestPhase = iota
+	PhaseRequestHeader
+	PhaseRequestBody
+	PhaseResponseHeader
+	PhaseResponseBody
+)
+
+func (p RequestPhase) String() string {
+	switch p {
+	case PhaseRequestHeader:
+		return "request_header"
+	case PhaseRequestBody:
+		return "request_body"
+	case PhaseResponseHeader:
+		return "response_header"
+	case PhaseResponseBody:
+		return "response_body"
+	default:
+		return "unknown"
+	}
+}
+
 func (connectionState ConnectionState) String() string {
 	return connectionStateName[connectionState]
 }
@@ -137,7 +162,7 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	}
 	interruption := tx.ProcessRequestHeaders()
 	if interruption != nil {
-		f.handleInterruption("request_headers", interruption)
+		f.handleInterruption(PhaseRequestHeader, interruption)
 		return api.LocalReply
 	}
 	return api.Continue
@@ -169,7 +194,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			return api.Continue
 		}
 		if interruption != nil {
-			f.handleInterruption("request_body", interruption)
+			f.handleInterruption(PhaseRequestBody, interruption)
 			return api.LocalReply
 		}
 		return api.Continue
@@ -189,7 +214,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		 * This means if we receive an interruption here it was evaluated and interrupted by request body processing.
 		 */
 		if interruption != nil {
-			f.handleInterruption("request_body", interruption)
+			f.handleInterruption(PhaseRequestBody, interruption)
 			return api.LocalReply
 		}
 	}
@@ -201,7 +226,7 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			return api.Continue
 		}
 		if interruption != nil {
-			f.handleInterruption("request_body", interruption)
+			f.handleInterruption(PhaseRequestBody, interruption)
 			return api.LocalReply
 		}
 		return api.Continue
@@ -241,7 +266,7 @@ func (f *filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 			return api.Continue
 		}
 		if interruption != nil {
-			f.handleInterruption("response_headers", interruption)
+			f.handleInterruption(PhaseResponseHeader, interruption)
 			return api.LocalReply
 		}
 	}
@@ -271,7 +296,7 @@ func (f *filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 	}
 	interruption := tx.ProcessResponseHeaders(int(code), f.httpProtocol)
 	if interruption != nil {
-		f.handleInterruption("response_headers", interruption)
+		f.handleInterruption(PhaseResponseHeader, interruption)
 		return api.LocalReply
 	}
 
@@ -325,7 +350,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 				return api.Continue
 			}
 			if interruption != nil {
-				f.handleInterruption("response_body", interruption)
+				f.handleInterruption(PhaseResponseBody, interruption)
 				return api.LocalReply
 			}
 		}
@@ -343,7 +368,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		 * This means if we receive an interruption here it was evaluated and interrupted by response body processing.
 		 */
 		if interruption != nil {
-			f.handleInterruption("response_body", interruption)
+			f.handleInterruption(PhaseResponseBody, interruption)
 			return api.LocalReply
 		}
 	}
@@ -356,7 +381,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		}
 		if interruption != nil {
 			buffer.Set(bytes.Repeat([]byte("\x00"), bodySize))
-			f.handleInterruption("response_body", interruption)
+			f.handleInterruption(PhaseResponseBody, interruption)
 			return api.LocalReply
 		}
 		return api.Continue
@@ -392,25 +417,25 @@ func (f *filter) OnDestroy(reason api.DestroyReason) {
 	}
 }
 
-func (f *filter) handleInterruption(phase string, interruption *types.Interruption) {
+func (f *filter) handleInterruption(phase RequestPhase, interruption *types.Interruption) {
 	f.isInterruption = true
 	f.logInfo("Transaction interrupted",
-		struct{ K, V string }{"phase", phase},
+		struct{ K, V string }{"phase", phase.String()},
 		struct{ K, V string }{"ruleID", strconv.Itoa(interruption.RuleID)},
 		struct{ K, V string }{"action", interruption.Action},
 		struct{ K, V string }{"status", strconv.Itoa(interruption.Status)})
 
-	if strings.Contains(phase, "request_") {
+	switch phase {
+	case PhaseRequestHeader, PhaseRequestBody:
 		f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
-	} else {
+	case PhaseResponseHeader, PhaseResponseBody:
 		f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
-
 	}
 }
 
 /* helpers for easy logging */
 func (f *filter) logTrace(parts ...interface{}) {
-	f.callbacks.Log(api.Error, f.logger.Log(parts...))
+	f.callbacks.Log(api.Trace, f.logger.Log(parts...))
 }
 func (f *filter) logDebug(parts ...interface{}) {
 	f.callbacks.Log(api.Debug, f.logger.Log(parts...))
