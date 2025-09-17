@@ -421,7 +421,12 @@ func (f *filter) handleInterruption(phase string, interruption *types.Interrupti
 			struct{ K, V string }{"action", interruption.Action},
 			struct{ K, V string }{"status", strconv.Itoa(interruption.Status)}))
 
-	f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+	if strings.Contains(phase, "request_") {
+		f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+	} else {
+		f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+
+	}
 }
 
 func main() {
