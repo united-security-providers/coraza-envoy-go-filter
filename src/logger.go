@@ -66,6 +66,13 @@ func (d *BasicLogMessage) output() string {
 	return string(d.buff)
 }
 
+// Reset resets the string buffer and the data array
+func (d *BasicLogMessage) Reset() *BasicLogMessage {
+	d.buff = d.buff[:0]
+	d.data = make(map[string]interface{})
+	return d
+}
+
 // Log builds and immediately returns the log string.
 // opts are applied left-to-right and may be:
 //
@@ -73,6 +80,7 @@ func (d *BasicLogMessage) output() string {
 //	error   -> added via err()
 //	struct{K,V string} -> added via str(K,V)
 func (d *BasicLogMessage) Log(opts ...interface{}) string {
+	d.Reset()
 	for _, o := range opts {
 		switch v := o.(type) {
 		case string: // msg
