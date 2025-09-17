@@ -148,9 +148,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	} else {
 		config.logFormat = "plain"
 		logFormat = "plain"
-		logger := BuildLoggerMessage(logFormat)
-		logger.msg("No log_format provided. Using default 'plain'")
-		api.LogInfo(logger.output())
+		api.LogInfo(BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'plain'"))
 	}
 
 	return &config, nil
