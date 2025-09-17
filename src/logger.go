@@ -11,7 +11,7 @@ import (
 
 // BuildLoggerMessage creates a new logger with the specified configuration
 // logformat can be "plain" or "json"
-func BuildLoggerMessage(logformat string) LogMessageBuilder {
+func BuildLoggerMessage(logformat string) *BasicLogMessage {
 	buff := make([]byte, 0)
 	return &BasicLogMessage{
 		buff:   buff,
@@ -20,28 +20,21 @@ func BuildLoggerMessage(logformat string) LogMessageBuilder {
 	}
 }
 
-type LogMessageBuilder interface {
-	msg(msg string) LogMessageBuilder
-	str(key, val string) LogMessageBuilder
-	err(err error) LogMessageBuilder
-	output() string
-}
-
 type BasicLogMessage struct {
 	buff   []byte                 // buffer for plaintext output
 	data   map[string]interface{} // data for json output
 	format string                 // store the logformat
 }
 
-func (d *BasicLogMessage) msg(msg string) LogMessageBuilder {
+func (d *BasicLogMessage) msg(msg string) *BasicLogMessage {
 	d.buff = append(d.buff, ' ')
 	d.buff = append(d.buff, "msg="...)
-	d.buff = append(d.buff, msg...)
+	d.buff = append(d.buff, strconv.Quote(msg)...)
 	d.data["msg"] = msg
 	return d
 }
 
-func (d *BasicLogMessage) str(key, val string) LogMessageBuilder {
+func (d *BasicLogMessage) str(key, val string) *BasicLogMessage {
 	d.buff = append(d.buff, ' ')
 	d.buff = append(d.buff, key...)
 	d.buff = append(d.buff, '=')
@@ -50,13 +43,13 @@ func (d *BasicLogMessage) str(key, val string) LogMessageBuilder {
 	return d
 }
 
-func (d *BasicLogMessage) err(err error) LogMessageBuilder {
+func (d *BasicLogMessage) err(err error) *BasicLogMessage {
 	if err == nil {
 		return d
 	}
-	d.buff = append(d.buff, "error=\""...)
-	d.buff = append(d.buff, err.Error()...)
-	d.buff = append(d.buff, "\""...)
+	d.buff = append(d.buff, ' ')
+	d.buff = append(d.buff, "error="...)
+	d.buff = append(d.buff, strconv.Quote(err.Error())...)
 	d.data["error"] = err.Error()
 	return d
 }
@@ -71,4 +64,34 @@ func (d *BasicLogMessage) output() string {
 		return string(jsonData)
 	}
 	return string(d.buff)
+}
+
+// Reset resets the string buffer and the data array
+func (d *BasicLogMessage) Reset() *BasicLogMessage {
+	d.buff = d.buff[:0]
+	d.data = make(map[string]interface{})
+	return d
+}
+
+// Log builds and immediately returns the log string.
+// opts are applied left-to-right and may be:
+//
+//	string  -> treated as msg (only the first one is kept)
+//	error   -> added via err()
+//	struct{K,V string} -> added via str(K,V)
+func (d *BasicLogMessage) Log(opts ...interface{}) string {
+	d.Reset()
+	for _, o := range opts {
+		switch v := o.(type) {
+		case string: // msg
+			d.msg(v)
+		case error: // err
+			d.err(v)
+		case struct{ K, V string }: // str
+			d.str(v.K, v.V)
+		default:
+			panic("logger.go: opt must be string, error, or struct{K,V string}")
+		}
+	}
+	return d.output()
 }
