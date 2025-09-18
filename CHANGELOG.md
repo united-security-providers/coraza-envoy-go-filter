@@ -1,6 +1,6 @@
 # Changelog
 
-## [v1.1.0] - In Progress
+## [v1.1.0] - 2025-09-18
 
 ### Changed
 - Improved log messages ([#31](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/31)) ([daum3ns](https://github.com/daum3ns))
