@@ -1,8 +1,9 @@
 # Changelog
 
-## [v1.0.1] - In Progress
+## [v1.1.0] - In Progress
 
 ### Changed
+- Improved log messages ([#31](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/31)) ([daum3ns](https://github.com/daum3ns))
 - Update envoy to 1.35.3 ([#27](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/27)) ([daum3ns](https://github.com/daum3ns))
 - Update CRS to version 4.18.0 ([#23](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/23)) ([#26](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/26)) ([daum3ns](https://github.com/daum3ns)) ([kabbohus](https://github.com/HusseinKabbout))
 
@@ -36,5 +37,5 @@ _First release._
 ### Known Issues
 - - A bug in Coraza results in a wrong HTTP status code returned, if `SecResponseBodyLimit` is reached and `SecResponseBodyLimitAction` is set to `Reject`. Coraza incorrectly returns HTTP 413 instead of HTTP 500. ([corazawaf/coraza#1377](https://github.com/corazawaf/coraza/issues/1377))
 
-[v1.0.1]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v1.0.1
+[v1.1.0]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v1.1.0
 [v1.0.0]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v1.0.0
