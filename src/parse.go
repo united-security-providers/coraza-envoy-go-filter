@@ -34,6 +34,14 @@ type configuration struct {
 	hostDirectiveMap HostDirectiveMap
 	wafMaps          wafMaps
 	logFormat        string
+	// metrics
+	requestCounter                    api.CounterMetric
+	interruptionCounter               api.CounterMetric
+	interruptionCounterRequestHeader  api.CounterMetric
+	interruptionCounterRequestBody    api.CounterMetric
+	interruptionCounterResponseHeader api.CounterMetric
+	interruptionCounterResponseBody   api.CounterMetric
+	processingErrorsCounter           api.CounterMetric
 }
 
 type wafMaps map[string]coraza.WAF
@@ -150,6 +158,15 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		logFormat = "plain"
 		api.LogInfo(BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'plain'"))
 	}
+
+	// register metrics
+	config.requestCounter = callbacks.DefineCounterMetric("coraza_tx_total")
+	config.interruptionCounter = callbacks.DefineCounterMetric("coraza_tx_interrupted")
+	config.interruptionCounterRequestHeader = callbacks.DefineCounterMetric("coraza_tx_interrupted_phase_request_headers")
+	config.interruptionCounterRequestBody = callbacks.DefineCounterMetric("coraza_tx_interrupted_phase_request_body")
+	config.interruptionCounterResponseHeader = callbacks.DefineCounterMetric("coraza_tx_interrupted_phase_response_headers")
+	config.interruptionCounterResponseBody = callbacks.DefineCounterMetric("coraza_tx_interrupted_phase_response_body")
+	config.processingErrorsCounter = callbacks.DefineCounterMetric("coraza_tx_processing_errors")
 
 	return &config, nil
 }

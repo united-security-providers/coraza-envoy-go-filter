@@ -76,6 +76,7 @@ type filter struct {
 }
 
 func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) api.StatusType {
+	f.conf.requestCounter.Increment(1)
 	f.connection = HTTP
 
 	f.logDebug("DecodeHeaders enter", struct{ K, V string }{"f.connection", f.connection.String()})
@@ -426,11 +427,20 @@ func (f *filter) handleInterruption(phase RequestPhase, interruption *types.Inte
 		struct{ K, V string }{"status", strconv.Itoa(interruption.Status)})
 
 	switch phase {
-	case PhaseRequestHeader, PhaseRequestBody:
+	case PhaseRequestHeader:
+		f.conf.interruptionCounterRequestHeader.Increment(1)
 		f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
-	case PhaseResponseHeader, PhaseResponseBody:
+	case PhaseRequestBody:
+		f.conf.interruptionCounterRequestBody.Increment(1)
+		f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+	case PhaseResponseHeader:
+		f.conf.interruptionCounterResponseHeader.Increment(1)
+		f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+	case PhaseResponseBody:
+		f.conf.interruptionCounterResponseBody.Increment(1)
 		f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 	}
+	f.conf.interruptionCounter.Increment(1)
 }
 
 /* helpers for easy logging */
