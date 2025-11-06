@@ -1,9 +1,14 @@
 # Changelog
 
+## In Progress
+
+### Changed
+- Update go to version 1.24.10 ([#40](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/40)) ([daum3ns](https://github.com/daum3ns))
+
 ## [v1.1.1] - 2025-09-18
 
 ### Changed
-- Update go to version 1.24.6 ([#32](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/32)) ([daum3ns](https://github.com/daum3ns)) 
+- Update go to version 1.24.6 ([#32](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/32)) ([daum3ns](https://github.com/daum3ns))
 
 ## [v1.1.0] - 2025-09-18
 
