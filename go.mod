@@ -7,11 +7,11 @@ toolchain go1.24.10
 require (
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
 	github.com/corazawaf/coraza/v3 v3.3.3
-	github.com/envoyproxy/envoy v1.35.3
+	github.com/envoyproxy/envoy v1.36.2
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/magefile/mage v1.15.1-0.20241126214340-bdc92f694516
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
