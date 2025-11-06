@@ -9,7 +9,15 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    assignees:
+      - "daum3ns"
+      - "arminabf"
+      - "kabbohus"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    assignees:
+      - "daum3ns"
+      - "arminabf"
+      - "kabbohus"
