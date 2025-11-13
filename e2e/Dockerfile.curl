@@ -10,10 +10,16 @@ WORKDIR /workspace
 
 RUN apk add --no-cache bash
 
-COPY ./e2e-example.sh /workspace/e2e-example.sh
+COPY ./e2e-base.sh /workspace/e2e-base.sh
+COPY ./e2e-sse.sh /workspace/e2e-sse.sh
 
+ENV ENVOY_HOST=envoy:8081 \
+    HTTPBIN_HOST=httpbin:8080 \
+    SSE_HOST=sse-server:8080 \
+    SSE_PATH=/events \
+    HEALTH_PATH=/healthz \
+    CONNECT_TIMEOUT=5 \
+    MAX_TIME=5
 
-ENV ENVOY_HOST=envoy:8081
-ENV HTTPBIN_HOST=httpbin:8080
-
-CMD ["bash","-c", "/workspace/e2e-example.sh"]
+# Default runs both tests sequentially: general e2e then SSE. Compose can still override.
+CMD ["bash","-lc", "set -e; bash /workspace/e2e-base.sh && bash /workspace/e2e-sse.sh"]
