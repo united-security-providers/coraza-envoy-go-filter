@@ -1,9 +1,9 @@
-#!/usr/bin/env bash
-# e2e/e2e-sse.sh — E2E test for SSE endpoint (via Envoy), with readiness on SSE health
+#!/bin/bash
+# e2e/e2e-sse.sh — E2E test for SSE endpoint (via Envoy)
 #
 # This script is intended to run inside the tests container defined in e2e/docker-compose.yml.
-# It first waits for the SSE server health endpoint to be ready, then connects to Envoy and
-# verifies that the SSE endpoint streams at least two messages containing the text "Server time:".
+# It waits for the SSE server health endpoint to be ready, then connects to Envoy and verifies
+# that the SSE endpoint streams at least four messages containing the text "Server time:".
 #
 # Environment variables shared across e2e scripts:
 #   ENVOY_HOST       host:port of Envoy (default: envoy:8081)
@@ -14,7 +14,7 @@
 #   CONNECT_TIMEOUT  curl connect-timeout seconds (default: 5)
 #   MAX_TIME         curl max total time seconds for SSE fetch (default: 15)
 #
-set -eu
+:[[ "${DEBUG}" == "true" ]] && set -x
 
 ENVOY_HOST=${ENVOY_HOST:-envoy:8081}
 HTTPBIN_HOST=${HTTPBIN_HOST:-httpbin:8080}
@@ -24,87 +24,86 @@ HEALTH_PATH=${HEALTH_PATH:-/healthz}
 CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-5}
 MAX_TIME=${MAX_TIME:-15}
 
-HEALTH_URL="http://${SSE_HOST}${HEALTH_PATH}"
-TARGET_URL="http://${ENVOY_HOST}${SSE_PATH}"
+health_url="http://${SSE_HOST}${HEALTH_PATH}"
+target_url="http://${ENVOY_HOST}${SSE_PATH}"
 
-# Wait for SSE server health readiness
-echo "[INFO] Waiting for SSE server health at ${HEALTH_URL}..."
-for i in {1..40}; do
-  # Expect HTTP 200 and body 'ok' (lenient: just HTTP 200 is sufficient)
-  if status=$(curl -sS --connect-timeout 1 --max-time 1 -w "%{http_code}" -o /dev/null "${HEALTH_URL}"); then
-    if [ "$status" = "200" ]; then
-      echo "[INFO] SSE server is healthy (status ${status})."
-      break
+# wait_for_service waits until the given URL returns a 200 status code.
+# $1: The URL to send requests to.
+# $2: The max number of requests to send before giving up.
+function wait_for_service() {
+  local status_code="000"
+  local url=${1}
+  local max=${2}
+  while [[ "${status_code}" -ne "200" ]]; do
+    status_code=$(curl --connect-timeout "${CONNECT_TIMEOUT}" --write-out "%{http_code}" --silent --output /dev/null "${url}")
+    sleep 1
+    echo -ne "[Wait] Waiting for response from ${url}. Timeout: ${max}s   \r"
+    ((max-=1))
+    if [[ "${max}" -eq 0 ]]; then
+      echo "[Fail] Timeout waiting for response from ${url}, make sure the server is running."
+      exit 1
     fi
+  done
+  echo -e "\n[Ok] Got status code ${status_code}"
+}
+
+# sse_check checks that at least n data lines are received and each contains "Server time:"
+# $1: Host header value
+# $2: Expected number of received lines
+# $3: Time to receive events in seconds
+# $2: Human-friendly label for the step (e.g., "without WAF", "with WAF")
+function sse_check() {
+  local host_header=${1}
+  local expected=${2}
+  local connection_time=${3}
+  local label=${4}
+  echo "[Info] Connecting to SSE stream ${target_url} (${label}) and capturing at least ${expected} events"
+  local data_out
+  data_out=$(curl -H "Host: ${host_header}" -sS --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${connection_time}" "${target_url}" \
+    | sed -n 's/^data: //p')
+
+  local lines_captured
+  lines_captured=$(printf "%s" "${data_out}" | grep -c "." || true)
+  if [[ "${lines_captured}" -lt ${expected} ]]; then
+    echo "[Fail] Expected at least ${expected} SSE data lines, got ${lines_captured}. Raw output:"
+    printf '%s\n' "${data_out}"
+    exit 2
   fi
-  sleep 0.5
-  if [ "$i" -eq 40 ]; then
-    echo "[ERROR] SSE server health endpoint not ready at ${HEALTH_URL}"
-    exit 1
+
+  local bad=0
+  local index=0
+  while IFS= read -r line; do
+    index=$((index+1))
+    echo "[Info] Event ${index}: ${line}"
+    if ! printf "%s" "${line}" | grep -q "Server time:"; then
+      bad=1
+    fi
+  done <<< "${data_out}"
+
+  if [[ "${bad}" -ne 0 ]]; then
+    echo "[Fail] One or more lines did not contain 'Server time:'"
+    exit 3
   fi
-done
+  echo "[Ok] Received ${lines_captured} valid SSE events (${label})"
+}
 
-# Now fetch SSE stream via Envoy without a WAF
-echo "[INFO] Connecting to SSE stream ${TARGET_URL} (without coraza) and capturing at least 4 events..."
-#curl -H "Host: no-waf.example.com"  -sS --no-buffer  --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${MAX_TIME}" "${TARGET_URL}" -v
+step=1
+# 3 main steps: reachability, SSE without WAF, SSE with WAF
+total_steps=3
 
-DATA_OUT=$(curl -H "Host: no-waf.example.com" -sS --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${MAX_TIME}" "${TARGET_URL}" \
-  | sed -n 's/^data: //p')
+# Step 1: Testing application reachability (SSE health)
+echo "[${step}/${total_steps}] Testing SSE server reachability"
+wait_for_service "${health_url}" 15
 
-# check number of received lines
-LINES_CAPTURED=$(printf "%s" "${DATA_OUT}" | grep -c "." || true)
-if [ "${LINES_CAPTURED}" -lt 4 ]; then
-  echo "[ERROR] Expected at least 2 SSE data lines, got ${LINES_CAPTURED}. Raw output:"
-  printf '%s\n' "${DATA_OUT}"
-  exit 2
-fi
+# Step 2: SSE via Envoy without WAF
+((step+=1))
+echo "[${step}/${total_steps}] Testing SSE streaming (without WAF)"
+sse_check "no-waf.example.com" 4 $MAX_TIME "without WAF"
 
-# check each line contains data
-BAD=0
-INDEX=0
-while IFS= read -r line; do
-  INDEX=$((INDEX+1))
-  echo "[INFO] Event ${INDEX}: ${line}"
-  if ! printf "%s" "${line}" | grep -q "Server time:"; then
-    BAD=1
-  fi
-done <<< "${DATA_OUT}"
+# Step 3: SSE via Envoy with WAF
+((step+=1))
+echo "[${step}/${total_steps}] Testing SSE streaming (with WAF)"
+sse_check "bar.example.com" 4 $MAX_TIME "with WAF"
 
-if [ "${BAD}" -ne 0 ]; then
-  echo "[ERROR] One or more lines did not contain 'Server time:'"
-  exit 3
-fi
-
-# Now fetch SSE stream via Envoy with a WAF
-echo "[INFO] Connecting to SSE stream ${TARGET_URL} (with coraza) and capturing at least 4 events..."
-#curl -H "Host: no-waf.example.com"  -sS --no-buffer  --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${MAX_TIME}" "${TARGET_URL}" -v
-
-DATA_OUT=$(curl -H "Host: bar.example.com" -sS --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${MAX_TIME}" "${TARGET_URL}" \
-  | sed -n 's/^data: //p')
-
-# check number of received lines
-LINES_CAPTURED=$(printf "%s" "${DATA_OUT}" | grep -c "." || true)
-if [ "${LINES_CAPTURED}" -lt 4 ]; then
-  echo "[ERROR] Expected at least 2 SSE data lines, got ${LINES_CAPTURED}. Raw output:"
-  printf '%s\n' "${DATA_OUT}"
-  exit 2
-fi
-
-# check each line contains data
-BAD=0
-INDEX=0
-while IFS= read -r line; do
-  INDEX=$((INDEX+1))
-  echo "[INFO] Event ${INDEX}: ${line}"
-  if ! printf "%s" "${line}" | grep -q "Server time:"; then
-    BAD=1
-  fi
-done <<< "${DATA_OUT}"
-
-if [ "${BAD}" -ne 0 ]; then
-  echo "[ERROR] One or more lines did not contain 'Server time:'"
-  exit 3
-fi
-
-
-echo "[SUCCESS] SSE endpoint streamed valid events via Envoy. Test passed."
+echo "[Ok] SSE endpoint streamed valid events via Envoy."
+echo "[Done] All tests passed"
