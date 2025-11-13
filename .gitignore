@@ -5,3 +5,4 @@ gen
 coraza-waf.so
 ftw/logs
 example/logs
+e2e/logs
