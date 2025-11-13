@@ -72,6 +72,18 @@ static_resources:
                                               "SecRequestBodyLimitAction Reject"
                                           ]
                                     },
+                                  "waf4":{
+                                        "simple_directives":[
+                                              "Include @demo-conf",
+                                              "Include @crs-setup-demo-conf",
+                                              "SecDefaultAction \"phase:3,log,auditlog,pass\"",
+                                              "SecDefaultAction \"phase:4,log,auditlog,pass\"",
+                                              "SecDefaultAction \"phase:5,log,auditlog,pass\"",
+                                              "SecDebugLogLevel 3",
+                                              "Include @owasp_crs/*.conf",
+                                              "SecResponseBodyAccess Off"
+                                          ]
+                                    },
                                   "no-waf":{
                                         "simple_directives":[
                                               "SecRuleEngine Off"
@@ -84,6 +96,7 @@ static_resources:
                                   "foo.example.com":"waf1",
                                   "bar.example.com":"waf2",
                                   "baz.example.com":"waf3",
+                                  "body-off.example.com":"waf4",
                                   "no-waf.example.com":"no-waf"
                                 }
                   - name: envoy.filters.http.router
