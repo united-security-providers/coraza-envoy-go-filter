@@ -71,6 +71,11 @@ static_resources:
                                               "SecRequestBodyLimit 40",
                                               "SecRequestBodyLimitAction Reject"
                                           ]
+                                    },
+                                  "no-waf":{
+                                        "simple_directives":[
+                                              "SecRuleEngine Off"
+                                          ]
                                     }
                                 }
                               default_directive: "waf1"
@@ -78,7 +83,8 @@ static_resources:
                                 {
                                   "foo.example.com":"waf1",
                                   "bar.example.com":"waf2",
-                                  "baz.example.com":"waf3"
+                                  "baz.example.com":"waf3",
+                                  "no-waf.example.com":"no-waf"
                                 }
                   - name: envoy.filters.http.router
                     typed_config:
@@ -90,24 +96,40 @@ static_resources:
                       domains: ["*"]
                       routes:
                         - match:
+                            prefix: "/events"
+                          route:
+                            cluster: sse_service
+                        - match:
                             prefix: "/"
                           route:
                             host_rewrite_literal: 0.0.0.0:8080
-                            cluster: service_gin
+                            cluster: service_httpbin
 
   clusters:
-    - name: service_gin
+    - name: service_httpbin
       type: LOGICAL_DNS
       # Comment out the following line to test on v6 networks
       dns_lookup_family: V4_ONLY
       load_assignment:
-        cluster_name: service_gin
+        cluster_name: service_httpbin
         endpoints:
           - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
                       address: httpbin
+                      port_value: 8080
+    - name: sse_service
+      type: LOGICAL_DNS
+      dns_lookup_family: V4_ONLY
+      load_assignment:
+        cluster_name: sse_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: sse-server
                       port_value: 8080
 admin:
   access_log_path: /dev/null
