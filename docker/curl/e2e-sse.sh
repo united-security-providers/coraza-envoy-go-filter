@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright © 2025 United Security Providers AG, Switzerland
+# SPDX-License-Identifier: Apache-2.0
+#
 # e2e/e2e-sse.sh — E2E test for SSE endpoint (via Envoy)
 #
 # This script is intended to run inside the tests container defined in e2e/docker-compose.yml.
@@ -14,7 +17,7 @@
 #   CONNECT_TIMEOUT  curl connect-timeout seconds (default: 5)
 #   MAX_TIME         curl max total time seconds for SSE fetch (default: 15)
 #
-:[[ "${DEBUG}" == "true" ]] && set -x
+[[ "${DEBUG}" == "true" ]] && set -x
 
 ENVOY_HOST=${ENVOY_HOST:-envoy:8081}
 HTTPBIN_HOST=${HTTPBIN_HOST:-httpbin:8080}
@@ -57,15 +60,15 @@ function sse_check() {
   local expected=${2}
   local connection_time=${3}
   local label=${4}
-  echo "[Info] Connecting to SSE stream ${target_url} (${label}) and capturing at least ${expected} events"
+  echo "   [Info] Connecting to SSE stream ${target_url} (${label}) and capturing at least ${expected} events"
   local data_out
-  data_out=$(curl -H "Host: ${host_header}" -sS --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${connection_time}" "${target_url}" \
+  data_out=$(curl -H "Host: ${host_header}" --silent --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${connection_time}" "${target_url}" \
     | sed -n 's/^data: //p')
 
   local lines_captured
   lines_captured=$(printf "%s" "${data_out}" | grep -c "." || true)
   if [[ "${lines_captured}" -lt ${expected} ]]; then
-    echo "[Fail] Expected at least ${expected} SSE data lines, got ${lines_captured}. Raw output:"
+    echo "[Fail] Expected at least ${expected} SSE data lines, got ${lines_captured}. Raw output:  (${label})"
     printf '%s\n' "${data_out}"
     exit 2
   fi
@@ -74,14 +77,14 @@ function sse_check() {
   local index=0
   while IFS= read -r line; do
     index=$((index+1))
-    echo "[Info] Event ${index}: ${line}"
+    echo "   [Info] Event ${index}: ${line}"
     if ! printf "%s" "${line}" | grep -q "Server time:"; then
       bad=1
     fi
   done <<< "${data_out}"
 
   if [[ "${bad}" -ne 0 ]]; then
-    echo "[Fail] One or more lines did not contain 'Server time:'"
+    echo "[Fail] One or more lines did not contain 'Server time:' (${label})"
     exit 3
   fi
   echo "[Ok] Received ${lines_captured} valid SSE events (${label})"
@@ -89,7 +92,7 @@ function sse_check() {
 
 step=1
 # 3 main steps: reachability, SSE without WAF, SSE with WAF
-total_steps=3
+total_steps=4
 
 # Step 1: Testing application reachability (SSE health)
 echo "[${step}/${total_steps}] Testing SSE server reachability"
@@ -100,10 +103,15 @@ wait_for_service "${health_url}" 15
 echo "[${step}/${total_steps}] Testing SSE streaming (without WAF)"
 sse_check "no-waf.example.com" 4 $MAX_TIME "without WAF"
 
-# Step 3: SSE via Envoy with WAF
+# Step 3: SSE via Envoy with WAF with SecResponseBodyAccess Off
 ((step+=1))
-echo "[${step}/${total_steps}] Testing SSE streaming (with WAF)"
-sse_check "bar.example.com" 4 $MAX_TIME "with WAF"
+echo "[${step}/${total_steps}] Testing SSE streaming (with WAF, SecResponseBodyAccess Off)"
+sse_check "body-off.example.com" 4 $MAX_TIME "with WAF, SecResponseBodyAccess Off"
+
+# Step 4: SSE via Envoy with default WAF
+((step+=1))
+echo "[${step}/${total_steps}] Testing SSE streaming (with default WAF)"
+sse_check "foo.example.com" 4 $MAX_TIME "with default WAF"
 
 echo "[Ok] SSE endpoint streamed valid events via Envoy."
 echo "[Done] All tests passed"
