@@ -26,7 +26,7 @@ COPY --from=builder /app/sse-server /app/sse-server
 ENV SSE_PORT=8080 \
     SSE_PATH=/events \
     SSE_INTERVAL=1 \
-    HEALTH_PATH=/healthz
+    HEALTH_PATH=/health
 
 # Expose default port (can be changed by setting SSE_PORT)
 EXPOSE 8080
