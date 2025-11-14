@@ -3,12 +3,9 @@
 # Copyright © 2025 United Security Providers AG, Switzerland
 # SPDX-License-Identifier: Apache-2.0
 
-# Environment variables shared across e2e scripts:
-#   ENVOY_HOST       host:port of Envoy (default: localhost:8081)
-#   HTTPBIN_HOST     host:port of httpbin (default: localhost:8080)
-#   SSE_HOST         host:port of SSE server (unused here; default: localhost:8080)
-#   SSE_PATH         SSE events path (unused here; default: /events)
-#   CONNECT_TIMEOUT  curl connect-timeout seconds (default: 3)
+
+# source shared functions across e2e scripts
+. e2e-utils.sh
 
 ENVOY_HOST=${ENVOY_HOST:-"localhost:8081"}
 HTTPBIN_HOST=${HTTPBIN_HOST:-"localhost:8080"}
@@ -28,63 +25,6 @@ truePositiveBodyPayload="maliciouspayload"
 trueNegativeBodyPayloadForResponseBody="Hello world"
 truePositiveBodyPayloadForResponseBody="responsebodycode"
 
-# wait_for_service waits until the given URL returns a 200 status code.
-# $1: The URL to send requests to.
-# $2: The max number of requests to send before giving up.
-function wait_for_service() {
-    local status_code="000"
-    local url=${1}
-    local max=${2}
-    while [[ "${status_code}" -ne "200" ]]; do
-      status_code=$(curl --connect-timeout "${CONNECT_TIMEOUT}" --write-out "%{http_code}" --silent --output /dev/null "${url}")
-      sleep 1
-      echo -ne "[Wait] Waiting for response from ${url}. Timeout: ${max}s   \r"
-      ((max-=1))
-      if [[ "${max}" -eq 0 ]]; then
-        echo "[Fail] Timeout waiting for response from ${url}, make sure the server is running."
-        exit 1
-      fi
-    done
-    echo -e "\n[Ok] Got status code ${status_code}"
-}
-
-# check_status sends HTTP requests to the given URL and expects a given response code.
-# $1: The URL to send requests to.
-# $2: The expected status code.
-# $3-N: The rest of the arguments will be passed to the curl command as additional arguments
-#       to customize the HTTP call.
-function check_status() {
-    local url=${1}
-    local status=${2}
-    local args=("${@:3}" --write-out '%{http_code}' --silent --output /dev/null)
-    status_code=$(curl --connect-timeout "${CONNECT_TIMEOUT}" "${args[@]}" "${url}")
-    if [[ "${status_code}" -ne ${status} ]] ; then
-      echo "[Fail] Unexpected response with code ${status_code} from ${url}"
-      exit 1
-    fi
-    echo "[Ok] Got status code ${status_code}, expected ${status}"
-}
-
-# check_body sends the given HTTP request and checks the response body.
-# $1: The URL to send requests to.
-# $2: true/false indicating if an empty, or null body is expected or not.
-# $3-N: The rest of the arguments will be passed to the curl command as additional arguments
-#       to customize the HTTP call.
-function check_body() {
-    local url=${1}
-    local empty=${2}
-    local args=("${@:3}" --silent)
-    response_body=$(curl --connect-timeout "${CONNECT_TIMEOUT}" "${args[@]}" "${url}")
-    if [[ "${empty}" == "true" ]] && [[ -n "${response_body}" ]]; then
-      echo -e "[Fail] Unexpected response with a body. Body dump:\n${response_body}"
-      exit 1
-    fi
-    if [[ "${empty}" != "true" ]] && [[ -z "${response_body}" ]]; then
-      echo -e "[Fail] Unexpected response with a body. Body dump:\n${response_body}"
-      exit 1
-    fi
-    echo "[Ok] Got response with an expected body (empty=${empty})"
-}
 
 echo "####################################################"
 echo "#                  E2E BASE TESTS                  #"

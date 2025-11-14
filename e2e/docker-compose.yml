@@ -45,3 +45,5 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile.curl
+    env_file:
+      - ./.env.e2e
