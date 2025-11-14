@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -28,6 +29,7 @@ import (
  *	- /health - simple health check endpoint
  *	- /events - continuously streams events
  *	- /events/<n> - sends <n> events and then closes the connection
+ *  - /events/body/<n1>/<string1>/<n2>/<string2> send <n1> events with body <string1> and <n2> events with body <string2>
  */
 
 func main() {
@@ -120,7 +122,8 @@ func main() {
 	// Infinite event stream on /events
 	http.HandleFunc(path, sseHandler(nil, true))
 
-	// Endpoint to stream exactly N events and then close the HTTP connection: /events/<n>
+	// Endpoint to stream exactly N events and then close the HTTP connection
+	// default: /events/<n>
 	http.HandleFunc(path+"/", func(w http.ResponseWriter, r *http.Request) {
 		nStr := strings.TrimPrefix(r.URL.Path, path+"/")
 		if nStr == "" {
@@ -138,7 +141,75 @@ func main() {
 		handler(w, r)
 	})
 
+	// Endpoint to stream exactly N1 events with custom body string1, then
+	// N2 events with custom body string2 and finally close.
+	// default: /events/body/<n1>/<string1>/<n2>/<string2>
+	http.HandleFunc(path+"/body/", func(w http.ResponseWriter, r *http.Request) {
+		trimmed := strings.TrimPrefix(r.URL.Path, path+"/body/")
+		parts := strings.Split(trimmed, "/")
+		if len(parts) != 4 {
+			http.Error(w, "invalid body endpoint path; expected /events/body/<n1>/<string1>/<n2>/<string2>", http.StatusBadRequest)
+			return
+		}
+
+		n1, err1 := strconv.Atoi(parts[0])
+		n2, err2 := strconv.Atoi(parts[2])
+		if err1 != nil || err2 != nil || n1 < 0 || n2 < 0 {
+			http.Error(w, "invalid counts in path", http.StatusBadRequest)
+			return
+		}
+
+		str1, err := url.PathUnescape(parts[1])
+		if err != nil {
+			http.Error(w, "invalid string1 encoding", http.StatusBadRequest)
+			return
+		}
+		str2, err := url.PathUnescape(parts[3])
+		if err != nil {
+			http.Error(w, "invalid string2 encoding", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "close")
+
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+			return
+		}
+
+		sendEvent := func(payload string) bool {
+			select {
+			case <-r.Context().Done():
+				return false
+			default:
+			}
+			fmt.Fprintf(w, "event: CustomEvent\n")
+			fmt.Fprintf(w, "data: %s\n\n", payload)
+			flusher.Flush()
+			return true
+		}
+
+		for i := 0; i < n1; i++ {
+			time.Sleep(time.Duration(interval) * time.Second)
+			if !sendEvent(str1) {
+				return
+			}
+		}
+		for i := 0; i < n2; i++ {
+			time.Sleep(time.Duration(interval) * time.Second)
+			if !sendEvent(str2) {
+				return
+			}
+		}
+	})
+
 	// Simple health check endpoint (configurable path)
+	// default: /health
 	http.HandleFunc(healthPath, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Header().Set("Connection", "close")
