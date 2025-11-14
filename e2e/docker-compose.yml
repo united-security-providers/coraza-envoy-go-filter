@@ -46,3 +46,5 @@ services:
       - sse-server
     build:
       context: ../docker/curl/
+    env_file:
+      - ./.env.e2e
