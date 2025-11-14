@@ -13,7 +13,7 @@
 #   HTTPBIN_HOST     host:port of httpbin (unused here, but accepted for symmetry)
 #   SSE_HOST         host:port of SSE server (default: sse-server:8080)
 #   SSE_PATH         SSE events path (default: /events)
-#   HEALTH_PATH      SSE health path (default: /healthz)
+#   HEALTH_PATH      SSE health path (default: /health)
 #   CONNECT_TIMEOUT  curl connect-timeout seconds (default: 5)
 #   MAX_TIME         curl max total time seconds for SSE fetch (default: 15)
 #
@@ -23,7 +23,7 @@ ENVOY_HOST=${ENVOY_HOST:-envoy:8081}
 HTTPBIN_HOST=${HTTPBIN_HOST:-httpbin:8080}
 SSE_HOST=${SSE_HOST:-sse-server:8080}
 SSE_PATH=${SSE_PATH:-/events}
-HEALTH_PATH=${HEALTH_PATH:-/healthz}
+HEALTH_PATH=${HEALTH_PATH:-/health}
 CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-5}
 MAX_TIME=${MAX_TIME:-15}
 
@@ -111,7 +111,7 @@ sse_check "body-off.example.com" 4 $MAX_TIME "with WAF, SecResponseBodyAccess Of
 # Step 4: SSE via Envoy with default WAF
 ((step+=1))
 echo "[${step}/${total_steps}] Testing SSE streaming (with default WAF)"
-sse_check "foo.example.com" 4 $MAX_TIME "with default WAF"
+sse_check "bar.example.com" 4 $MAX_TIME "with default WAF"
 
 echo "[Ok] SSE endpoint streamed valid events via Envoy."
 echo "[Done] All tests passed"
