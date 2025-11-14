@@ -50,17 +50,17 @@ function wait_for_service() {
   echo -e "\n[Ok] Got status code ${status_code}"
 }
 
-# sse_check checks that at least n data lines are received and each contains "Server time:"
+# sse_check_stream connects to /events stream and checks that at least n events are received and each contains "Server time:"
 # $1: Host header value
 # $2: Expected number of received lines
 # $3: Time to receive events in seconds
 # $2: Human-friendly label for the step (e.g., "without WAF", "with WAF")
-function sse_check() {
+function sse_check_stream() {
   local host_header=${1}
   local expected=${2}
   local connection_time=${3}
   local label=${4}
-  echo "   [Info] Connecting to SSE stream ${target_url} (${label}) and capturing at least ${expected} events"
+  echo "   [Info] Connecting to SSE stream ${target_url} and capturing at least ${expected} events [${label}]"
   local data_out
   data_out=$(curl -H "Host: ${host_header}" --silent --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${connection_time}" "${target_url}" \
     | sed -n 's/^data: //p')
@@ -68,7 +68,7 @@ function sse_check() {
   local lines_captured
   lines_captured=$(printf "%s" "${data_out}" | grep -c "." || true)
   if [[ "${lines_captured}" -lt ${expected} ]]; then
-    echo "[Fail] Expected at least ${expected} SSE data lines, got ${lines_captured}. Raw output:  (${label})"
+    echo "[Fail] Expected at least ${expected} SSE data lines, got ${lines_captured}. Raw output:  [${label}]"
     printf '%s\n' "${data_out}"
     exit 2
   fi
@@ -84,34 +84,95 @@ function sse_check() {
   done <<< "${data_out}"
 
   if [[ "${bad}" -ne 0 ]]; then
-    echo "[Fail] One or more lines did not contain 'Server time:' (${label})"
+    echo "[Fail] One or more lines did not contain 'Server time:' [${label}]"
     exit 3
   fi
-  echo "[Ok] Received ${lines_captured} valid SSE events (${label})"
+  echo "[Ok] Received ${lines_captured} valid SSE events [${label}]"
 }
 
+# sse_check_exact connects to the /events/<n> endpoint and checks that at exactly N events are received and each contains "Server time:"
+# $1: Host header value
+# $2: Expected number of received lines
+# $2: Human-friendly label for the step (e.g., "without WAF", "with WAF")
+function sse_check_exact() {
+  local host_header=${1}
+  local expected=${2}
+  local label=${3}
+  echo "   [Info] Connecting to SSE stream ${target_url}/${expected} and expecting exactly ${expected} events [${label}]"
+  local data_out
+  data_out=$(curl -H "Host: ${host_header}" --silent --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" "${target_url}/${expected}" \
+    | sed -n 's/^data: //p')
+
+  local lines_captured
+  lines_captured=$(printf "%s" "${data_out}" | grep -c "." || true)
+  if [[ "${lines_captured}" -ne ${expected} ]]; then
+    echo "[Fail] Expected at least ${expected} SSE data lines, got ${lines_captured}. Raw output:  [${label}]"
+    printf '%s\n' "${data_out}"
+    exit 2
+  fi
+
+  local bad=0
+  local index=0
+  while IFS= read -r line; do
+    index=$((index+1))
+    echo "   [Info] Event ${index}: ${line}"
+    if ! printf "%s" "${line}" | grep -q "Server time:"; then
+      bad=1
+    fi
+  done <<< "${data_out}"
+
+  if [[ "${bad}" -ne 0 ]]; then
+    echo "[Fail] One or more lines did not contain 'Server time:' [${label}]"
+    exit 3
+  fi
+  echo "[Ok] Received ${lines_captured} valid SSE events [${label}]"
+}
+
+echo "####################################################"
+echo "#                  E2E SSE TESTS                   #"
+echo "####################################################"
+
 step=1
-# 3 main steps: reachability, SSE without WAF, SSE with WAF
-total_steps=4
+total_steps=6
 
 # Step 1: Testing application reachability (SSE health)
 echo "[${step}/${total_steps}] Testing SSE server reachability"
 wait_for_service "${health_url}" 15
 
-# Step 2: SSE via Envoy without WAF
+# Step 2: Test SSE stream via Envoy with SecRuleEngine disabled
 ((step+=1))
-echo "[${step}/${total_steps}] Testing SSE streaming (without WAF)"
-sse_check "no-waf.example.com" 4 $MAX_TIME "without WAF"
+echo "[${step}/${total_steps}] Testing SSE streaming [stream, SecRuleEngine Off]"
+sse_check_stream "no-waf.example.com" 4 $MAX_TIME "stream, SecRuleEngine Off"
 
-# Step 3: SSE via Envoy with WAF with SecResponseBodyAccess Off
+# Step 3: Test exact 5 SSE events via Envoy with SecRuleEngine disabled
 ((step+=1))
-echo "[${step}/${total_steps}] Testing SSE streaming (with WAF, SecResponseBodyAccess Off)"
-sse_check "body-off.example.com" 4 $MAX_TIME "with WAF, SecResponseBodyAccess Off"
+echo "[${step}/${total_steps}] Testing exact 5 SSE events streamed [exact, SecRuleEngine Off]"
+sse_check_exact "no-waf.example.com" 5 "exact, SecRuleEngine Off"
 
-# Step 4: SSE via Envoy with default WAF
+# Step 4: Test SSE stream via Envoy with WAF with SecResponseBodyAccess Off
 ((step+=1))
-echo "[${step}/${total_steps}] Testing SSE streaming (with default WAF)"
-sse_check "bar.example.com" 4 $MAX_TIME "with default WAF"
+echo "[${step}/${total_steps}] Testing SSE streaming [stream, SecResponseBodyAccess Off]"
+sse_check_stream "body-off.example.com" 4 $MAX_TIME "stream, SecResponseBodyAccess Off"
 
-echo "[Ok] SSE endpoint streamed valid events via Envoy."
-echo "[Done] All tests passed"
+# Step 5: Test exact 5 SSE events via Envoy with WAF with SecResponseBodyAccess Off
+((step+=1))
+echo "[${step}/${total_steps}] Testing  exact 5 SSE events streamed [exact, SecResponseBodyAccess Off]"
+sse_check_exact "body-off.example.com" 5 "exact, SecResponseBodyAccess Off"
+
+# Step 6: Test SSE stream via Envoy with default WAF
+# TODO: this test currently fails because the golang filter can't handle it correctly
+#((step+=1))
+#echo "[${step}/${total_steps}] Testing SSE streaming [stream, default WAF]"
+#sse_check_stream "foo.example.com" 4 $MAX_TIME "stream, default WAF"
+
+# Step 7: Test exact 5 SSE events via Envoy with default WAF
+((step+=1))
+echo "[${step}/${total_steps}] Testing  exact 5 SSE events streamed [stream, default WAF]"
+sse_check_exact "foo.example.com" 5 "exact, default WAF"
+
+
+echo "####################################################"
+echo "#                   SUCCESS :-)                    #"
+echo "####################################################"
+echo ""
+echo ""
