@@ -9,15 +9,27 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	sse "github.com/rifaideen/sse-server"
 )
 
-// Simple SSE server that sends periodic notifications
-// It doesn't wait for any client to connect, it just starts broadcasting to all the connected clients
-// port, paths and interval can be configured via environment variables
-// based on the example: https://github.com/rifaideen/sse-server?tab=readme-ov-file#usage
+/* Simple SSE server
+ * based on the example: https://github.com/rifaideen/sse-server?tab=readme-ov-file#usage
+ * It doesn't wait for any client to connect, it just starts broadcasting to all the connected clients.
+ * can be configured via environment variables:
+ * SSE_PORT - port to listen on (default 8080)
+ * SSE_PATH - path to listen on (default /events)
+ * SSE_INTERVAL - interval in seconds to send server time updates (default 1)
+ * HEALTH_PATH - path to health check endpoint (default /health)
+ *
+ * endpoints:
+ *	- /health - simple health check endpoint
+ *	- /events - continuously streams events
+ *	- /events/<n> - sends <n> events and then closes the connection
+ */
+
 func main() {
 	// Configure via environment variables only
 	port := os.Getenv("SSE_PORT")
@@ -83,6 +95,7 @@ func main() {
 				}
 
 				// send message to client
+				fmt.Fprintf(w, "event: ServerTimeUpdate\n")
 				fmt.Fprintf(w, "data: %s\n\n", message)
 				flusher.Flush()
 			case <-r.Context().Done():
@@ -91,11 +104,66 @@ func main() {
 		}
 	})
 
-	// Simple healthcheck endpoint (configurable path)
+	// Endpoint to stream exactly N events and then close the HTTP connection
+	// /events/<n>
+	http.HandleFunc(path+"/", func(w http.ResponseWriter, r *http.Request) {
+		// Only handle paths with a numeric suffix
+		nStr := strings.TrimPrefix(r.URL.Path, path+"/")
+		if nStr == "" {
+			http.NotFound(w, r)
+			return
+		}
+		n, err := strconv.Atoi(nStr)
+		if err != nil || n < 0 {
+			http.Error(w, "invalid events count", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		// Inform the client we will close after sending N events
+		w.Header().Set("Connection", "close")
+
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+			return
+		}
+
+		chNotification := make(chan string, 10)
+		server.Add <- chNotification
+		defer func() {
+			server.Remove <- chNotification
+			close(chNotification)
+		}()
+
+		sent := 0
+		for sent < n {
+			select {
+			case message := <-chNotification:
+				if message == sse.QUIT {
+					return
+				}
+				fmt.Fprintf(w, "event: ServerTimeUpdate\n")
+				fmt.Fprintf(w, "data: %s\n\n", message)
+				flusher.Flush()
+				sent++
+			case <-r.Context().Done():
+				return
+			}
+		}
+		// Return to end the response; client connection will close
+		return
+	})
+
+	// Simple health check endpoint (configurable path)
 	http.HandleFunc(healthPath, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Connection", "close")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok responsebodycode"))
 	})
 
 	// Send server time updates
@@ -104,8 +172,7 @@ func main() {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			server.Notification <- fmt.Sprintf("responsebodycode Server time: %s  responsebodycode", time.Now().Format(time.RFC3339))
-			//server.Notification <- fmt.Sprintf("Server time: %s Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  \n\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  \n\nUt wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  \n\nNam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.  \n\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis.   \n\nAt vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, At accusam aliquyam diam diam dolore dolores duo eirmod eos erat, et nonumy sed tempor et et invidunt justo labore Stet clita ea et gubergren, kasd magna no rebum. sanctus sea sed takimata ut vero voluptua. est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat.  \n\nConsetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus.  \n\nLorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.  \n\nDuis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.  \n\nUt wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.  \n\nNam liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming id quod mazim placerat facer possim assum. Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.  \n\nDuis autem vel eum iriure dolor in", time.Now().Format(time.RFC3339))
+			server.Notification <- fmt.Sprintf("Server time: %s", time.Now().Format(time.RFC3339))
 		}
 	}()
 
