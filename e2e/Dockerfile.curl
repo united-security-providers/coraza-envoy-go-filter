@@ -22,5 +22,5 @@ ENV ENVOY_HOST=envoy:8081 \
     MAX_TIME=5
 
 # Default runs both tests sequentially: general e2e then SSE. Compose can still override.
-#CMD ["bash","-lc", "set -e; bash /workspace/e2e-base.sh && bash /workspace/e2e-sse.sh"]
-CMD ["bash","-lc", "set -e; bash /workspace/e2e-sse.sh"]
+CMD ["bash","-lc", "set -e; bash /workspace/e2e-base.sh && bash /workspace/e2e-sse.sh"]
+#CMD ["bash","-lc", "set -e; bash /workspace/e2e-sse.sh"]

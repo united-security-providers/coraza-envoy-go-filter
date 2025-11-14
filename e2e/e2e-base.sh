@@ -86,6 +86,10 @@ function check_body() {
     echo "[Ok] Got response with an expected body (empty=${empty})"
 }
 
+echo "####################################################"
+echo "#                  E2E BASE TESTS                  #"
+echo "####################################################"
+
 step=1
 total_steps=19
 
@@ -210,6 +214,8 @@ echo "[${step}/${total_steps}] True negative GET request with user-agent"
 check_status "${envoy_url_echo}" 200 --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
 
 
-
-
-echo "[Done] All tests passed"
+echo "####################################################"
+echo "#                   SUCCESS :-)                    #"
+echo "####################################################"
+echo ""
+echo ""
