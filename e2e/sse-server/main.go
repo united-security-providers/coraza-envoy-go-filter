@@ -63,51 +63,65 @@ func main() {
 	go server.Listen()
 	defer server.Close()
 
-	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
+	// Shared SSE handler
+	// maxEvents == nil  -> unlimited stream
+	// maxEvents != nil  -> send exactly *maxEvents events and then return
+	sseHandler := func(maxEvents *int, keepAlive bool) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			if keepAlive {
+				w.Header().Set("Connection", "keep-alive")
+			} else {
+				w.Header().Set("Connection", "close")
+			}
 
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
-			return
-		}
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+				return
+			}
 
-		// create buffered channel to receive notifications and add it to the server
-		chNotification := make(chan string, 10)
-		server.Add <- chNotification
+			// create buffered channel to receive notifications and add it to the server
+			chNotification := make(chan string, 10)
+			server.Add <- chNotification
+			defer func() {
+				server.Remove <- chNotification
+				close(chNotification)
+			}()
 
-		defer func() {
-			// remove the channel from the server and close the channel
-			server.Remove <- chNotification
-			close(chNotification)
-		}()
-
-		for {
-			select {
-			case message := <-chNotification:
-				// Quit signal received, exit the loop
-				if message == sse.QUIT {
+			sent := 0
+			for {
+				// If we have a limit and we've reached it, stop.
+				if maxEvents != nil && sent >= *maxEvents {
 					return
 				}
 
-				// send message to client
-				fmt.Fprintf(w, "event: ServerTimeUpdate\n")
-				fmt.Fprintf(w, "data: %s\n\n", message)
-				flusher.Flush()
-			case <-r.Context().Done():
-				return
+				select {
+				case message := <-chNotification:
+					if message == sse.QUIT {
+						return
+					}
+					fmt.Fprintf(w, "event: ServerTimeUpdate\n")
+					fmt.Fprintf(w, "data: %s\n\n", message)
+					flusher.Flush()
+					if maxEvents != nil {
+						sent++
+					}
+				case <-r.Context().Done():
+					return
+				}
 			}
 		}
-	})
+	}
 
-	// Endpoint to stream exactly N events and then close the HTTP connection
-	// /events/<n>
+	// Infinite event stream on /events
+	http.HandleFunc(path, sseHandler(nil, true))
+
+	// Endpoint to stream exactly N events and then close the HTTP connection: /events/<n>
 	http.HandleFunc(path+"/", func(w http.ResponseWriter, r *http.Request) {
-		// Only handle paths with a numeric suffix
 		nStr := strings.TrimPrefix(r.URL.Path, path+"/")
 		if nStr == "" {
 			http.NotFound(w, r)
@@ -119,43 +133,9 @@ func main() {
 			return
 		}
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		// Inform the client we will close after sending N events
-		w.Header().Set("Connection", "close")
-
-		flusher, ok := w.(http.Flusher)
-		if !ok {
-			http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
-			return
-		}
-
-		chNotification := make(chan string, 10)
-		server.Add <- chNotification
-		defer func() {
-			server.Remove <- chNotification
-			close(chNotification)
-		}()
-
-		sent := 0
-		for sent < n {
-			select {
-			case message := <-chNotification:
-				if message == sse.QUIT {
-					return
-				}
-				fmt.Fprintf(w, "event: ServerTimeUpdate\n")
-				fmt.Fprintf(w, "data: %s\n\n", message)
-				flusher.Flush()
-				sent++
-			case <-r.Context().Done():
-				return
-			}
-		}
-		// Return to end the response; client connection will close
-		return
+		// Reuse the shared handler with a concrete N and "Connection: close"
+		handler := sseHandler(&n, false)
+		handler(w, r)
 	})
 
 	// Simple health check endpoint (configurable path)
