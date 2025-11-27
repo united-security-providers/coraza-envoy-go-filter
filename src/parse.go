@@ -19,6 +19,9 @@ import (
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	"coraza-waf/internal/libinjection"
+	"coraza-waf/internal/re2"
 )
 
 func init() {
@@ -149,6 +152,14 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		config.logFormat = "plain"
 		logFormat = "plain"
 		api.LogInfo(BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'plain'"))
+	}
+
+	if useRe2, ok := v.AsMap()["useRe2"].(bool); !ok || useRe2 {
+		re2.Register()
+	}
+
+	if useLibinjection, ok := v.AsMap()["useLibinjection"].(bool); !ok || useLibinjection {
+		libinjection.Register()
 	}
 
 	return &config, nil
