@@ -1,6 +1,9 @@
 # Changelog
 
-## In Progress
+## [Unreleased]
+
+### Added
+- Set the memoize_builders flag to reduce memory consumption in deployments that launch several coraza instances. ([#42](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/42)) ([daum3ns](https://github.com/daum3ns))
 
 ### Changed
 - Update go to version 1.24.10 ([#40](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/40)) ([daum3ns](https://github.com/daum3ns))
@@ -41,7 +44,7 @@ _First release._
 ### Fixed
 - Fix filter disrupts websocket connections ([#18](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/18)) ([daum3ns](https://github.com/daum3ns))
 - Fix wrong status code returned when reaching body limits ([#6](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/6)) ([daum3ns](https://github.com/daum3ns))
-- Fix wrong status code returned ([#5](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/5)) ([daum3ns](https://github.com/daum3ns)) 
+- Fix wrong status code returned ([#5](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/5)) ([daum3ns](https://github.com/daum3ns))
 - Fix avoid response inspection if SecResponseBodyAccess is off ([#4](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/4/)) ([Armin Abfalterer](https://github.com/arminabf))
 - Fix go-ftw testbench (#X) ([daum3ns](https://github.com/daum3ns))
 - Fix rule exclusion via SecAction to not working (#X) ([daum3ns](https://github.com/daum3ns))
