@@ -66,8 +66,8 @@ function check_body() {
     echo "[Ok] Got response with an expected body (empty=${empty})"
 }
 
-# sse_check_stream connects the given URL and checks that at least N events are received and verifies each event contains
-# a string in the data: field
+# sse_check_stream connects the given URL and checks that at least N events are received, verifies each event contains
+# a string in the data: field, and each arrives at ~1s, 2s, 3s, etc. from request start
 # $1: URL to connect to
 # $2: Expected number of received lines
 # $3: Time to receive events in seconds
@@ -75,79 +75,128 @@ function check_body() {
 # $5-N: The rest of the arguments will be passed to the curl command as additional arguments
 #       to customize the HTTP call.
 function sse_check_stream() {
-  local url=${1}
-  local expected=${2}
-  local connection_time=${3}
-  local pattern=${4}
-  local args=("${@:3}" --silent)
-  echo "   [Info] Connecting to SSE stream ${target_url} and capturing at least ${expected} events"
-  local data_out
-  data_out=$(curl --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${connection_time}" "${args[@]}" "${url}" \
-    | sed -n 's/^data: //p')
+  local url=$1
+  local expected=$2
+  local connection_time=$3
+  local pattern=$4
+  shift 4
+  local args=("$@" --silent --no-buffer --connect-timeout "$CONNECT_TIMEOUT" --max-time "$connection_time")
 
-  local lines_captured
-  lines_captured=$(printf "%s" "${data_out}" | grep -c "." || true)
-  if [[ "${lines_captured}" -lt ${expected} ]]; then
-    echo "[Fail] Expected at least ${expected} SSE data lines, got ${lines_captured}. Raw output:"
-    printf '%s\n' "${data_out}"
+  local start_time=$(date +%s.%N)
+  echo "   [Info] Connecting to SSE stream ${url}"
+
+  local lines_captured=0
+  local bad=0
+
+  # Read SSE events line-by-line from curl stream
+  while IFS= read -r line; do
+    if [[ $line =~ ^data:\ (.*) ]]; then
+      local data="${BASH_REMATCH[1]}"
+      local receive_time=$(date +%s.%N)
+      local elapsed=$(echo "$receive_time - $start_time" | bc -l)
+      local elapsed_rounded=$(printf "%.3f" $elapsed)
+
+      lines_captured=$((lines_captured + 1))
+      echo "   > [Info] Event ${lines_captured}: ${data}      (elapsed=${elapsed_rounded}s)"
+
+      # Check pattern
+      if ! [[ "$data" =~ $pattern ]]; then
+        echo "   > [Fail] Event ${lines_captured} does not match pattern: '${pattern}'"
+        bad=1
+      fi
+
+      # Validate event N arrives close to N seconds after start with +/- 200ms tolerance
+      local expected_time=$(echo "${lines_captured} - 0.2" | bc -l)
+      local max_time=$(echo "${lines_captured} + 0.2" | bc -l)
+
+      if (( $(echo "$elapsed < $expected_time" | bc -l) )) || (( $(echo "$elapsed > $max_time" | bc -l) )); then
+        echo "   > [Fail] Event ${lines_captured} arrived at ${elapsed_rounded}s (expected between ${expected_time}s and ${max_time}s)"
+        bad=1
+      else
+        echo "   > [Ok] Event ${lines_captured} arrived between ${expected_time}s and ${max_time}s"
+
+      fi
+
+    fi
+
+    (( lines_captured >= expected )) && break
+  done < <(curl "${args[@]}" "${url}")
+
+  # Final checks
+  if (( lines_captured < expected )); then
+    echo "[Fail] Expected ${expected} events, got ${lines_captured}"
     exit 2
   fi
-
-  local bad=0
-  local index=0
-  while IFS= read -r line; do
-    index=$((index+1))
-    echo "   [Info] Event ${index}: ${line}"
-    if ! printf "%s" "${line}" | grep -q "${pattern}"; then
-      bad=1
-    fi
-  done <<< "${data_out}"
-
-  if [[ "${bad}" -ne 0 ]]; then
-    echo "[Fail] One or more lines did not contain '${pattern}'"
+  if (( bad != 0 )); then
+    echo "[Fail] One or more validation checks failed."
     exit 3
   fi
-  echo "[Ok] Received ${lines_captured} valid SSE events"
+
+  echo "[Success] Received ${lines_captured} events with correct timing and content"
 }
 
-# sse_check_exact connects to the given URL and checks that at exactly N events are received and each event contains
-# a string in the data: field
+# sse_check_exact connects to the given URL and checks that exactly N events are received,
+# each contains a pattern, and each arrives at ~1s, 2s, 3s, etc. from request start
 # $1: URL to connect to
 # $2: Expected number of received lines
 # $3: Expected string in the events data field
-# $4-N: The rest of the arguments will be passed to the curl command as additional arguments
-#       to customize the HTTP call.
+# $4-N: Additional curl arguments
 function sse_check_exact() {
-  local url=${1}
-  local expected=${2}
-  local pattern=${3}
-  local args=("${@:4}" --silent)
-  echo "   [Info] Connecting to SSE stream ${url} and expecting exactly ${expected} events"
-  local data_out
-  data_out=$(curl --no-buffer --connect-timeout "${CONNECT_TIMEOUT}" "${args[@]}" "${url}" \
-    | sed -n 's/^data: //p')
+  local url=$1
+  local expected=$2
+  local pattern=$3
+  shift 3
+  local args=("$@" --silent --no-buffer --connect-timeout "$CONNECT_TIMEOUT" --max-time "$((expected + 5))")
 
-  local lines_captured
-  lines_captured=$(printf "%s" "${data_out}" | grep -c "." || true)
-  if [[ "${lines_captured}" -ne ${expected} ]]; then
-    echo "[Fail] Expected at least ${expected} SSE data lines, got ${lines_captured}. Raw output:"
-    printf '%s\n' "${data_out}"
+  local start_time=$(date +%s.%N)
+  echo "   [Info] Connecting to SSE stream ${url} and expecting exactly ${expected} events"
+
+  local lines_captured=0
+  local bad=0
+
+  # Read SSE events line-by-line from curl stream
+  while IFS= read -r line; do
+    if [[ $line =~ ^data:\ (.*) ]]; then
+      local data="${BASH_REMATCH[1]}"
+      local receive_time=$(date +%s.%N)
+      local elapsed=$(echo "$receive_time - $start_time" | bc -l)
+      local elapsed_rounded=$(printf "%.3f" $elapsed)
+
+      lines_captured=$((lines_captured + 1))
+      echo "   > [Info] Event ${lines_captured}: ${data}      (elapsed=${elapsed_rounded}s)"
+
+      # Check pattern
+      if ! [[ "$data" =~ $pattern ]]; then
+        echo "   > [Fail] Event ${lines_captured} does not match pattern: '${pattern}'"
+        bad=1
+      fi
+
+      # Validate timing: event N should arrive close to N seconds after start with +/- 200ms tolerance
+      local expected_min=$(echo "${lines_captured} - 0.2" | bc -l)
+      local expected_max=$(echo "${lines_captured} + 0.2" | bc -l)
+
+      if (( $(echo "$elapsed < $expected_min" | bc -l) )) || (( $(echo "$elapsed > $expected_max" | bc -l) )); then
+        echo "   > [Fail] Event ${lines_captured} arrived at ${elapsed_rounded}s (expected between ${expected_min}s and ${expected_max}s)"
+        bad=1
+      else
+        echo "   > [Ok] Event ${lines_captured} arrived between ${expected_min}s and ${expected_max}s"
+      fi
+    fi
+
+    # Exit loop after receiving expected number of events
+    (( lines_captured >= expected )) && break
+  done < <(curl "${args[@]}" "${url}")
+
+  # Final validation
+  if (( lines_captured != expected )); then
+    echo "[Fail] Expected exactly ${expected} events, got ${lines_captured}"
     exit 2
   fi
 
-  local bad=0
-  local index=0
-  while IFS= read -r line; do
-    index=$((index+1))
-    echo "   [Info] Event ${index}: ${line}"
-    if ! printf "%s" "${line}" | grep -q "${pattern}"; then
-      bad=1
-    fi
-  done <<< "${data_out}"
-
-  if [[ "${bad}" -ne 0 ]]; then
-    echo "[Fail] One or more lines did not contain 'Server time:'"
+  if (( bad != 0 )); then
+    echo "[Fail] One or more validation checks failed."
     exit 3
   fi
-  echo "[Ok] Received ${lines_captured} valid SSE events"
+
+  echo "[Success] Received exactly ${lines_captured} events with correct timing and content"
 }
