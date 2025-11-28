@@ -9,12 +9,13 @@
 ```bash
 ▶ go run mage.go
 Targets:
-  build              builds the Coraza goFilter plugin.
-  doc                runs godoc, access at http://localhost:6060
-  e2e                runs e2e tests with a built plugin against the example deployment.
-  ftw                runs ftw tests with a built plugin and Envoy.
-  runExample         spins up the test environment, access at http://localhost:8080.
-  teardownExample    tears down the test environment.
+  build               the coraza filter waf plugin.
+  doc                 runs godoc, access at http://localhost:6060
+  e2e                 runs e2e tests with a built plugin against the example deployment.
+  ftw                 runs ftw tests with a built plugin and Envoy.
+  performanceBuild    Build the coraza filter waf plugin with libinjection and re2.
+  runExample          spins up the test environment, access at http://localhost:8080.
+  teardownExample     tears down the test environment.
 ```
 
 ### Building the filter
@@ -24,6 +25,41 @@ go run mage.go build
 ```
 
 You will find the go waf plugin under `./coraza-waf.so`.
+
+### Performance
+
+There is [a known performance issue with larger request bodies in Coraza](https://github.com/corazawaf/coraza/issues/1176).
+To help mitigate this, a new build target named `performanceBuild` has been introduced.
+This target compiles the filter with support for both [re2](https://github.com/google/re2) and
+[libinjection](https://github.com/libinjection/libinjection) to improve throughput.
+The only downside is that this build introduces runtime dependencies on `re2` and `libinjection`.
+
+You can enable this behavior through the configuration. For example:
+
+```yaml
+  ...
+
+  filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          http_filters:
+            - name: envoy.filters.http.golang
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
+                library_id: coraza-waf
+                library_path: /etc/envoy/coraza-waf.so
+                plugin_name: coraza-waf
+                plugin_config:
+                  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                  value:
+                    useRe2: true
+                    useLibinjection: true
+```
+
+Setting these configuration options in the normal build will have no effect on coraza.
 
 ### Running the filter in an Envoy process
 

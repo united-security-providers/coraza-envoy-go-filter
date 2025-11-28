@@ -26,7 +26,9 @@ services:
     depends_on:
       - chown
       - httpbin
-    image: envoyproxy/envoy:contrib-dev
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
     command:
       - -c
       - /etc/envoy/envoy.yaml
@@ -35,7 +37,7 @@ services:
       - /etc/envoy/logs/envoy.log
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ../coraza-waf.so:/etc/envoy/coraza-waf.so
+      - ../build/coraza-waf.so:/etc/envoy/coraza-waf.so
       - ./logs:/etc/envoy/logs:rw
     ports:
       - 10000:10000

@@ -42,7 +42,7 @@ jobs:
           files: |
             CHANGELOG.md
             LICENSE
-            coraza-waf.so
+            build/coraza-waf.so
       - name: Final Release
         uses: softprops/action-gh-release@v2
         if: ${{ !contains(github.ref_name, '-rc') }}
@@ -53,4 +53,4 @@ jobs:
           files: |
             CHANGELOG.md
             LICENSE
-            coraza-waf.so
+            build/coraza-waf.so

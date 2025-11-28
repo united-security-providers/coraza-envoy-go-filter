@@ -18,15 +18,49 @@ var (
 	available_os      = "linux"
 	addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 	gosImportsVer     = "v0.3.1"                                   // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
+	tags              = "coraza.rule.multiphase_evaluation,memoize_builders"
 )
 
-// Build the coraza filter waf plugin.It only works on linux
+func buildDir() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	builddir := cwd + "/build"
+	if err := os.MkdirAll(builddir, 0o755); err != nil {
+		return "", err
+	}
+
+	return builddir, nil
+}
+
+// Build the coraza filter waf plugin. It only works on linux
 func Build() error {
+	builddir, err := buildDir()
+	if err != nil {
+		return err
+	}
 	os := runtime.GOOS
 	if !strings.Contains(available_os, os) {
 		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
 	}
-	return sh.RunV("go", "build", "-o", "coraza-waf.so", "-buildmode=c-shared", "-tags=coraza.rule.multiphase_evaluation,memoize_builders", "./src")
+	return sh.RunV("go", "build", "-o", builddir + "/coraza-waf.so", "-buildmode=c-shared", "-tags=" + tags, "./src")
+}
+
+// Build the coraza filter waf plugin with libinjection and re2. It only works on linux
+func PerformanceBuild() error {
+	builddir, err := buildDir()
+	if err != nil {
+		return err
+	}
+	os := runtime.GOOS
+	if !strings.Contains(available_os, os) {
+		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
+	}
+	if err := sh.RunV("docker", "build", "--target", "build", "--build-arg", tags + "libinjection_cgo,re2_cgo", "-f", "docker/Dockerfile", ".", "-t", "coraza-waf-builder"); err != nil {
+		return err
+	}
+	return sh.RunV("docker", "run", "-v", builddir + ":/build", "coraza-waf-builder")
 }
 
 // RunExample spins up the test environment, access at http://localhost:8080. Requires docker compose.
