@@ -24,6 +24,7 @@ services:
     build:
       context: ..
       dockerfile: ./docker/Dockerfile
+    image: coraza-waf-builder
     command:
       - -c
       - /etc/envoy/envoy.yaml
@@ -49,7 +50,6 @@ services:
       - tail -c +0 -f /etc/envoy/logs/envoy.log | grep --line-buffered  "\[golang\]" > /etc/envoy/logs/ftw.log
     volumes:
       - ./logs:/etc/envoy/logs:rw
-
 
   ftw-crs:
     depends_on:

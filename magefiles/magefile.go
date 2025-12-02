@@ -44,7 +44,7 @@ func Build() error {
 	if !strings.Contains(available_os, os) {
 		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
 	}
-	return sh.RunV("go", "build", "-o", builddir + "/coraza-waf.so", "-buildmode=c-shared", "-tags=" + tags, "./src")
+	return sh.RunV("go", "build", "-o", builddir+"/coraza-waf.so", "-buildmode=c-shared", "-tags="+tags, ".")
 }
 
 // Build the coraza filter waf plugin with libinjection and re2. It only works on linux
@@ -57,10 +57,10 @@ func PerformanceBuild() error {
 	if !strings.Contains(available_os, os) {
 		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
 	}
-	if err := sh.RunV("docker", "build", "--target", "build", "--build-arg", tags + "libinjection_cgo,re2_cgo", "-f", "docker/Dockerfile", ".", "-t", "coraza-waf-builder"); err != nil {
+	if err := sh.RunV("docker", "build", "--target", "build", "--build-arg", tags+"libinjection_cgo,re2_cgo", "-f", "docker/Dockerfile", ".", "-t", "coraza-waf-builder"); err != nil {
 		return err
 	}
-	return sh.RunV("docker", "run", "-v", builddir + ":/build", "coraza-waf-builder")
+	return sh.RunV("docker", "run", "-v", builddir+":/build", "coraza-waf-builder")
 }
 
 // RunExample spins up the test environment, access at http://localhost:8080. Requires docker compose.

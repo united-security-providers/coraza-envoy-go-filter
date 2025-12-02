@@ -2,7 +2,7 @@
 //  Copyright © 2025 United Security Providers AG, Switzerland
 //  SPDX-License-Identifier: Apache-2.0
 
-package main
+package logger
 
 import (
 	"encoding/json"

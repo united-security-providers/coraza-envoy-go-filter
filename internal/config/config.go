@@ -2,7 +2,7 @@
 //  Copyright © 2025 United Security Providers AG, Switzerland
 //  SPDX-License-Identifier: Apache-2.0
 
-package main
+package config
 
 import (
 	"encoding/json"
@@ -15,31 +15,26 @@ import (
 	"github.com/corazawaf/coraza/v3"
 	ctypes "github.com/corazawaf/coraza/v3/types"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
-	"github.com/envoyproxy/envoy/contrib/golang/filters/http/source/go/pkg/http"
 	"github.com/google/uuid"
 	jsoniter "github.com/json-iterator/go"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"coraza-waf/internal/libinjection"
+	"coraza-waf/internal/logger"
 	"coraza-waf/internal/re2"
 )
 
-func init() {
-	http.RegisterHttpFilterFactoryAndConfigParser("coraza-waf", configFactory(), &parser{})
-}
+type Parser struct{}
 
-type parser struct {
-}
-
-type configuration struct {
+type Configuration struct {
 	directives       WafDirectives
-	defaultDirective string
-	hostDirectiveMap HostDirectiveMap
-	wafMaps          wafMaps
-	logFormat        string
+	DefaultDirective string
+	HostDirectiveMap HostDirectiveMap
+	WafMaps          WafMaps
+	LogFormat        string
 }
 
-type wafMaps map[string]coraza.WAF
+type WafMaps map[string]coraza.WAF
 
 type WafDirectives map[string]Directives
 
@@ -72,13 +67,13 @@ type JSONErrorLogLine struct {
 var filePathPrefix = regexp.MustCompile(".*/")
 var logFormat string
 
-func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
+func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
 	configStruct := &xds.TypedStruct{}
 	if err := any.UnmarshalTo(configStruct); err != nil {
 		return nil, err
 	}
 	v := configStruct.Value
-	var config configuration
+	var config Configuration
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 	if directivesString, ok := v.AsMap()["directives"].(string); ok {
 		var wafDirectives WafDirectives
@@ -92,7 +87,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		config.directives = wafDirectives
 
 		// parse the WAFs into config.wafMaps in any case
-		wafMaps := make(wafMaps)
+		wafMaps := make(WafMaps)
 		for wafName, wafRules := range config.directives {
 			wafConfig := coraza.NewWAFConfig().WithErrorCallback(errorCallback).WithRootFS(root).WithDirectives(strings.Join(wafRules.SimpleDirectives, "\n"))
 			waf, err := coraza.NewWAF(wafConfig)
@@ -101,7 +96,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 			}
 			wafMaps[wafName] = waf
 		}
-		config.wafMaps = wafMaps
+		config.WafMaps = wafMaps
 	} else {
 		return nil, errors.New("directives does not exist")
 	}
@@ -110,7 +105,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		if !ok {
 			return nil, errors.New("the referenced default_directive does not exist in directives")
 		}
-		config.defaultDirective = defaultDirectiveString
+		config.DefaultDirective = defaultDirectiveString
 	} else {
 		return nil, errors.New("default_directive does not exist")
 	}
@@ -118,7 +113,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	// host_directives_map is not set, however we still need to initialize an empty host mapping
 	if v.AsMap()["host_directive_map"] == nil {
 		hostDirectiveMap := make(HostDirectiveMap)
-		config.hostDirectiveMap = hostDirectiveMap
+		config.HostDirectiveMap = hostDirectiveMap
 
 	} else {
 		// try to read host_directives_map as JSON string
@@ -134,7 +129,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 					return nil, errors.New(fmt.Sprintf("the referenced directive '%s' for host %s does not exist", rule, host))
 				}
 			}
-			config.hostDirectiveMap = hostDirectiveMap
+			config.HostDirectiveMap = hostDirectiveMap
 		} else {
 			return nil, errors.New("host_directive_map is not a JSON string")
 		}
@@ -143,15 +138,15 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	// read log format
 	if logFormatString, ok := v.AsMap()["log_format"].(string); ok {
 		if strings.ToLower(logFormatString) == "json" || strings.ToLower(logFormatString) == "plain" {
-			config.logFormat = strings.ToLower(logFormatString)
+			config.LogFormat = strings.ToLower(logFormatString)
 			logFormat = strings.ToLower(logFormatString)
 		} else {
 			return nil, errors.New("Invalid log_format. Only 'json' and 'plain' is supported")
 		}
 	} else {
-		config.logFormat = "plain"
+		config.LogFormat = "plain"
 		logFormat = "plain"
-		api.LogInfo(BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'plain'"))
+		api.LogInfo(logger.BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'plain'"))
 	}
 
 	if useRe2, ok := v.AsMap()["useRe2"].(bool); !ok || useRe2 {
@@ -165,7 +160,7 @@ func (p parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	return &config, nil
 }
 
-func (p parser) Merge(parentConfig interface{}, childConfig interface{}) interface{} {
+func (p Parser) Merge(parentConfig interface{}, childConfig interface{}) interface{} {
 	panic("TODO")
 }
 
