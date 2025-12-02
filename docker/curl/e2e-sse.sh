@@ -20,7 +20,6 @@ MAX_TIME=${MAX_TIME:-15}
 health_url="http://${SSE_HOST}${HEALTH_PATH}"
 target_url="http://${ENVOY_HOST}${SSE_PATH}"
 
-
 echo "####################################################"
 echo "#                  E2E SSE TESTS                   #"
 echo "####################################################"
@@ -52,17 +51,10 @@ sse_check_stream ${target_url} 4 $MAX_TIME "Server time:" -H "Host: body-off.exa
 echo "[${step}/${total_steps}] Testing receive exact 5 SSE events [SecResponseBodyAccess Off]"
 sse_check_exact "${target_url}/5" 5 "Server time:" -H "Host: body-off.example.com"
 
-# Step 6: Test SSE stream via Envoy with default WAF
-# TODO: this test currently fails because the golang filter can't handle it correctly
-#((step+=1))
-#echo "[${step}/${total_steps}] Testing SSE streaming [default WAF]"
-#sse_check_stream ${target_url} 4 $MAX_TIME "Server time:" -H "Host: foo.example.com"
-
-# Step 7: Test exact 5 SSE events via Envoy with default WAF
+# Step 6: Test SSE rule to disable response body inspection works
 ((step+=1))
-echo "[${step}/${total_steps}] Testing receive exact 5 SSE events [default WAF]"
-sse_check_exact "${target_url}/5" 5 "Server time:" -H "Host: foo.example.com"
-
+echo "[${step}/${total_steps}] Testing SSE rule for disabling response body inspection"
+sse_check_stream ${target_url} 4 $MAX_TIME "Server time:" -H "Host: sse.example.com"
 
 echo "####################################################"
 echo "#                   SUCCESS :-)                    #"

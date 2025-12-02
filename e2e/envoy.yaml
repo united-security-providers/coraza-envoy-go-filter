@@ -88,6 +88,18 @@ static_resources:
                                         "simple_directives":[
                                               "SecRuleEngine Off"
                                           ]
+                                    },
+                                  "sse-response-body-off":{
+                                        "simple_directives":[
+                                              "Include @demo-conf",
+                                              "Include @crs-setup-demo-conf",
+                                              "SecDefaultAction \"phase:3,log,auditlog,pass\"",
+                                              "SecDefaultAction \"phase:4,log,auditlog,pass\"",
+                                              "SecDefaultAction \"phase:5,log,auditlog,pass\"",
+                                              "SecDebugLogLevel 3",
+                                              "Include @owasp_crs/*.conf",
+                                              "SecRule RESPONSE_CONTENT_TYPE \"text/event-stream\" \"id:1001,phase:3,log,allow,ctl:responseBodyAccess=Off\"" 
+                                          ]
                                     }
                                 }
                               default_directive: "waf1"
@@ -97,7 +109,8 @@ static_resources:
                                   "bar.example.com":"waf2",
                                   "baz.example.com":"waf3",
                                   "body-off.example.com":"waf4",
-                                  "no-waf.example.com":"no-waf"
+                                  "no-waf.example.com":"no-waf",
+                                  "sse.example.com":"sse-response-body-off"
                                 }
                   - name: envoy.filters.http.router
                     typed_config:
