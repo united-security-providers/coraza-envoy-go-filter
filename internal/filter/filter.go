@@ -2,10 +2,12 @@
 //  Copyright © 2025 United Security Providers AG, Switzerland
 //  SPDX-License-Identifier: Apache-2.0
 
-package main
+package filter
 
 import (
 	"bytes"
+	"coraza-waf/internal/config"
+	"coraza-waf/internal/logger"
 	"net"
 	"net/http"
 	"strconv"
@@ -61,10 +63,10 @@ var connectionStateName = map[ConnectionState]string{
 
 const HOSTPOSTSEPARATOR string = ":"
 
-type filter struct {
-	callbacks                   api.FilterCallbackHandler
-	conf                        configuration
-	wafMaps                     wafMaps
+type Filter struct {
+	Callbacks                   api.FilterCallbackHandler
+	Config                      config.Configuration
+	WafMaps                     config.WafMaps
 	tx                          types.Transaction
 	httpProtocol                string
 	isInterruption              bool
@@ -72,10 +74,10 @@ type filter struct {
 	processResponseBody         bool
 	withNoResponseBodyProcessed bool
 	connection                  ConnectionState
-	logger                      *BasicLogMessage
+	Logger                      *logger.BasicLogMessage
 }
 
-func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) api.StatusType {
+func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) api.StatusType {
 	f.connection = HTTP
 
 	f.logDebug("DecodeHeaders enter", struct{ K, V string }{"f.connection", f.connection.String()})
@@ -85,10 +87,10 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	if len(host) == 0 {
 		return api.Continue
 	}
-	waf := f.conf.wafMaps[f.conf.defaultDirective]
-	ruleName, ok := f.conf.hostDirectiveMap[host]
+	waf := f.Config.WafMaps[f.Config.DefaultDirective]
+	ruleName, ok := f.Config.HostDirectiveMap[host]
 	if ok {
-		waf = f.conf.wafMaps[ruleName]
+		waf = f.Config.WafMaps[ruleName]
 	}
 
 	xReqId, exist := headerMap.Get("x-request-id")
@@ -107,7 +109,7 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 		server, _, err = net.SplitHostPort(host)
 		if err != nil {
 			f.logInfo("Failed to parse server name from Host", struct{ K, V string }{"Host", host}, err)
-			f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+			f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
 	}
@@ -117,24 +119,24 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	if tx.IsRuleEngineOff() {
 		return api.Continue
 	}
-	srcIP, srcPortString, _ := net.SplitHostPort(f.callbacks.StreamInfo().DownstreamRemoteAddress())
+	srcIP, srcPortString, _ := net.SplitHostPort(f.Callbacks.StreamInfo().DownstreamRemoteAddress())
 	srcPort, err := strconv.Atoi(srcPortString)
 	if err != nil {
 		f.logInfo("RemotePort formatting error", err)
-		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
+		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
-	destIP, destPortString, _ := net.SplitHostPort(f.callbacks.StreamInfo().DownstreamLocalAddress())
+	destIP, destPortString, _ := net.SplitHostPort(f.Callbacks.StreamInfo().DownstreamLocalAddress())
 	destPort, err := strconv.Atoi(destPortString)
 	if err != nil {
 		f.logInfo("LocalPort formatting error", err)
-		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
+		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	tx.ProcessConnection(srcIP, srcPort, destIP, destPort)
 	path := headerMap.Path()
 	method := headerMap.Method()
-	protocol, ok := f.callbacks.StreamInfo().Protocol()
+	protocol, ok := f.Callbacks.StreamInfo().Protocol()
 	if !ok {
 		f.logWarn("Protocol not set")
 		protocol = "HTTP/2.0"
@@ -168,11 +170,11 @@ func (f *filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	return api.Continue
 }
 
-func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	f.logDebug("DecodeData enter", struct{ K, V string }{"f.connection", f.connection.String()})
 
 	if f.isInterruption {
-		f.callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "interruption-already-handled")
+		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "interruption-already-handled")
 		return api.LocalReply
 	}
 	if f.processRequestBody {
@@ -240,11 +242,11 @@ func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	return api.Continue
 }
 
-func (f *filter) DecodeTrailers(trailerMap api.RequestTrailerMap) api.StatusType {
+func (f *Filter) DecodeTrailers(trailerMap api.RequestTrailerMap) api.StatusType {
 	return api.Continue
 }
 
-func (f *filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) api.StatusType {
+func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) api.StatusType {
 	f.logDebug("Encode headers enter", struct{ K, V string }{"f.connection", f.connection.String()})
 	if f.isInterruption {
 		f.logDebug("Interruption already handled, sending downstream the local response")
@@ -270,7 +272,7 @@ func (f *filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 			return api.LocalReply
 		}
 	}
-	code, b := f.callbacks.StreamInfo().ResponseCode()
+	code, b := f.Callbacks.StreamInfo().ResponseCode()
 	if !b {
 		code = 0
 	}
@@ -313,7 +315,7 @@ func (f *filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 	return api.Continue
 }
 
-func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	f.logDebug("EncodeData enter", struct{ K, V string }{"f.connection", f.connection.String()})
 
 	// immediately return if its a websocket request as we can't handle the binary body data
@@ -322,7 +324,7 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.Continue
 	}
 	if f.isInterruption {
-		f.callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
+		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
 	if f.withNoResponseBodyProcessed {
@@ -389,18 +391,18 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	return api.StopAndBuffer
 }
 
-func (f *filter) EncodeTrailers(trailerMap api.ResponseTrailerMap) api.StatusType {
+func (f *Filter) EncodeTrailers(trailerMap api.ResponseTrailerMap) api.StatusType {
 	return api.Continue
 }
 
-func (f *filter) OnLog(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
+func (f *Filter) OnLog(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
 }
-func (f *filter) OnLogDownstreamPeriodic(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
+func (f *Filter) OnLogDownstreamPeriodic(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
 }
-func (f *filter) OnLogDownstreamStart(api.RequestHeaderMap) {}
-func (f *filter) OnStreamComplete()                         {}
+func (f *Filter) OnLogDownstreamStart(api.RequestHeaderMap) {}
+func (f *Filter) OnStreamComplete()                         {}
 
-func (f *filter) OnDestroy(reason api.DestroyReason) {
+func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	tx := f.tx
 	if tx != nil {
 		if !f.processResponseBody {
@@ -417,7 +419,7 @@ func (f *filter) OnDestroy(reason api.DestroyReason) {
 	}
 }
 
-func (f *filter) handleInterruption(phase RequestPhase, interruption *types.Interruption) {
+func (f *Filter) handleInterruption(phase RequestPhase, interruption *types.Interruption) {
 	f.isInterruption = true
 	f.logInfo("Transaction interrupted",
 		struct{ K, V string }{"phase", phase.String()},
@@ -427,30 +429,30 @@ func (f *filter) handleInterruption(phase RequestPhase, interruption *types.Inte
 
 	switch phase {
 	case PhaseRequestHeader, PhaseRequestBody:
-		f.callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 	case PhaseResponseHeader, PhaseResponseBody:
-		f.callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 	}
 }
 
 /* helpers for easy logging */
-func (f *filter) logTrace(parts ...interface{}) {
-	f.callbacks.Log(api.Trace, f.logger.Log(parts...))
+func (f *Filter) logTrace(parts ...interface{}) {
+	f.Callbacks.Log(api.Trace, f.Logger.Log(parts...))
 }
-func (f *filter) logDebug(parts ...interface{}) {
-	f.callbacks.Log(api.Debug, f.logger.Log(parts...))
+func (f *Filter) logDebug(parts ...interface{}) {
+	f.Callbacks.Log(api.Debug, f.Logger.Log(parts...))
 }
-func (f *filter) logInfo(parts ...interface{}) {
-	f.callbacks.Log(api.Info, f.logger.Log(parts...))
+func (f *Filter) logInfo(parts ...interface{}) {
+	f.Callbacks.Log(api.Info, f.Logger.Log(parts...))
 }
-func (f *filter) logWarn(parts ...interface{}) {
-	f.callbacks.Log(api.Warn, f.logger.Log(parts...))
+func (f *Filter) logWarn(parts ...interface{}) {
+	f.Callbacks.Log(api.Warn, f.Logger.Log(parts...))
 }
-func (f *filter) logError(parts ...interface{}) {
-	f.callbacks.Log(api.Error, f.logger.Log(parts...))
+func (f *Filter) logError(parts ...interface{}) {
+	f.Callbacks.Log(api.Error, f.Logger.Log(parts...))
 }
-func (f *filter) logCritical(parts ...interface{}) {
-	f.callbacks.Log(api.Critical, f.logger.Log(parts...))
+func (f *Filter) logCritical(parts ...interface{}) {
+	f.Callbacks.Log(api.Critical, f.Logger.Log(parts...))
 }
 
 func main() {

@@ -10,10 +10,9 @@ RUN mkdir /libinjection && \
     ./configure && \
     make install
 WORKDIR /src
-COPY src ./src
-COPY internal  ./internal
-COPY go.mod go.sum .
-RUN /usr/lib/go-1.23/bin/go build -o coraza-waf.so -buildmode=c-shared -tags=$BUILD_TAGS ./src
+COPY internal ./internal
+COPY main.go go.mod go.sum .
+RUN /usr/lib/go-1.23/bin/go build -o coraza-waf.so -buildmode=c-shared -tags=$BUILD_TAGS .
 
 ENTRYPOINT ["/usr/bin/cp", "/src/coraza-waf.so", "/build"]
 

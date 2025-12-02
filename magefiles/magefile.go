@@ -44,7 +44,7 @@ func Build() error {
 	if !strings.Contains(available_os, os) {
 		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
 	}
-	return sh.RunV("go", "build", "-o", builddir + "/coraza-waf.so", "-buildmode=c-shared", "-tags=" + tags, "./src")
+	return sh.RunV("go", "build", "-o", builddir + "/coraza-waf.so", "-buildmode=c-shared", "-tags=" + tags, ".")
 }
 
 // Build the coraza filter waf plugin with libinjection and re2. It only works on linux
