@@ -20,7 +20,7 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
                       library_id: coraza-waf
-                      library_path: ../coraza-waf.so
+                      library_path: /etc/envoy/coraza-waf.so
                       plugin_name: coraza-waf
                       plugin_config:
                           "@type": type.googleapis.com/xds.type.v3.TypedStruct
@@ -48,7 +48,6 @@ static_resources:
                                               "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                               "SecDebugLogLevel 3",
                                               "Include @owasp_crs/*.conf",
-                                              "SecResponseBodyAccess Off",
                                               "SecRule REQUEST_URI \"@streq /example\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                         ]
                                     }
@@ -69,17 +68,6 @@ static_resources:
                       domains: ["*"]
                       routes:
                         - match:
-                              prefix: "/healthz"
-                          route:
-                            cluster: sse_service
-                            host_rewrite_literal: 0.0.0.0:8081
-                        - match:
-                            prefix: "/events"
-                          route:
-                            cluster: sse_service
-                            host_rewrite_literal: 0.0.0.0:8081
-                            timeout: 300s
-                        - match:
                             prefix: "/"
                           route:
                             host_rewrite_literal: 0.0.0.0:8080
@@ -97,20 +85,8 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 127.0.0.1
+                      address: 10.5.0.5
                       port_value: 8080
-    - name: sse_service
-      type: LOGICAL_DNS
-      dns_lookup_family: V4_ONLY
-      load_assignment:
-        cluster_name: sse_service
-        endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: 127.0.0.1
-                      port_value: 8081
 admin:
   access_log_path: /dev/null
   address:
