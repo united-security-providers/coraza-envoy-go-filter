@@ -4,6 +4,7 @@
 
 ### Added
 - Set the memoize_builders flag to reduce memory consumption in deployments that launch several coraza instances. ([#42](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/42)) ([daum3ns](https://github.com/daum3ns))
+- Add a new build target for improved performance on larger payloads. ([#45](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/45)) ([kabbohus](https://github.com/HusseinKabbout))
 
 ### Changed
 - Update go to version 1.24.10 ([#40](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/40)) ([daum3ns](https://github.com/daum3ns))

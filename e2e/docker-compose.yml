@@ -8,13 +8,15 @@ services:
   envoy:
     depends_on:
       - httpbin
-    image: envoyproxy/envoy:contrib-dev
+    build:
+      context: ..
+      dockerfile: ./docker/Dockerfile
     command:
       - -c
       - /etc/envoy/envoy.yaml
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ../coraza-waf.so:/etc/envoy/coraza-waf.so
+      - ../build/coraza-waf.so:/etc/envoy/coraza-waf.so
     ports:
       - 8081:8081
       - 9999:9999
@@ -24,5 +26,4 @@ services:
     depends_on:
       - envoy
     build:
-      context: .
-      dockerfile: ./Dockerfile.curl
+      context: ../docker/curl/

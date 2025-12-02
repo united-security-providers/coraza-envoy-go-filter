@@ -1,4 +1,4 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE:-scratch}
 
-COPY coraza-waf.so /coraza-waf.so
+COPY build/coraza-waf.so /coraza-waf.so
