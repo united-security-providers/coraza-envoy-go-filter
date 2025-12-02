@@ -11,6 +11,7 @@ services:
     build:
       context: ..
       dockerfile: ./docker/Dockerfile
+    image: coraza-waf-builder
     command:
       - -c
       - /etc/envoy/envoy.yaml
