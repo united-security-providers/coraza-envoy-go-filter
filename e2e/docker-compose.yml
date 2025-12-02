@@ -7,8 +7,7 @@ services:
     image: mccutchen/go-httpbin:2.18.1
   sse-server:
     build:
-      context: ./sse-server
-      dockerfile: ./Dockerfile
+      context: ../docker/sse-server
   chown:
     image: alpine:3.16
     command:
