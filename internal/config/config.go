@@ -24,7 +24,7 @@ import (
 	"coraza-waf/internal/re2"
 )
 
-type Parser struct {}
+type Parser struct{}
 
 type Configuration struct {
 	directives       WafDirectives
