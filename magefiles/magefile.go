@@ -57,7 +57,7 @@ func PerformanceBuild() error {
 	if !strings.Contains(available_os, os) {
 		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
 	}
-	if err := sh.RunV("docker", "build", "--target", "build", "--build-arg", tags+"libinjection_cgo,re2_cgo", "-f", "docker/Dockerfile", ".", "-t", "coraza-waf-builder"); err != nil {
+	if err := sh.RunV("docker", "build", "--target", "build", "--build-arg", tags+",libinjection_cgo,re2_cgo", "-f", "docker/Dockerfile", ".", "-t", "coraza-waf-builder"); err != nil {
 		return err
 	}
 	return sh.RunV("docker", "run", "-v", builddir+":/build", "coraza-waf-builder")
