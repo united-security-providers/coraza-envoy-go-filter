@@ -79,13 +79,13 @@ func TeardownExample() error {
 
 // E2e runs e2e tests with a built plugin against the example deployment. Requires docker compose.
 func E2e() error {
-	if err := sh.RunV("docker", "compose", "--file", "e2e/docker-compose.yml", "build", "--pull"); err != nil {
+	if err := sh.RunV("docker", "compose", "--file", "tests/e2e/docker-compose.yml", "build", "--pull"); err != nil {
 		return err
 	}
 	defer func() {
-		_ = sh.RunV("docker", "compose", "--file", "e2e/docker-compose.yml", "down", "-v")
+		_ = sh.RunV("docker", "compose", "--file", "tests/e2e/docker-compose.yml", "down", "-v")
 	}()
-	return sh.RunV("docker", "compose", "--file", "e2e/docker-compose.yml", "up", "--abort-on-container-exit", "tests")
+	return sh.RunV("docker", "compose", "--file", "tests/e2e/docker-compose.yml", "up", "--abort-on-container-exit", "tests")
 }
 
 // Doc runs godoc, access at http://localhost:6060
@@ -95,11 +95,11 @@ func Doc() error {
 
 // Ftw runs ftw tests with a built plugin and Envoy. Requires docker compose.
 func Ftw() error {
-	if err := sh.RunV("docker", "compose", "--file", "ftw/docker-compose.yml", "build", "--pull"); err != nil {
+	if err := sh.RunV("docker", "compose", "--file", "tests/ftw/docker-compose.yml", "build", "--pull"); err != nil {
 		return err
 	}
 	defer func() {
-		_ = sh.RunV("docker", "compose", "--file", "ftw/docker-compose.yml", "down", "-v")
+		_ = sh.RunV("docker", "compose", "--file", "tests/ftw/docker-compose.yml", "down", "-v")
 	}()
 	env := map[string]string{
 		"FTW_CLOUDMODE": os.Getenv("FTW_CLOUDMODE"),
@@ -113,5 +113,5 @@ func Ftw() error {
 	if os.Getenv("MEMSTATS") == "true" {
 		task = "ftw-memstats"
 	}
-	return sh.RunWithV(env, "docker", "compose", "--file", "ftw/docker-compose.yml", "run", "--rm", task)
+	return sh.RunWithV(env, "docker", "compose", "--file", "tests/ftw/docker-compose.yml", "run", "--rm", task)
 }

@@ -3,6 +3,6 @@
 out
 gen
 build/
-ftw/logs
+tests/ftw/logs
 example/logs
-e2e/logs
+tests/e2e/logs
