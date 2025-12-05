@@ -7,8 +7,8 @@
 - Add a new build target for improved performance on larger payloads. ([#45](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/45)) ([kabbohus](https://github.com/HusseinKabbout))
 
 ### Changed
-- Update go to version 1.24.10 ([#40](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/40)) ([daum3ns](https://github.com/daum3ns))
-- Update envoy to 1.36.2 ([#37](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/37))
+- Update go to version 1.24.11 ([#40](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/40)) ([daum3ns](https://github.com/daum3ns)) ([48](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/48))
+- Update envoy to 1.36.3 ([#37](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/37)) ([#49](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/49))
 - Update protobug to 1.36.10 ([#37](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/37))
 
 ## [v1.1.1] - 2025-09-18
