@@ -13,10 +13,8 @@ WORKDIR /app
 # Copy only the server source
 COPY main.go ./
 
-# Install git for fetching modules and build the binary
-RUN apk add --no-cache git \
-    && go mod init sse-server \
-    && go get github.com/rifaideen/sse-server@latest \
+# Initialize minimal module and build the binary
+RUN go mod init sse-server \
     && go build -ldflags="-s -w" -o /app/sse-server ./main.go
 
 # Runtime stage
