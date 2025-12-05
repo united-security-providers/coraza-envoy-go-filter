@@ -5,9 +5,22 @@
 services:
   httpbin:
     image: mccutchen/go-httpbin:2.18.1
+  sse-server:
+    build:
+      context: ../docker/sse-server
+  chown:
+    image: alpine:3.16
+    command:
+      - /bin/sh
+      - -c
+      - chown -R 101:101 /etc/envoy/logs
+    volumes:
+      - ./logs:/etc/envoy/logs:rw
   envoy:
     depends_on:
+      - chown
       - httpbin
+      - sse-server
     build:
       context: ..
       dockerfile: ./docker/Dockerfile
@@ -15,9 +28,13 @@ services:
     command:
       - -c
       - /etc/envoy/envoy.yaml
+      - --log-format [%Y-%m-%d %T.%f][%t][%l][%n] [%g:%#] %v
+      - --log-path
+      - /etc/envoy/logs/envoy.log
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
       - ../build/coraza-waf.so:/etc/envoy/coraza-waf.so
+      - ./logs:/etc/envoy/logs:rw
     ports:
       - 8081:8081
       - 9999:9999
@@ -26,5 +43,8 @@ services:
   tests:
     depends_on:
       - envoy
+      - sse-server
     build:
       context: ../docker/curl/
+    env_file:
+      - ./.env.e2e

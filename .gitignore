@@ -5,3 +5,4 @@ gen
 build/
 ftw/logs
 example/logs
+e2e/logs

@@ -3,9 +3,13 @@
 # Copyright © 2025 United Security Providers AG, Switzerland
 # SPDX-License-Identifier: Apache-2.0
 
+
+# source shared functions across e2e scripts
+. e2e-utils.sh
+
 ENVOY_HOST=${ENVOY_HOST:-"localhost:8081"}
 HTTPBIN_HOST=${HTTPBIN_HOST:-"localhost:8080"}
-TIMEOUT_SECS=${TIMEOUT_SECS:-5}
+CONNECT_TIMEOUT=${CONNECT_TIMEOUT:-5}
 
 [[ "${DEBUG}" == "true" ]] && set -x
 
@@ -21,63 +25,10 @@ truePositiveBodyPayload="maliciouspayload"
 trueNegativeBodyPayloadForResponseBody="Hello world"
 truePositiveBodyPayloadForResponseBody="responsebodycode"
 
-# wait_for_service waits until the given URL returns a 200 status code.
-# $1: The URL to send requests to.
-# $2: The max number of requests to send before giving up.
-function wait_for_service() {
-    local status_code="000"
-    local url=${1}
-    local max=${2}
-    while [[ "${status_code}" -ne "200" ]]; do
-      status_code=$(curl --write-out "%{http_code}" --silent --output /dev/null "${url}")
-      sleep 1
-      echo -ne "[Wait] Waiting for response from ${url}. Timeout: ${max}s   \r"
-      ((max-=1))
-      if [[ "${max}" -eq 0 ]]; then
-        echo "[Fail] Timeout waiting for response from ${url}, make sure the server is running."
-        exit 1
-      fi
-    done
-    echo -e "\n[Ok] Got status code ${status_code}"
-}
 
-# check_status sends HTTP requests to the given URL and expects a given response code.
-# $1: The URL to send requests to.
-# $2: The expected status code.
-# $3-N: The rest of the arguments will be passed to the curl command as additional arguments
-#       to customize the HTTP call.
-function check_status() {
-    local url=${1}
-    local status=${2}
-    local args=("${@:3}" --write-out '%{http_code}' --silent --output /dev/null)
-    status_code=$(curl --max-time ${TIMEOUT_SECS} "${args[@]}" "${url}")
-    if [[ "${status_code}" -ne ${status} ]] ; then
-      echo "[Fail] Unexpected response with code ${status_code} from ${url}"
-      exit 1
-    fi
-    echo "[Ok] Got status code ${status_code}, expected ${status}"
-}
-
-# check_body sends the given HTTP request and checks the response body.
-# $1: The URL to send requests to.
-# $2: true/false indicating if an empty, or null body is expected or not.
-# $3-N: The rest of the arguments will be passed to the curl command as additional arguments
-#       to customize the HTTP call.
-function check_body() {
-    local url=${1}
-    local empty=${2}
-    local args=("${@:3}" --silent)
-    response_body=$(curl --max-time ${TIMEOUT_SECS} "${args[@]}" "${url}")
-    if [[ "${empty}" == "true" ]] && [[ -n "${response_body}" ]]; then
-      echo -e "[Fail] Unexpected response with a body. Body dump:\n${response_body}"
-      exit 1
-    fi
-    if [[ "${empty}" != "true" ]] && [[ -z "${response_body}" ]]; then
-      echo -e "[Fail] Unexpected response with a body. Body dump:\n${response_body}"
-      exit 1
-    fi
-    echo "[Ok] Got response with an expected body (empty=${empty})"
-}
+echo "####################################################"
+echo "#                  E2E BASE TESTS                  #"
+echo "####################################################"
 
 step=1
 total_steps=19
@@ -203,6 +154,8 @@ echo "[${step}/${total_steps}] True negative GET request with user-agent"
 check_status "${envoy_url_echo}" 200 --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
 
 
-
-
-echo "[Done] All tests passed"
+echo "####################################################"
+echo "#                   SUCCESS :-)                    #"
+echo "####################################################"
+echo ""
+echo ""
