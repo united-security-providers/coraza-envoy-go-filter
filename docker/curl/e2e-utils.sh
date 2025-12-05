@@ -102,7 +102,7 @@ function sse_check_stream() {
       # Check pattern
       if ! [[ "$data" =~ $pattern ]]; then
         echo "   > [Fail] Event ${lines_captured} does not match pattern: '${pattern}'"
-        bad+=1
+        ((bad += 1))
       fi
 
       # Validate event N arrives close to N seconds after start with +/- 200ms tolerance
@@ -111,7 +111,7 @@ function sse_check_stream() {
 
       if (( $(echo "$elapsed < $expected_time" | bc -l) )) || (( $(echo "$elapsed > $max_time" | bc -l) )); then
         echo "   > [Fail] Event ${lines_captured} arrived at ${elapsed_rounded}s (expected between ${expected_time}s and ${max_time}s)"
-        bad+=1
+        ((bad += 1))
       else
         echo "   > [Ok] Event ${lines_captured} arrived between ${expected_time}s and ${max_time}s"
 
@@ -168,7 +168,7 @@ function sse_check_exact() {
       # Check pattern
       if ! [[ "$data" =~ $pattern ]]; then
         echo "   > [Fail] Event ${lines_captured} does not match pattern: '${pattern}'"
-        bad=+1
+        ((bad += 1))
       fi
 
       # Validate timing: event N should arrive close to N seconds after start with +/- 200ms tolerance
@@ -177,7 +177,7 @@ function sse_check_exact() {
 
       if (( $(echo "$elapsed < $expected_min" | bc -l) )) || (( $(echo "$elapsed > $expected_max" | bc -l) )); then
         echo "   > [Fail] Event ${lines_captured} arrived at ${elapsed_rounded}s (expected between ${expected_min}s and ${expected_max}s)"
-        bad=+1
+        ((bad += 1))
       else
         echo "   > [Ok] Event ${lines_captured} arrived between ${expected_min}s and ${expected_max}s"
       fi
