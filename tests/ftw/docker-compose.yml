@@ -22,8 +22,7 @@ services:
       - chown
       - albedo
     build:
-      context: ..
-      dockerfile: ./docker/Dockerfile
+      context: ../../
     image: coraza-waf-builder
     command:
       - -c
@@ -33,7 +32,7 @@ services:
       - /etc/envoy/logs/envoy.log
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ../build/coraza-waf.so:/etc/envoy/coraza-waf.so
+      - ../../build/coraza-waf.so:/etc/envoy/coraza-waf.so
       - ./logs:/etc/envoy/logs:rw
     ports:
       - 8090:8090
@@ -55,7 +54,7 @@ services:
     depends_on:
       - goFilter-logs
     build:
-      context: ../docker/ftw/
+      context: .
     environment:
       - FTW_CLOUDMODE
       - FTW_INCLUDE

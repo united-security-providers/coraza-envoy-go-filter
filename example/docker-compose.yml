@@ -28,7 +28,6 @@ services:
       - httpbin
     build:
       context: ..
-      dockerfile: ./docker/Dockerfile
     image: coraza-waf-builder
     command:
       - -c
