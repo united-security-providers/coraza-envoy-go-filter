@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Multi-stage Dockerfile for the SSE test server
+# This Dockerfile is also used to manually build (and then push) the docker image:
+# reg-bob.u-s-p.local/usp/simple-sse-server
+# https://nexus-bob.u-s-p.local/#browse/browse:docker-public:v2%2Fusp%2Fsimple-sse-server
+
 # Build stage
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
