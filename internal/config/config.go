@@ -75,6 +75,15 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	v := configStruct.Value
 	var config Configuration
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
+
+	if useRe2, ok := v.AsMap()["useRe2"].(bool); !ok || useRe2 {
+		re2.Register()
+	}
+
+	if useLibinjection, ok := v.AsMap()["useLibinjection"].(bool); !ok || useLibinjection {
+		libinjection.Register()
+	}
+
 	if directivesString, ok := v.AsMap()["directives"].(string); ok {
 		var wafDirectives WafDirectives
 		err := json.UnmarshalFromString(directivesString, &wafDirectives)
@@ -147,14 +156,6 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		config.LogFormat = "plain"
 		logFormat = "plain"
 		api.LogInfo(logger.BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'plain'"))
-	}
-
-	if useRe2, ok := v.AsMap()["useRe2"].(bool); !ok || useRe2 {
-		re2.Register()
-	}
-
-	if useLibinjection, ok := v.AsMap()["useLibinjection"].(bool); !ok || useLibinjection {
-		libinjection.Register()
 	}
 
 	return &config, nil
