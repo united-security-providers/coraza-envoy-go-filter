@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/magefile/mage v1.15.1-0.20241126214340-bdc92f694516
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -23,7 +23,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20240411101913-e07a1f0e8eb4 // indirect
 	github.com/tetratelabs/wazero v1.7.2 // indirect
-	github.com/rifaideen/sse-server v0.1.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
