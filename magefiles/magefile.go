@@ -19,6 +19,7 @@ var (
 	addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
 	gosImportsVer     = "v0.3.1"                                   // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
 	tags              = "coraza.rule.multiphase_evaluation,memoize_builders"
+	golangCILintVer   = "v2.7.2"
 )
 
 func buildDir() (string, error) {
@@ -114,4 +115,13 @@ func Ftw() error {
 		task = "ftw-memstats"
 	}
 	return sh.RunWithV(env, "docker", "compose", "--file", "tests/ftw/docker-compose.yml", "run", "--rm", task)
+}
+
+// Lint verifies code quality.
+func Lint() error {
+	if err := sh.RunV("go", "run", fmt.Sprintf("github.com/golangci/golangci-lint/v2/cmd/golangci-lint@%s", golangCILintVer), "run"); err != nil {
+		return err
+	}
+
+	return nil
 }
