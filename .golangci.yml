@@ -9,3 +9,8 @@ formatters:
     - goimports
 linters:
   enable-all: true
+  exclusions:
+    rules:
+      - path: tests/e2e/sse-server/*
+        linters:
+          - errcheck

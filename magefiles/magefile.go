@@ -5,7 +5,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -15,11 +14,9 @@ import (
 )
 
 var (
-	available_os      = "linux"
-	addLicenseVersion = "04bfe4ee9ca5764577b029acc6a1957fd1997153" // https://github.com/google/addlicense
-	gosImportsVer     = "v0.3.1"                                   // https://github.com/rinchsan/gosimports/releases/tag/v0.3.1
-	tags              = "coraza.rule.multiphase_evaluation,memoize_builders"
-	golangCILintVer   = "v2.7.2"
+	availableOs     = "linux"
+	tags            = "coraza.rule.multiphase_evaluation,memoize_builders"
+	golangCILintVer = "v2.7.2"
 )
 
 func buildDir() (string, error) {
@@ -42,8 +39,8 @@ func Build() error {
 		return err
 	}
 	os := runtime.GOOS
-	if !strings.Contains(available_os, os) {
-		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
+	if !strings.Contains(availableOs, os) {
+		return fmt.Errorf("%s is not available , place compile in %s", os, availableOs)
 	}
 	return sh.RunV("go", "build", "-o", builddir+"/coraza-waf.so", "-buildmode=c-shared", "-tags="+tags, ".")
 }
@@ -55,8 +52,8 @@ func PerformanceBuild() error {
 		return err
 	}
 	os := runtime.GOOS
-	if !strings.Contains(available_os, os) {
-		return errors.New(fmt.Sprintf("%s is not available , place compile in %s", os, available_os))
+	if !strings.Contains(availableOs, os) {
+		return fmt.Errorf("%s is not available , place compile in %s", os, availableOs)
 	}
 	if err := sh.RunV("docker", "build", "--target", "build", "--build-arg", "BUILD_TAGS="+tags+",libinjection_cgo,re2_cgo", ".", "-t", "coraza-waf-builder"); err != nil {
 		return err
