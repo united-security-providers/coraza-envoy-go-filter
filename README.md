@@ -55,8 +55,8 @@ You can enable this behavior through the configuration. For example:
                 plugin_config:
                   "@type": type.googleapis.com/xds.type.v3.TypedStruct
                   value:
-                    useRe2: true
-                    useLibinjection: true
+                    use_re2: true
+                    use_libinjection: true
 ```
 
 Setting these configuration options in the normal build will have no effect on coraza.
@@ -184,7 +184,7 @@ go run mage.go e2e
 
 ## Log format
 
-By the dafault the filter writes plain text logs. 
+By the dafault the filter writes plain text logs.
 The log format can be changed to json using the `log_format` configuraion option:
 ```yaml
                     plugin_config:

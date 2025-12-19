@@ -76,11 +76,11 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	var config Configuration
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 
-	if useRe2, ok := v.AsMap()["useRe2"].(bool); !ok || useRe2 {
+	if useRe2, ok := v.AsMap()["use_re2"].(bool); !ok || useRe2 {
 		re2.Register()
 	}
 
-	if useLibinjection, ok := v.AsMap()["useLibinjection"].(bool); !ok || useLibinjection {
+	if useLibinjection, ok := v.AsMap()["use_libinjection"].(bool); !ok || useLibinjection {
 		libinjection.Register()
 	}
 
