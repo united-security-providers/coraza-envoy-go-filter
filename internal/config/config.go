@@ -101,7 +101,7 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 			wafConfig := coraza.NewWAFConfig().WithErrorCallback(errorCallback).WithRootFS(root).WithDirectives(strings.Join(wafRules.SimpleDirectives, "\n"))
 			waf, err := coraza.NewWAF(wafConfig)
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("%s mapping waf init error:%s", wafName, err.Error()))
+				return nil, fmt.Errorf("%s mapping waf init error:%s", wafName, err.Error())
 			}
 			wafMaps[wafName] = waf
 		}
@@ -135,7 +135,7 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 			for host, rule := range hostDirectiveMap {
 				_, ok := config.directives[rule]
 				if !ok {
-					return nil, errors.New(fmt.Sprintf("the referenced directive '%s' for host %s does not exist", rule, host))
+					return nil, fmt.Errorf("the referenced directive '%s' for host %s does not exist", rule, host)
 				}
 			}
 			config.HostDirectiveMap = hostDirectiveMap
@@ -150,7 +150,7 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 			config.LogFormat = strings.ToLower(logFormatString)
 			logFormat = strings.ToLower(logFormatString)
 		} else {
-			return nil, errors.New("Invalid log_format. Only 'json' and 'plain' is supported")
+			return nil, errors.New("invalid log_format. Only 'json' and 'plain' is supported")
 		}
 	} else {
 		config.LogFormat = "plain"

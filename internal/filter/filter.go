@@ -82,8 +82,7 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 
 	f.logDebug("DecodeHeaders enter", struct{ K, V string }{"f.connection", f.connection.String()})
 
-	var host string
-	host = headerMap.Host()
+	host := headerMap.Host()
 	if len(host) == 0 {
 		return api.Continue
 	}
@@ -382,7 +381,10 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			return api.Continue
 		}
 		if interruption != nil {
-			buffer.Set(bytes.Repeat([]byte("\x00"), bodySize))
+			if err := buffer.Set(bytes.Repeat([]byte("\x00"), bodySize)); err != nil {
+				f.logInfo("failed to write into internal buffer", err)
+				return api.Continue
+			}
 			f.handleInterruption(PhaseResponseBody, interruption)
 			return api.LocalReply
 		}
@@ -448,12 +450,13 @@ func (f *Filter) logInfo(parts ...interface{}) {
 func (f *Filter) logWarn(parts ...interface{}) {
 	f.Callbacks.Log(api.Warn, f.Logger.Log(parts...))
 }
+
+//nolint:unused
 func (f *Filter) logError(parts ...interface{}) {
 	f.Callbacks.Log(api.Error, f.Logger.Log(parts...))
 }
+
+//nolint:unused
 func (f *Filter) logCritical(parts ...interface{}) {
 	f.Callbacks.Log(api.Critical, f.Logger.Log(parts...))
-}
-
-func main() {
 }
