@@ -1,0 +1,16 @@
+version: "2"
+timeout: 5m
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - goimports
+linters:
+  enable-all: true
+  exclusions:
+    rules:
+      - path: tests/e2e/sse-server/*
+        linters:
+          - errcheck
