@@ -166,7 +166,11 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 		f.handleInterruption(PhaseRequestHeader, interruption)
 		return api.LocalReply
 	}
-	return api.Continue
+	// don't continue if a body is coming!
+	if endStream {
+		return api.Continue
+	}
+	return api.StopAndBufferWatermark
 }
 
 func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
