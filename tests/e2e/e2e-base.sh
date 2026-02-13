@@ -19,6 +19,7 @@ envoy_url_unfiltered="http://${ENVOY_HOST}"
 envoy_url_filtered="${envoy_url_unfiltered}/admin"
 envoy_url_filtered_resp_header="${envoy_url_unfiltered}/status/406"
 envoy_url_echo="${envoy_url_unfiltered}/anything"
+envoy_url_post="${envoy_url_unfiltered}/post"
 
 tueNegativeBodyPayload="This is a payload"
 truePositiveBodyPayload="maliciouspayload"
@@ -56,12 +57,12 @@ check_body "${envoy_url_filtered}" true
 # Testing body true negative
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing true negative request (body)"
-check_status "${envoy_url_echo}" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${tueNegativeBodyPayload}"
+check_status "${envoy_url_post}" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${tueNegativeBodyPayload}"
 
 # Testing body detection
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body)"
-check_status "${envoy_url_unfiltered}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayload}"
+check_status "${envoy_url_post}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayload}"
 
 # Testing body detection when reaching SecRequestBodyLimit (ProcessPartial)
 # It's important that the pattern triggering the rule is within SecRequestBodyLimit
@@ -69,21 +70,21 @@ check_status "${envoy_url_unfiltered}" 403 -X POST -H 'Content-Type: application
 # SecRequestBodyLimit is set to 40 so it includes the payload
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when inside SecRequestBodyLimit"
-check_status "${envoy_url_unfiltered}/post" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "prefix is 20 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
+check_status "${envoy_url_post}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "prefix is 20 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
 
 # Testing body detection when reaching SecRequestBodyLimit (ProcessPartial)
 # In this test the the pattern triggering the rule is NOT within SecRequestBodyLimit
 # SecRequestBodyLimit is set to 40 and the malicious payload starts after 58 bytes
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when outside SecRequestBodyLimit"
-check_status "${envoy_url_unfiltered}/post" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "this very long prefix is just a little more than 40 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
+check_status "${envoy_url_post}" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "this very long prefix is just a little more than 40 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
 
 # Testing request is rejected when SecRequestBodyLimitAction is set to reject
 # and the request body exceeds the configured limit
 # SecRequestBodyLimit is set to 40 and we send 49 bytes
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
-check_status "${envoy_url_unfiltered}/post" 413 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: baz.example.com' --data "this payload is just a little more than 40 bytes"
+check_status "${envoy_url_post}" 413 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: baz.example.com' --data "this payload is just a little more than 40 bytes"
 
 
 # Testing response headers detection
@@ -94,24 +95,24 @@ check_status "${envoy_url_filtered_resp_header}" 403
 # Testing response body true negative
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true negative"
-check_body "${envoy_url_unfiltered}" false -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${trueNegativeBodyPayloadForResponseBody}"
+check_body "${envoy_url_post}" false -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${trueNegativeBodyPayloadForResponseBody}"
 
 # Testing response body detection
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive"
-check_body "${envoy_url_echo}" true -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
+check_body "${envoy_url_post}" true -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
 
 # Testing status code is correct on response body detection
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive status is correct"
-check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
+check_status "${envoy_url_post}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "${truePositiveBodyPayloadForResponseBody}"
 
 # Testing response body detection when reaching SecResponseBodyLimit (ProcessPartial)
 # It's important that the malicious payload is detectable within SecResponseBodyLimit
 # The generated response is 727 bytes, SecResponsBodyLimit is set to 700 bytes
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive response (body) when inside SecResponseBodyLimit"
-check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "${truePositiveBodyPayloadForResponseBody}"
+check_status "${envoy_url_post}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "${truePositiveBodyPayloadForResponseBody}"
 
 # Testing response body detection when reaching SecResponseBodyLimit (ProcessPartial)
 # In this test the the malicious payload is NOT detectable within SecResponseBodyLimit
@@ -119,7 +120,7 @@ check_status "${envoy_url_echo}" 403 -X POST -H 'Content-Type: application/x-www
 # is behind 700 bytes in the response
 ((step+=1))
 echo "[${step}/${total_steps}] (onResponseBody) Testing true positive response (body) when inside SecResponseBodyLimit"
-check_status "${envoy_url_echo}" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "this long prefix ensures that the payload is outside the parseable response because it is 105 bytes long${truePositiveBodyPayloadForResponseBody}"
+check_status "${envoy_url_post}" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "this long prefix ensures that the payload is outside the parseable response because it is 105 bytes long${truePositiveBodyPayloadForResponseBody}"
 
 # Testing response is rejected when SecResponseBodyLimitAction is set to reject
 # and the response body exceeds the configured limit
@@ -141,7 +142,7 @@ check_status "${envoy_url_echo}?arg=<script>alert(0)</script>" 403
 # Testing SQLI detection during phase 2
 ((step+=1))
 echo "[${step}/${total_steps}] Testing SQLi detection at request body"
-check_status "${envoy_url_echo}" 403 -X POST --data "1%27%20ORDER%20BY%203--%2B"
+check_status "${envoy_url_post}" 403 -X POST --data "1%27%20ORDER%20BY%203--%2B"
 
 # Triggers a CRS scanner detection rule (913100)
 ((step+=1))
