@@ -11,6 +11,9 @@
 - Update envoy to 1.37.0 ([#37](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/37)) ([#49](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/49)) ([56](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/56))
 - Update protobuf to 1.36.11 ([#37](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/37)) ([54](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/54))
 
+### Fixed
+- Fix HTTP headers arrive at backend despite request being blocked in later phase ([#61](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/61))([daum3ns]((https://github.com/daum3ns)))
+
 ## [v1.1.1] - 2025-09-18
 
 ### Changed
