@@ -174,7 +174,7 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 }
 
 func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	f.logDebug("DecodeData enter", struct{ K, V string }{"f.connection", f.connection.String()})
+	f.logDebug("DecodeData enter", struct{ K, V string }{"f.connection", f.connection.String()}, struct{ K, V string }{"endStream", strconv.FormatBool(endStream)})
 
 	if f.isInterruption {
 		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "interruption-already-handled")
@@ -196,7 +196,9 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
 			f.logInfo("Failed to process request body", err)
-			return api.Continue
+			/* processing error, block the request to prevent further processing */
+			f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
+			return api.LocalReply
 		}
 		if interruption != nil {
 			f.handleInterruption(PhaseRequestBody, interruption)
@@ -212,7 +214,9 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		f.logTrace("Buffered request data", struct{ K, V string }{"size", strconv.Itoa(buffered)})
 		if err != nil {
 			f.logInfo("Failed to write request body", err)
-			return api.Continue
+			/* processing error, block the request to prevent further processing */
+			f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
+			return api.LocalReply
 		}
 
 		/* WriteRequestBody triggers ProcessRequestBody if the bodylimit (SecRequestBodyLimit) is reached.
@@ -222,13 +226,18 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.handleInterruption(PhaseRequestBody, interruption)
 			return api.LocalReply
 		}
+	} else {
+		f.logDebug("Empty request body, probably zero-length EOS")
+		return api.Continue
 	}
 	if endStream {
 		f.processRequestBody = true
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
 			f.logInfo("Failed to process request body", err)
-			return api.Continue
+			/* processing error, block the request to prevent further processing */
+			f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
+			return api.LocalReply
 		}
 		if interruption != nil {
 			f.handleInterruption(PhaseRequestBody, interruption)
@@ -268,7 +277,9 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 		interruption, err := tx.ProcessRequestBody()
 		if err != nil {
 			f.logInfo("Failed to process request body", err)
-			return api.Continue
+			/* processing error, block the request to prevent further processing */
+			f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
+			return api.LocalReply
 		}
 		if interruption != nil {
 			f.handleInterruption(PhaseResponseHeader, interruption)
@@ -321,7 +332,7 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	f.logDebug("EncodeData enter", struct{ K, V string }{"f.connection", f.connection.String()})
 
-	// immediately return if its a websocket request as we can't handle the binary body data
+	// immediately return if this is a websocket request as we can't handle the body data
 	if f.connection == WebsocketConnection {
 		f.logDebug("Skip response body processing (websocket connection)")
 		return api.Continue
@@ -352,7 +363,9 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.processResponseBody = true
 			if err != nil {
 				f.logInfo("Failed to process response body", err)
-				return api.Continue
+				/* processing error, block the request to prevent further processing */
+				f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
+				return api.LocalReply
 			}
 			if interruption != nil {
 				f.handleInterruption(PhaseResponseBody, interruption)
@@ -367,7 +380,9 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		f.logTrace("Buffered response body data", struct{ K, V string }{"size", strconv.Itoa(buffered)})
 		if err != nil {
 			f.logInfo("Failed to write response body", err)
-			return api.Continue
+			/* processing error, block the request to prevent further processing */
+			f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
+			return api.LocalReply
 		}
 		/* WriteResponseBody triggers ProcessResponseBody if the bodylimit (SecResponseBodyLimit) is reached.
 		 * This means if we receive an interruption here it was evaluated and interrupted by response body processing.
@@ -382,12 +397,17 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		interruption, err := tx.ProcessResponseBody()
 		if err != nil {
 			f.logInfo("failed to process response body", err)
-			return api.Continue
+			/* processing error, block the request to prevent further processing */
+			f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
+			return api.LocalReply
 		}
 		if interruption != nil {
 			if err := buffer.Set(bytes.Repeat([]byte("\x00"), bodySize)); err != nil {
 				f.logInfo("failed to write into internal buffer", err)
-				return api.Continue
+				/* response body processing error, block the request to prevent further processing */
+				/* special case where we already have an interruption, so we can use that status code */
+				f.Callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+				return api.LocalReply
 			}
 			f.handleInterruption(PhaseResponseBody, interruption)
 			return api.LocalReply
