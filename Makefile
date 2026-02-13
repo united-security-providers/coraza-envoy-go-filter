@@ -37,4 +37,4 @@ clean:
 	rm -rf $(BUILD-DIRECTORY)/*
 
 lint:
-	go run "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG-Ci-LINT-VERSION)" run
+	go run "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG-CI-LINT-VERSION)" run
