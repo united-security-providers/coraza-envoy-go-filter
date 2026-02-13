@@ -10,6 +10,7 @@
 - Update go to version 1.24.11 ([#40](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/40)) ([daum3ns](https://github.com/daum3ns)) ([48](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/48))
 - Update envoy to 1.37.0 ([#37](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/37)) ([#49](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/49)) ([56](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/56))
 - Update protobuf to 1.36.11 ([#37](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/37)) ([54](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/54))
+- Migrate form `mage` to `make` ([#62](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/62)) ([kabbohus](https://github.com/HusseinKabbout))
 
 ### Fixed
 - Fix HTTP headers arrive at backend despite the request being blocked in the later phase ([#61](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/61))([daum3ns](https://github.com/daum3ns))
