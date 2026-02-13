@@ -11,7 +11,6 @@ require (
 	github.com/envoyproxy/envoy v1.37.0
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
-	github.com/magefile/mage v1.15.1-0.20241126214340-bdc92f694516
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -19,6 +18,7 @@ require (
 	cel.dev/expr v0.15.0 // indirect
 	github.com/corazawaf/libinjection-go v0.2.2 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
+	github.com/magefile/mage v1.15.1-0.20241126214340-bdc92f694516 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20240411101913-e07a1f0e8eb4 // indirect
