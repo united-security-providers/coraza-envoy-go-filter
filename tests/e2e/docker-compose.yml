@@ -21,9 +21,7 @@ services:
       - chown
       - httpbin
       - sse-server
-    build:
-      context: ../../
-    image: coraza-waf-builder
+    image: coraza-waf-envoy
     command:
       - -c
       - /etc/envoy/envoy.yaml

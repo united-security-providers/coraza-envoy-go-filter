@@ -4,27 +4,17 @@
 
 ## Getting started
 
-`go run mage.go` lists all the available commands:
-
-```bash
-▶ go run mage.go
-Targets:
-  build               the coraza filter waf plugin.
-  doc                 runs godoc, access at http://localhost:6060
-  e2e                 runs e2e tests with a built plugin against the example deployment.
-  ftw                 runs ftw tests with a built plugin and Envoy.
-  performanceBuild    Build the coraza filter waf plugin with libinjection and re2.
-  runExample          spins up the test environment, access at http://localhost:8080.
-  teardownExample     tears down the test environment.
-```
+See [Makefile](./Makefile) for all targets.
 
 ### Building the filter
 
 ```bash
-go run mage.go build
+make build
+# or
+make performanceBuild
 ```
 
-You will find the go waf plugin under `./coraza-waf.so`.
+You will find the go waf plugin under `./build/coraza-waf.so`.
 
 ### Performance
 
@@ -162,7 +152,7 @@ Loading some pieces:
 The following command runs the [go-ftw](https://github.com/coreruleset/go-ftw) test suite against the filter with the CRS fully loaded.
 
 ```bash
-go run mage.go ftw
+make ftw
 ```
 
 Take a look at its config [ftw.yml](./ftw/ftw.yml) and [overrides.yml](./ftw/overrides.yml) file for details about tests currently excluded and overriden.
@@ -170,7 +160,7 @@ Take a look at its config [ftw.yml](./ftw/ftw.yml) and [overrides.yml](./ftw/ove
 One can also run a single test by executing:
 
 ```bash
-FTW_INCLUDE=920410 go run mage.go ftw
+FTW_INCLUDE=920410 make ftw
 ```
 
 
@@ -179,7 +169,7 @@ FTW_INCLUDE=920410 go run mage.go ftw
 The following command runs a small set of end to end tests against the filter with the CRS fully loaded.
 
 ```bash
-go run mage.go e2e
+make e2e
 ```
 
 ## Log format
