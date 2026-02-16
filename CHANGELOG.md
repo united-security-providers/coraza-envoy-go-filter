@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.2.1] - 2026-02-16
+
+### Changed
+- Update go to version 1.25.7 ([kabbohus](https://github.com/kabbohus))
+
+### Known Issues
+- A bug in Coraza results in a wrong HTTP status code returned, if `SecResponseBodyLimit` is reached and `SecResponseBodyLimitAction` is set to `Reject`. Coraza incorrectly returns HTTP 413 instead of HTTP 500. ([corazawaf/coraza#1377](https://github.com/corazawaf/coraza/issues/1377))
+
 ## [v1.2.0] - 2026-02-13
 
 ### Added
