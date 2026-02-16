@@ -14,5 +14,5 @@ jobs:
           go-package: -mode=source -show verbose ./
           repo-checkout: true
           # we need to set a version here until https://github.com/golang/go/issues/70036 is fixed..
-          go-version-input: 1.24.10
+          go-version-input: 1.25.7
           go-version-file: go.mod
