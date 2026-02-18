@@ -26,9 +26,7 @@ services:
     depends_on:
       - chown
       - httpbin
-    build:
-      context: ..
-    image: coraza-waf-builder
+    image: coraza-waf-envoy
     command:
       - -c
       - /etc/envoy/envoy.yaml

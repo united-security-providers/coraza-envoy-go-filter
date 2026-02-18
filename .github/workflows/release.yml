@@ -17,20 +17,11 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Build shared object
-        uses: magefile/mage-action@v3
-        with:
-          version: latest
-          args: build
+        run: make build
       - name: Run FTW tests
-        uses: magefile/mage-action@v3
-        with:
-          version: latest
-          args: ftw
+        run: make ftw
       - name: Run e2e tests
-        uses: magefile/mage-action@v3
-        with:
-          version: latest
-          args: e2e
+        run: make e2e
       - name: Generate Release Notes
         id: notes
         uses: theory/changelog-version-notes-action@v0.1.3
