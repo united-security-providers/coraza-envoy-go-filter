@@ -1,5 +1,5 @@
 BUILD-TAGS := coraza.rule.multiphase_evaluation,memoize_builders
-GOLANG-CI-LINT-VERSION := v2.8.0
+GOLANG-CI-LINT-VERSION := v2.10.1
 BUILD-DIRECTORY := ./build
 
 .PHONY: build
