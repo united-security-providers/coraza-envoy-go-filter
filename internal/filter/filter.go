@@ -64,6 +64,8 @@ var connectionStateName = map[ConnectionState]string{
 const HOSTPOSTSEPARATOR string = ":"
 
 type Filter struct {
+	api.PassThroughStreamFilter
+
 	Callbacks                   api.FilterCallbackHandler
 	Config                      config.Configuration
 	WafMaps                     config.WafMaps
@@ -254,10 +256,6 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	return api.Continue
 }
 
-func (f *Filter) DecodeTrailers(trailerMap api.RequestTrailerMap) api.StatusType {
-	return api.Continue
-}
-
 func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) api.StatusType {
 	f.logDebug("Encode headers enter", struct{ K, V string }{"f.connection", f.connection.String()})
 	if f.isInterruption {
@@ -416,17 +414,6 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	}
 	return api.StopAndBuffer
 }
-
-func (f *Filter) EncodeTrailers(trailerMap api.ResponseTrailerMap) api.StatusType {
-	return api.Continue
-}
-
-func (f *Filter) OnLog(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
-}
-func (f *Filter) OnLogDownstreamPeriodic(api.RequestHeaderMap, api.RequestTrailerMap, api.ResponseHeaderMap, api.ResponseTrailerMap) {
-}
-func (f *Filter) OnLogDownstreamStart(api.RequestHeaderMap) {}
-func (f *Filter) OnStreamComplete()                         {}
 
 func (f *Filter) OnDestroy(reason api.DestroyReason) {
 	tx := f.tx
