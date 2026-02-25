@@ -137,11 +137,10 @@ test_overrides:
       log:
         no_expect_ids: [932207]
   - rule_id: 932237
-    test_ids: [8,18]
+    test_ids: [4,12]
     reason: |
       These tests try to do RCE injection in the Referer header.
       But the referrer header is sanitized by Envoy and removed from the request.
-      TODO: in test 932237-7 the reverer header is set to "id" and reaches coraza, find out why this is not sanitized by envoy....
     output:
       log:
         no_expect_ids: [932237]
@@ -152,7 +151,7 @@ test_overrides:
       But the referrer header is sanitized by Envoy and removed from the request.
     output:
       log:
-        no_expect_ids: [932237]
+        no_expect_ids: [932239]
   - rule_id: 941101
     test_ids: [1]
     reason: |
@@ -177,6 +176,14 @@ test_overrides:
     output:
       log:
         no_expect_ids: [942280]
+  - rule_id: 941120
+    test_ids: [49,50]
+    reason: |
+      These tests try to do XSS in the Referer header.
+      But the referrer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [941120]
 
   - rule_id: 920210
     test_ids: [2,3,4,6,7]
