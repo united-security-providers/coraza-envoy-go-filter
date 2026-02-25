@@ -14,7 +14,7 @@ performanceBuild:
 
 # Build the envoy image that we are going to use for tests and examples
 buildEnvoy:
-	docker build --target envoy . -t coraza-waf-envoy
+	docker build --target envoy --build-arg BUILD_TAGS=$(BUILD-TAGS) . -t coraza-waf-envoy
 
 runExample: build buildEnvoy teardownExample
 	docker compose --file example/docker-compose.yml up -d
