@@ -18,7 +18,6 @@ func filterFactory(c any, callbacks api.FilterCallbackHandler) api.StreamFilter 
 	}
 	return &filter.Filter{
 		Callbacks: callbacks,
-		WafMaps:   config.WafMaps,
 		Config:    *config,
 		Logger:    logger.BuildLoggerMessage(config.LogFormat),
 	}
