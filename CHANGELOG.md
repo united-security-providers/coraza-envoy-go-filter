@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.2.2] - 2026-02-27
+
+### Fixed
+- Fix HTTP headers arrive at backend despite the request being blocked in the later phase for header only requests ([#61](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/64))([kabbohus](https://github.com/kabbohus))
+
+### Known Issues
+- A bug in Coraza results in a wrong HTTP status code returned, if `SecResponseBodyLimit` is reached and `SecResponseBodyLimitAction` is set to `Reject`. Coraza incorrectly returns HTTP 413 instead of HTTP 500. ([corazawaf/coraza#1377](https://github.com/corazawaf/coraza/issues/1377))
+
 ## [v1.2.1] - 2026-02-16
 
 ### Changed
