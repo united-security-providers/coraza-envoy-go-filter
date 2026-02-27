@@ -347,7 +347,7 @@ func (f *Filter) initializeTx(headerMap api.RequestHeaderMap, host string) error
 		server, _, err = net.SplitHostPort(host)
 		if err != nil {
 			f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
-			return fmt.Errorf("Failed to parse server name from Host: %s", err)
+			return fmt.Errorf("failed to parse server name from Host: %s", err)
 		}
 	}
 	f.tx.SetServerName(server)
@@ -359,7 +359,7 @@ func (f *Filter) validateRequestBody() error {
 	interruption, err := f.tx.ProcessRequestBody()
 	if err != nil {
 		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
-		return errors.New("Failed to process request body")
+		return errors.New("failed to process request body")
 	}
 	if interruption != nil {
 		f.handleInterruption(PhaseRequestBody, interruption)
@@ -373,7 +373,7 @@ func (f *Filter) validateResponseBody() error {
 	interruption, err := f.tx.ProcessResponseBody()
 	if err != nil {
 		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
-		return errors.New("Failed to process response body")
+		return errors.New("failed to process response body")
 	}
 	if interruption != nil {
 		f.handleInterruption(PhaseResponseBody, interruption)
@@ -404,7 +404,7 @@ func (f *Filter) splitHostPort(hostPortCombination string) (string, int, error) 
 	port, err := strconv.Atoi(portString)
 	if err != nil {
 		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
-		return "", 0, fmt.Errorf("Port formatting err: %s", err)
+		return "", 0, fmt.Errorf("port formatting err: %s", err)
 	}
 
 	return ip, port, nil
