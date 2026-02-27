@@ -400,7 +400,11 @@ func (f *Filter) handleInterruption(phase phase, interruption *types.Interruptio
 }
 
 func (f *Filter) splitHostPort(hostPortCombination string) (string, int, error) {
-	ip, portString, _ := net.SplitHostPort(hostPortCombination)
+	ip, portString, err := net.SplitHostPort(hostPortCombination)
+	if err != nil {
+		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
+		return "", 0, fmt.Errorf("address formatting err: %s", err)
+	}
 	port, err := strconv.Atoi(portString)
 	if err != nil {
 		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
