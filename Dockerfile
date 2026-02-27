@@ -18,5 +18,7 @@ COPY main.go go.mod go.sum .
 RUN /usr/lib/go-1.23/bin/go build -o coraza-waf.so -buildmode=c-shared -tags=$BUILD_TAGS .
 ENTRYPOINT ["/usr/bin/cp", "/src/coraza-waf.so", "/build"]
 
-FROM envoy AS envoy-coraza
+FROM envoyproxy/envoy:contrib-dev AS envoy-coraza
+COPY --from=build /usr/local/lib/libinjection.so* /usr/local/lib/
 COPY --from=build /src/coraza-waf.so /etc/envoy/coraza-waf.so
+RUN apt update && apt install -y libre2-9
