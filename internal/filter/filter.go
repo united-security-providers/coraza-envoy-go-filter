@@ -53,18 +53,14 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 		return api.Continue
 	}
 	// Process connection (will not block)
-	srcIP, srcPortString, _ := net.SplitHostPort(f.Callbacks.StreamInfo().DownstreamRemoteAddress())
-	srcPort, err := strconv.Atoi(srcPortString)
+	srcIP, srcPort, err := f.splitHostPort(f.Callbacks.StreamInfo().DownstreamRemoteAddress())
 	if err != nil {
-		f.logInfo("RemotePort formatting error", err)
-		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
+		f.logError(err)
 		return api.LocalReply
 	}
-	destIP, destPortString, _ := net.SplitHostPort(f.Callbacks.StreamInfo().DownstreamLocalAddress())
-	destPort, err := strconv.Atoi(destPortString)
+	destIP, destPort, err := f.splitHostPort(f.Callbacks.StreamInfo().DownstreamLocalAddress())
 	if err != nil {
-		f.logInfo("LocalPort formatting error", err)
-		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
+		f.logError(err)
 		return api.LocalReply
 	}
 	f.tx.ProcessConnection(srcIP, srcPort, destIP, destPort)
@@ -401,6 +397,17 @@ func (f *Filter) handleInterruption(phase phase, interruption *types.Interruptio
 	case PhaseResponseHeader, PhaseResponseBody:
 		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
 	}
+}
+
+func (f *Filter) splitHostPort(hostPortCombination string) (string, int, error) {
+	ip, portString, _ := net.SplitHostPort(hostPortCombination)
+	port, err := strconv.Atoi(portString)
+	if err != nil {
+		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusBadRequest, "", map[string][]string{}, 0, "")
+		return "", 0, fmt.Errorf("Port formatting err: %s", err)
+	}
+
+	return ip, port, nil
 }
 
 /* helpers for easy logging */
