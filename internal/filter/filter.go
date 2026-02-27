@@ -184,7 +184,7 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 		f.wasRequestBodyProcessed = true
 		interruption, err := f.tx.ProcessRequestBody()
 		if err != nil {
-			f.logInfo("Failed to process request body", err)
+			f.logError("Failed to process request body", err)
 			/* processing error, block the request to prevent further processing */
 			f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
 			return api.LocalReply
@@ -318,7 +318,7 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 		f.wasResponseBodyProcessed = true
 		_, err := f.tx.ProcessResponseBody()
 		if err != nil {
-			f.logInfo("failed to process response body in OnDestroy", err)
+			f.logError("failed to process response body in OnDestroy", err)
 		}
 	}
 	f.tx.ProcessLogging()
@@ -329,7 +329,7 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 func (f *Filter) initializeTx(headerMap api.RequestHeaderMap, host string) error {
 	xReqId, exist := headerMap.Get("x-request-id")
 	if !exist {
-		f.logInfo("Error getting x-request-id header")
+		f.logError("Error getting x-request-id header")
 		xReqId = ""
 	}
 	waf := f.Config.WafMaps[f.Config.DefaultDirective]
