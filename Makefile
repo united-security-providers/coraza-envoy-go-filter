@@ -13,20 +13,20 @@ performanceBuild:
 	docker cp $$(docker create coraza-waf-builder):/src/coraza-waf.so $(BUILD-DIRECTORY)
 
 # Build the envoy image that we are going to use for tests and examples
-buildEnvoy:
+buildTestEnvoy:
 	docker build --target envoy --build-arg BUILD_TAGS=$(BUILD-TAGS) . -t coraza-waf-envoy
 
-runExample: build buildEnvoy teardownExample
+runExample: build buildTestEnvoy teardownExample
 	docker compose --file example/docker-compose.yml up -d
 
 teardownExample:
 	docker compose --file example/docker-compose.yml down
 
-e2e: clean build buildEnvoy
+e2e: clean build buildTestEnvoy
 	docker compose --file tests/e2e/docker-compose.yml up --abort-on-container-exit tests; \
 	docker compose --file tests/e2e/docker-compose.yml down
 
-ftw: clean build buildEnvoy
+ftw: clean build buildTestEnvoy
 	docker compose --file tests/ftw/docker-compose.yml run --rm ftw-crs; \
 	docker compose --file tests/ftw/docker-compose.yml down
 
