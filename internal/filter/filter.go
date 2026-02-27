@@ -344,7 +344,7 @@ func (f *Filter) initializeTx(headerMap api.RequestHeaderMap, host string) error
 	var server = host
 	var err error
 	if strings.Contains(host, HOSTPOSTSEPARATOR) {
-		server, _, err = net.SplitHostPort(host)
+		server, _, err = f.splitHostPort(host)
 		if err != nil {
 			f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 			return fmt.Errorf("failed to parse server name from Host: %s", err)
