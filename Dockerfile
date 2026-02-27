@@ -11,7 +11,7 @@ RUN mkdir /libinjection && \
     make install
 
 FROM envoy AS build
-RUN apt update && apt install golang-1.23-go
+RUN apt update && apt install -y golang-1.23-go
 WORKDIR /src
 COPY internal ./internal
 COPY main.go go.mod go.sum .
