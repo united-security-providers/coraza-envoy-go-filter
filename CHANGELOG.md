@@ -1,5 +1,13 @@
 # Changelog
 
+## [UPCOMMING] - 2026-XX-XX
+
+### Changed
+- Deprecate the "plain" log format in favor of "text" ([#65](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/65))([kabbohus](https://github.com/kabbohus))
+
+### Known Issues
+- A bug in Coraza results in a wrong HTTP status code returned, if `SecResponseBodyLimit` is reached and `SecResponseBodyLimitAction` is set to `Reject`. Coraza incorrectly returns HTTP 413 instead of HTTP 500. ([corazawaf/coraza#1377](https://github.com/corazawaf/coraza/issues/1377))
+
 ## [v1.2.2] - 2026-02-27
 
 ### Fixed
