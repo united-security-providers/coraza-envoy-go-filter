@@ -146,16 +146,20 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 
 	// read log format
 	if logFormatString, ok := v.AsMap()["log_format"].(string); ok {
-		if strings.ToLower(logFormatString) == "json" || strings.ToLower(logFormatString) == "plain" {
+		if strings.ToLower(logFormatString) == "plain" {
+			logFormatString = "text"
+			api.LogWarn(logger.BuildLoggerMessage(logFormatString).Log("DEPRECATION: 'plain' has been changed to 'text'"))
+		}
+		if strings.ToLower(logFormatString) == "json" || strings.ToLower(logFormatString) == "text" {
 			config.LogFormat = strings.ToLower(logFormatString)
 			logFormat = strings.ToLower(logFormatString)
 		} else {
-			return nil, errors.New("invalid log_format. Only 'json' and 'plain' is supported")
+			return nil, errors.New("invalid log_format. Only 'json' and 'text' is supported")
 		}
 	} else {
-		config.LogFormat = "plain"
-		logFormat = "plain"
-		api.LogInfo(logger.BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'plain'"))
+		config.LogFormat = "text"
+		logFormat = "text"
+		api.LogInfo(logger.BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'text'"))
 	}
 
 	return &config, nil
