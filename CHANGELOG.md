@@ -2,6 +2,10 @@
 
 ## [UPCOMMING] - 2026-XX-XX
 
+### Fixed
+- Add support for HTTP tunnels using CONNECT method ([#66](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/66))([kabbohus](https://github.com/kabbohus))
+- Fix HTTP request arrive at backend despite request being blocked after body was validated. ([#66](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/66))([kabbohus](https://github.com/kabbohus))
+
 ### Changed
 - Deprecate the "plain" log format in favor of "text" ([#65](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/65))([kabbohus](https://github.com/kabbohus))
 
