@@ -1,6 +1,6 @@
 # Changelog
 
-## [UPCOMMING] - 2026-XX-XX
+## [v1.2.3] - 2026-03-06
 
 ### Fixed
 - Add support for HTTP tunnels using CONNECT method ([#66](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/66))([kabbohus](https://github.com/kabbohus))
@@ -88,6 +88,7 @@ _First release._
 ### Known Issues
 - A bug in Coraza results in a wrong HTTP status code returned, if `SecResponseBodyLimit` is reached and `SecResponseBodyLimitAction` is set to `Reject`. Coraza incorrectly returns HTTP 413 instead of HTTP 500. ([corazawaf/coraza#1377](https://github.com/corazawaf/coraza/issues/1377))
 
+[v1.2.3]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v1.2.3
 [v1.2.2]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v1.2.2
 [v1.2.1]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v1.2.1
 [v1.2.0]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v1.2.0
