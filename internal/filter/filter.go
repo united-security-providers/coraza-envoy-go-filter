@@ -28,9 +28,6 @@ type Filter struct {
 	Config                             config.Configuration
 	tx                                 types.Transaction
 	wasInterrupted                     bool
-	wasRequestBodyProcessed            bool
-	wasResponseBodyProcessed           bool
-	wasResponseBodyProcessedWithNoBody bool
 	httpProtocol                       string
 	connection                         connectionState
 	Logger                             *logger.BasicLogMessage
@@ -107,6 +104,12 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 		}
 		return api.Continue
 	}
+
+	if f.tx.IsRequestBodyAccessible() && f.connection.IsHttp() {
+		f.logDebug("Buffering request body data")
+		return api.StopAndBuffer
+	}
+
 	return api.StopAndBufferWatermark
 }
 
@@ -138,7 +141,6 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
-
 		/* WriteRequestBody triggers ProcessRequestBody if the bodylimit (SecRequestBodyLimit) is reached.
 		 * This means if we receive an interruption here it was evaluated and interrupted by request body processing.
 		 */
@@ -146,24 +148,14 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 			f.handleInterruption(PhaseRequestBody, interruption)
 			return api.LocalReply
 		}
-	} else {
-		f.logDebug("Empty request body, probably zero-length EOS")
-		return api.Continue
 	}
-	// We reached the end of the body
+
 	if endStream {
-		f.wasRequestBodyProcessed = true
 		err := f.validateRequestBody()
 		if err != nil {
 			f.logError(err)
 			return api.LocalReply
 		}
-		return api.Continue
-	}
-	// only buffer the body if it is an HTTP connection
-	if f.connection.IsHttp() {
-		f.logDebug("Buffering request body data")
-		return api.StopAndBuffer
 	}
 	return api.Continue
 }
@@ -178,21 +170,6 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 	// jump from the decoding phase to the encoding phase
 	if f.tx == nil || f.tx.IsRuleEngineOff() {
 		return api.Continue
-	}
-	if !f.wasRequestBodyProcessed {
-		f.logDebug("ProcessRequestBody in phase3")
-		f.wasRequestBodyProcessed = true
-		interruption, err := f.tx.ProcessRequestBody()
-		if err != nil {
-			f.logError("Failed to process request body", err)
-			/* processing error, block the request to prevent further processing */
-			f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
-			return api.LocalReply
-		}
-		if interruption != nil {
-			f.handleInterruption(PhaseResponseHeader, interruption)
-			return api.LocalReply
-		}
 	}
 	code, b := f.Callbacks.StreamInfo().ResponseCode()
 	if !b {
@@ -225,32 +202,28 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 		return api.LocalReply
 	}
 
-	/* if this is not the end of the stream (i.e there is a body) and response
-	 * body processing is enabled, we need to buffer the headers to avoid envoy
-	 * already sending them downstream to the client before the body processing
-	 * eventually changes the status code
-	 */
-	if !endStream && f.tx.IsResponseBodyAccessible() && f.connection.IsHttp() {
-		f.logDebug("Buffering response headers")
-		return api.StopAndBuffer
-	}
-
 	if endStream {
 		err := f.validateResponseBody()
 		if err != nil {
 			f.logError(err)
 			return api.LocalReply
 		}
+		return api.Continue
 	}
 
-	return api.Continue
+	if f.tx.IsResponseBodyAccessible() && f.connection.IsHttp() {
+		f.logDebug("Buffering response headers")
+		return api.StopAndBuffer
+	}
+
+	return api.StopAndBufferWatermark
 }
 
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	// the nil check here MUST NEVER be removed
 	// there are cases (e.g. malformed HTTP request) where envoy will automatically
 	// jump from the decoding phase to the encoding phase
-	if f.tx == nil || f.tx.IsRuleEngineOff() || f.connection.IsWebsocket() || f.wasResponseBodyProcessedWithNoBody {
+	if f.tx == nil || f.tx.IsRuleEngineOff() || f.connection.IsWebsocket() {
 		if f.connection.IsWebsocket() {
 			f.logDebug("Skip response body processing (websocket connection)")
 		}
@@ -263,14 +236,10 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	f.logTrace("Processing incoming response data", struct{ K, V string }{"size", strconv.Itoa(buffer.Len())})
 	if !f.tx.IsResponseBodyAccessible() {
 		f.logDebug("Skipping response body processing, SecResponseBodyAccess is off")
-		if !f.wasResponseBodyProcessedWithNoBody {
-			f.wasResponseBodyProcessedWithNoBody = true
-			f.wasResponseBodyProcessed = true
-			err := f.validateResponseBody()
-			if err != nil {
-				f.logError(err)
-				return api.LocalReply
-			}
+		err := f.validateResponseBody()
+		if err != nil {
+			f.logError(err)
+			return api.LocalReply
 		}
 		return api.Continue
 	}
@@ -293,7 +262,6 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	}
 	// We reached the end of the body
 	if endStream {
-		f.wasResponseBodyProcessed = true
 		err := f.validateResponseBody()
 		if err != nil {
 			err := buffer.Set(bytes.Repeat([]byte("\x00"), buffer.Len()))
@@ -313,14 +281,6 @@ func (f *Filter) OnDestroy(reason api.DestroyReason) {
 		return
 	}
 
-	if !f.wasResponseBodyProcessed {
-		f.logDebug("Running ProcessResponseBody in OnHttpStreamDone, triggered actions will not be enforced. Further logs are for detection only purposes")
-		f.wasResponseBodyProcessed = true
-		_, err := f.tx.ProcessResponseBody()
-		if err != nil {
-			f.logError("failed to process response body in OnDestroy", err)
-		}
-	}
 	f.tx.ProcessLogging()
 	_ = f.tx.Close()
 	f.logInfo("Transaction finished")
