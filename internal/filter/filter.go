@@ -24,17 +24,17 @@ const HOSTPOSTSEPARATOR string = ":"
 type Filter struct {
 	api.PassThroughStreamFilter
 
-	Callbacks                          api.FilterCallbackHandler
-	Config                             config.Configuration
-	tx                                 types.Transaction
-	wasInterrupted                     bool
-	httpProtocol                       string
-	connection                         connectionState
-	Logger                             *logger.BasicLogMessage
+	Callbacks      api.FilterCallbackHandler
+	Config         config.Configuration
+	tx             types.Transaction
+	wasInterrupted bool
+	httpProtocol   string
+	connection     connectionState
+	Logger         *logger.BasicLogMessage
 }
 
 func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) api.StatusType {
-	f.connection = connectionStateHTTP
+	f.connection = connectionStateHttp
 	host := headerMap.Host()
 	if len(host) == 0 {
 		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
@@ -64,6 +64,9 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	// Process URI (will not block)
 	path := headerMap.Path()
 	method := headerMap.Method()
+	if strings.EqualFold(method, "connect") {
+		f.connection = connectionStateHttpTunnel
+	}
 	protocol, ok := f.Callbacks.StreamInfo().Protocol()
 	if !ok {
 		f.logWarn("Protocol not set")
