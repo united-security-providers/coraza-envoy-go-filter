@@ -1,7 +1,8 @@
 package filter
 
 var connectionStateName = map[connectionState]string{
-	connectionStateHTTP:                      "http",
+	connectionStateHttp:                      "http",
+	connectionStateHttpTunnel:                "http tunnel",
 	connectionStateUpgradeWebsocketRequested: "websocket upgrade requested",
 	connectionStateWebsocketConnection:       "websocket connection",
 }
@@ -9,7 +10,8 @@ var connectionStateName = map[connectionState]string{
 type connectionState int
 
 const (
-	connectionStateHTTP connectionState = iota
+	connectionStateHttp connectionState = iota
+	connectionStateHttpTunnel
 	connectionStateUpgradeWebsocketRequested
 	connectionStateWebsocketConnection
 )
@@ -19,7 +21,7 @@ func (connectionState connectionState) String() string {
 }
 
 func (connectionState connectionState) IsHttp() bool {
-	return connectionState == connectionStateHTTP
+	return connectionState == connectionStateHttp
 }
 
 func (connectionState connectionState) IsWebsocket() bool {
