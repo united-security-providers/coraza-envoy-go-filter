@@ -33,10 +33,9 @@ func (a *envoyLogger) Debug(msg string, args ...any) { a.l.Debug(msg, args...) }
 func (a *envoyLogger) With(args ...any) Logger       { return &envoyLogger{l: a.l.With(args...)} }
 func (a *envoyLogger) WithGroup(name string) Logger  { return &envoyLogger{l: a.l.WithGroup(name)} }
 
-
 func Init(format string) {
 	opts := &slog.HandlerOptions{
-		Level:       logLevel(),
+		Level: logLevel(),
 		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.TimeKey || a.Key == slog.LevelKey {
 				return slog.Attr{}

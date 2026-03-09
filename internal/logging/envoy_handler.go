@@ -13,14 +13,14 @@ import (
 )
 
 type groupOrAttr struct {
-    attrs []slog.Attr
-    group string
+	attrs []slog.Attr
+	group string
 }
 
 type envoyHandler struct {
-	opts   *slog.HandlerOptions
-	json   bool
-	groupOrAttr  []groupOrAttr
+	opts        *slog.HandlerOptions
+	json        bool
+	groupOrAttr []groupOrAttr
 }
 
 func (h *envoyHandler) Enabled(_ context.Context, level slog.Level) bool {
@@ -44,13 +44,13 @@ func (h *envoyHandler) Handle(ctx context.Context, r slog.Record) error {
 		inner = slog.NewTextHandler(&builder, h.opts)
 	}
 
-    for _, o := range h.groupOrAttr {
-        if o.group != "" {
-            inner = inner.WithGroup(o.group)
-        } else {
-            inner = inner.WithAttrs(o.attrs)
-        }
-    }
+	for _, o := range h.groupOrAttr {
+		if o.group != "" {
+			inner = inner.WithGroup(o.group)
+		} else {
+			inner = inner.WithAttrs(o.attrs)
+		}
+	}
 
 	if err := inner.Handle(ctx, r); err != nil {
 		return err
@@ -71,15 +71,15 @@ func (h *envoyHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 func (h *envoyHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-    newAttributes := make([]groupOrAttr, len(h.groupOrAttr)+1)
-    copy(newAttributes, h.groupOrAttr)
-    newAttributes[len(h.groupOrAttr)] = groupOrAttr{attrs: attrs}
-    return &envoyHandler{opts: h.opts, json: h.json, groupOrAttr: newAttributes}
+	newAttributes := make([]groupOrAttr, len(h.groupOrAttr)+1)
+	copy(newAttributes, h.groupOrAttr)
+	newAttributes[len(h.groupOrAttr)] = groupOrAttr{attrs: attrs}
+	return &envoyHandler{opts: h.opts, json: h.json, groupOrAttr: newAttributes}
 }
 
 func (h *envoyHandler) WithGroup(name string) slog.Handler {
-    newGroup := make([]groupOrAttr, len(h.groupOrAttr)+1)
-    copy(newGroup, h.groupOrAttr)
-    newGroup[len(h.groupOrAttr)] = groupOrAttr{group: name}
-    return &envoyHandler{opts: h.opts, json: h.json, groupOrAttr: newGroup}
+	newGroup := make([]groupOrAttr, len(h.groupOrAttr)+1)
+	copy(newGroup, h.groupOrAttr)
+	newGroup[len(h.groupOrAttr)] = groupOrAttr{group: name}
+	return &envoyHandler{opts: h.opts, json: h.json, groupOrAttr: newGroup}
 }
