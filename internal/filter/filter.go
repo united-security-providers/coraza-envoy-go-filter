@@ -7,7 +7,7 @@ package filter
 import (
 	"bytes"
 	"coraza-waf/internal/config"
-	"coraza-waf/internal/logger"
+	"coraza-waf/internal/logging"
 	"errors"
 	"fmt"
 	"net"
@@ -30,10 +30,18 @@ type Filter struct {
 	wasInterrupted bool
 	httpProtocol   string
 	connection     connectionState
-	Logger         *logger.BasicLogMessage
+	requestId      string
 }
 
 func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) api.StatusType {
+	logger := logging.GetLogger().With("action", "DecodeHeaders")
+	requestId, exist := headerMap.Get("x-request-id")
+	if !exist {
+		logger.Debug("x-request-id header missing")
+		requestId = "<unknown>"
+	}
+	f.requestId = requestId
+	logger = logger.With("request-id", requestId)
 	f.connection = connectionStateHttp
 	host := headerMap.Host()
 	if len(host) == 0 {
@@ -41,9 +49,9 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 		return api.LocalReply
 	}
 	// Initialize the WAF transaction
-	err := f.initializeTx(headerMap, host)
+	err := f.initializeTx(logger, headerMap, host)
 	if err != nil {
-		f.logError(err)
+		logger.Error("could not initialize transaction", "error", err.Error())
 		return api.LocalReply
 	}
 	if f.tx.IsRuleEngineOff() {
@@ -52,12 +60,12 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	// Process connection (will not block)
 	srcIP, srcPort, err := f.splitHostPort(f.Callbacks.StreamInfo().DownstreamRemoteAddress())
 	if err != nil {
-		f.logError(err)
+		logger.Error("could not parse IP and port for remote address", "error", err.Error())
 		return api.LocalReply
 	}
 	destIP, destPort, err := f.splitHostPort(f.Callbacks.StreamInfo().DownstreamLocalAddress())
 	if err != nil {
-		f.logError(err)
+		logger.Error("could not parse IP and port for local address", "error", err.Error())
 		return api.LocalReply
 	}
 	f.tx.ProcessConnection(srcIP, srcPort, destIP, destPort)
@@ -69,7 +77,7 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	}
 	protocol, ok := f.Callbacks.StreamInfo().Protocol()
 	if !ok {
-		f.logWarn("Protocol not set")
+		logger.Warn("Protocol not set")
 		protocol = "HTTP/2.0"
 	}
 	f.httpProtocol = protocol
@@ -89,27 +97,27 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 		return true
 	})
 	if upgrade_websocket_header && connection_upgrade_header {
-		f.logDebug("Websocket upgrade request detected")
+		logger.Debug("Websocket upgrade request detected")
 		f.connection = connectionStateUpgradeWebsocketRequested
 	}
 
 	interruption := f.tx.ProcessRequestHeaders()
 	if interruption != nil {
-		f.handleInterruption(PhaseRequestHeader, interruption)
+		f.handleInterruption(logger, PhaseRequestHeader, interruption)
 		return api.LocalReply
 	}
 
 	if endStream {
-		err := f.validateRequestBody()
+		err := f.validateRequestBody(logger)
 		if err != nil {
-			f.logError(err)
+			logger.Error("request validation failed", "error", err.Error())
 			return api.LocalReply
 		}
 		return api.Continue
 	}
 
 	if f.tx.IsRequestBodyAccessible() && f.connection.IsHttp() {
-		f.logDebug("Buffering request body data")
+		logger.Debug("Buffering request body data")
 		return api.StopAndBuffer
 	}
 
@@ -117,6 +125,7 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 }
 
 func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	logger := logging.GetLogger().With("action", "DecodeData").With("request-id", f.requestId)
 	if f.wasInterrupted {
 		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "interruption-already-handled")
 		return api.LocalReply
@@ -125,21 +134,21 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		return api.Continue
 	}
 	if !f.tx.IsRequestBodyAccessible() {
-		f.logDebug("Skipping request body processing, SecRequestBodyAccess is off")
-		err := f.validateRequestBody()
+		logger.Debug("Skipping request body processing, SecRequestBodyAccess is off")
+		err := f.validateRequestBody(logger)
 		if err != nil {
-			f.logError(err)
+			logger.Error("request validation failed", "error", err.Error())
 			return api.LocalReply
 		}
 		return api.Continue
 	}
-	f.logTrace("Processing incoming request data", struct{ K, V string }{"size", strconv.Itoa(buffer.Len())})
+	logger.Debug("Processing incoming request data", "size", buffer.Len())
 	if buffer.Len() > 0 {
 		// Write request body into waf
 		interruption, buffered, err := f.tx.WriteRequestBody(buffer.Bytes())
-		f.logTrace("Buffered request data", struct{ K, V string }{"size", strconv.Itoa(buffered)})
+		logger.Debug("Buffered request data", "size", buffered)
 		if err != nil {
-			f.logError("Failed to write request body", err)
+			logger.Error("Failed to write request body", "error", err)
 			/* processing error, block the request to prevent further processing */
 			f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
 			return api.LocalReply
@@ -148,15 +157,15 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		 * This means if we receive an interruption here it was evaluated and interrupted by request body processing.
 		 */
 		if interruption != nil {
-			f.handleInterruption(PhaseRequestBody, interruption)
+			f.handleInterruption(logger, PhaseRequestBody, interruption)
 			return api.LocalReply
 		}
 	}
 
 	if endStream {
-		err := f.validateRequestBody()
+		err := f.validateRequestBody(logger)
 		if err != nil {
-			f.logError(err)
+			logger.Error("request validation failed", "error", err.Error())
 			return api.LocalReply
 		}
 	}
@@ -164,8 +173,9 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 }
 
 func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) api.StatusType {
+	logger := logging.GetLogger().With("action", "EncodeHeaders")
 	if f.wasInterrupted {
-		f.logDebug("Interruption already handled, sending downstream the local response")
+		logger.Debug("Interruption already handled, sending downstream the local response")
 		return api.Continue
 	}
 	// the nil check here MUST NEVER be removed
@@ -174,6 +184,7 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 	if f.tx == nil || f.tx.IsRuleEngineOff() {
 		return api.Continue
 	}
+	logger = logger.With("request-id", f.requestId)
 	code, b := f.Callbacks.StreamInfo().ResponseCode()
 	if !b {
 		code = 0
@@ -196,26 +207,26 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 		return true
 	})
 	if upgrade_websocket_header && connection_upgrade_header {
-		f.logDebug("Websocket upgrade request detected")
+		logger.Debug("Websocket upgrade request detected")
 		f.connection = connectionStateWebsocketConnection
 	}
 	interruption := f.tx.ProcessResponseHeaders(int(code), f.httpProtocol)
 	if interruption != nil {
-		f.handleInterruption(PhaseResponseHeader, interruption)
+		f.handleInterruption(logger, PhaseResponseHeader, interruption)
 		return api.LocalReply
 	}
 
 	if endStream {
-		err := f.validateResponseBody()
+		err := f.validateResponseBody(logger)
 		if err != nil {
-			f.logError(err)
+			logger.Error("response validation failed", "error", err.Error())
 			return api.LocalReply
 		}
 		return api.Continue
 	}
 
 	if f.tx.IsResponseBodyAccessible() && f.connection.IsHttp() {
-		f.logDebug("Buffering response headers")
+		logger.Debug("Buffering response headers")
 		return api.StopAndBuffer
 	}
 
@@ -223,12 +234,13 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 }
 
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
+	logger := logging.GetLogger().With("action", "EncodeData")
 	// the nil check here MUST NEVER be removed
 	// there are cases (e.g. malformed HTTP request) where envoy will automatically
 	// jump from the decoding phase to the encoding phase
 	if f.tx == nil || f.tx.IsRuleEngineOff() || f.connection.IsWebsocket() {
 		if f.connection.IsWebsocket() {
-			f.logDebug("Skip response body processing (websocket connection)")
+			logger.Debug("Skip response body processing (websocket connection)", "request-id", f.requestId)
 		}
 		return api.Continue
 	}
@@ -236,12 +248,13 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
-	f.logTrace("Processing incoming response data", struct{ K, V string }{"size", strconv.Itoa(buffer.Len())})
+	logger = logger.With("request-id", f.requestId)
+	logger.Debug("Processing incoming response data", "size", buffer.Len())
 	if !f.tx.IsResponseBodyAccessible() {
-		f.logDebug("Skipping response body processing, SecResponseBodyAccess is off")
-		err := f.validateResponseBody()
+		logger.Debug("Skipping response body processing, SecResponseBodyAccess is off")
+		err := f.validateResponseBody(logger)
 		if err != nil {
-			f.logError(err)
+			logger.Error("response validation failed", "error", err.Error())
 			return api.LocalReply
 		}
 		return api.Continue
@@ -249,9 +262,9 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	if buffer.Len() > 0 {
 		// Write response body into waf
 		interruption, buffered, err := f.tx.WriteResponseBody(buffer.Bytes())
-		f.logTrace("Buffered response body data", struct{ K, V string }{"size", strconv.Itoa(buffered)})
+		logger.Debug("Buffered response body data", "size", buffered)
 		if err != nil {
-			f.logError("Failed to write response body", err)
+			logger.Error("Failed to write response body", "error", err)
 			f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
 			return api.LocalReply
 		}
@@ -259,19 +272,19 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		 * This means if we receive an interruption here it was evaluated and interrupted by response body processing.
 		 */
 		if interruption != nil {
-			f.handleInterruption(PhaseResponseBody, interruption)
+			f.handleInterruption(logger, PhaseResponseBody, interruption)
 			return api.LocalReply
 		}
 	}
 	// We reached the end of the body
 	if endStream {
-		err := f.validateResponseBody()
+		err := f.validateResponseBody(logger)
 		if err != nil {
 			err := buffer.Set(bytes.Repeat([]byte("\x00"), buffer.Len()))
 			if err != nil {
-				f.logError("failed to write into internal buffer", err)
+				logger.Error("failed to write into internal buffer", "error", err)
 			}
-			f.logError(err)
+			logger.Error("response validation failed", "error", err.Error())
 			return api.LocalReply
 		}
 	}
@@ -280,19 +293,20 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 }
 
 func (f *Filter) OnDestroy(reason api.DestroyReason) {
+	logger := logging.GetLogger().With("action", "OnDestroy").With("request-id", f.requestId)
 	if f.tx == nil {
 		return
 	}
 
 	f.tx.ProcessLogging()
 	_ = f.tx.Close()
-	f.logInfo("Transaction finished")
+	logger.Info("Transaction finished")
 }
 
-func (f *Filter) initializeTx(headerMap api.RequestHeaderMap, host string) error {
+func (f *Filter) initializeTx(logger logging.Logger, headerMap api.RequestHeaderMap, host string) error {
 	xReqId, exist := headerMap.Get("x-request-id")
 	if !exist {
-		f.logError("Error getting x-request-id header")
+		logger.Error("Error getting x-request-id header")
 		xReqId = ""
 	}
 	waf := f.Config.WafMaps[f.Config.DefaultDirective]
@@ -318,41 +332,43 @@ func (f *Filter) initializeTx(headerMap api.RequestHeaderMap, host string) error
 	return nil
 }
 
-func (f *Filter) validateRequestBody() error {
+func (f *Filter) validateRequestBody(logger logging.Logger) error {
 	interruption, err := f.tx.ProcessRequestBody()
 	if err != nil {
 		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
 		return errors.New("failed to process request body")
 	}
 	if interruption != nil {
-		f.handleInterruption(PhaseRequestBody, interruption)
+		f.handleInterruption(logger, PhaseRequestBody, interruption)
 		return errors.New("found interruption")
 	}
 
 	return nil
 }
 
-func (f *Filter) validateResponseBody() error {
+func (f *Filter) validateResponseBody(logger logging.Logger) error {
 	interruption, err := f.tx.ProcessResponseBody()
 	if err != nil {
 		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusInternalServerError, "", map[string][]string{}, 0, "")
 		return errors.New("failed to process response body")
 	}
 	if interruption != nil {
-		f.handleInterruption(PhaseResponseBody, interruption)
+		f.handleInterruption(logger, PhaseResponseBody, interruption)
 		return errors.New("found interruption")
 	}
 
 	return nil
 }
 
-func (f *Filter) handleInterruption(phase phase, interruption *types.Interruption) {
+func (f *Filter) handleInterruption(logger logging.Logger, phase phase, interruption *types.Interruption) {
 	f.wasInterrupted = true
-	f.logInfo("Transaction interrupted",
-		struct{ K, V string }{"phase", phase.String()},
-		struct{ K, V string }{"ruleID", strconv.Itoa(interruption.RuleID)},
-		struct{ K, V string }{"action", interruption.Action},
-		struct{ K, V string }{"status", strconv.Itoa(interruption.Status)})
+	logger.Info(
+		"Transaction interrupted",
+		"phase", phase.String(),
+		"ruleID", interruption.RuleID,
+		"action", interruption.Action,
+		"status", interruption.Status,
+	)
 
 	switch phase {
 	case PhaseRequestHeader, PhaseRequestBody:
@@ -375,28 +391,4 @@ func (f *Filter) splitHostPort(hostPortCombination string) (string, int, error) 
 	}
 
 	return ip, port, nil
-}
-
-/* helpers for easy logging */
-func (f *Filter) logTrace(parts ...interface{}) {
-	f.Callbacks.Log(api.Trace, f.Logger.Log(parts...))
-}
-func (f *Filter) logDebug(parts ...interface{}) {
-	f.Callbacks.Log(api.Debug, f.Logger.Log(parts...))
-}
-func (f *Filter) logInfo(parts ...interface{}) {
-	f.Callbacks.Log(api.Info, f.Logger.Log(parts...))
-}
-func (f *Filter) logWarn(parts ...interface{}) {
-	f.Callbacks.Log(api.Warn, f.Logger.Log(parts...))
-}
-
-//nolint:unused
-func (f *Filter) logError(parts ...interface{}) {
-	f.Callbacks.Log(api.Error, f.Logger.Log(parts...))
-}
-
-//nolint:unused
-func (f *Filter) logCritical(parts ...interface{}) {
-	f.Callbacks.Log(api.Critical, f.Logger.Log(parts...))
 }

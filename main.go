@@ -6,7 +6,7 @@ import (
 
 	"coraza-waf/internal/config"
 	"coraza-waf/internal/filter"
-	"coraza-waf/internal/logger"
+	"coraza-waf/internal/logging"
 )
 
 const PluginName = "coraza-waf"
@@ -16,10 +16,10 @@ func filterFactory(c any, callbacks api.FilterCallbackHandler) api.StreamFilter 
 	if !ok {
 		panic("unexpected config type")
 	}
+	logging.Init(config.LogFormat)
 	return &filter.Filter{
 		Callbacks: callbacks,
 		Config:    *config,
-		Logger:    logger.BuildLoggerMessage(config.LogFormat),
 	}
 }
 

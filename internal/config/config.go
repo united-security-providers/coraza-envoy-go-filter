@@ -20,7 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"coraza-waf/internal/libinjection"
-	"coraza-waf/internal/logger"
+	"coraza-waf/internal/logging"
 	"coraza-waf/internal/re2"
 )
 
@@ -144,11 +144,13 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		}
 	}
 
+	logging.Init("text")
+	logger := logging.GetLogger()
 	// read log format
 	if logFormatString, ok := v.AsMap()["log_format"].(string); ok {
 		if strings.ToLower(logFormatString) == "plain" {
 			logFormatString = "text"
-			api.LogWarn(logger.BuildLoggerMessage(logFormatString).Log("DEPRECATION: 'plain' has been changed to 'text'"))
+			logger.Warn("DEPRECATION: 'plain' has been changed to 'text'")
 		}
 		if strings.ToLower(logFormatString) == "json" || strings.ToLower(logFormatString) == "text" {
 			config.LogFormat = strings.ToLower(logFormatString)
@@ -159,7 +161,7 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 	} else {
 		config.LogFormat = "text"
 		logFormat = "text"
-		api.LogInfo(logger.BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'text'"))
+		logger.Info("No log_format provided. Using default 'text'")
 	}
 
 	return &config, nil
