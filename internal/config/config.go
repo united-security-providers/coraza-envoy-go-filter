@@ -155,7 +155,7 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any,
 
 		if strings.EqualFold(logFormatString, "json") {
 			config.LogFormat = logging.FormatJson
-		} else if  strings.EqualFold(logFormatString, "text") {
+		} else if strings.EqualFold(logFormatString, "text") {
 			config.LogFormat = logging.FormatText
 		} else {
 			return nil, errors.New("invalid log_format. Only 'json' and 'text' is supported")

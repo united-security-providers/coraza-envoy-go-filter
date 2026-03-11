@@ -11,6 +11,7 @@ import (
 )
 
 type LogFormat string
+
 const (
 	FormatText LogFormat = "text"
 	FormatJson LogFormat = "json"
