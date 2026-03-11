@@ -6,9 +6,14 @@ package logging
 
 import (
 	"log/slog"
-	"strings"
 
 	api "github.com/envoyproxy/envoy/contrib/golang/common/go/api"
+)
+
+type LogFormat string
+const (
+	FormatText LogFormat = "text"
+	FormatJson LogFormat = "json"
 )
 
 var logger Logger
@@ -33,7 +38,7 @@ func (a *envoyLogger) Debug(msg string, args ...any) { a.l.Debug(msg, args...) }
 func (a *envoyLogger) With(args ...any) Logger       { return &envoyLogger{l: a.l.With(args...)} }
 func (a *envoyLogger) WithGroup(name string) Logger  { return &envoyLogger{l: a.l.WithGroup(name)} }
 
-func Init(format string) {
+func Init(format LogFormat) {
 	opts := &slog.HandlerOptions{
 		Level: logLevel(),
 		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
@@ -45,7 +50,7 @@ func Init(format string) {
 	}
 	logger = &envoyLogger{l: slog.New(&envoyHandler{
 		opts: opts,
-		json: strings.EqualFold(format, "json"),
+		json: format == FormatJson,
 	})}
 }
 

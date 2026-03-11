@@ -234,13 +234,13 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 }
 
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	logger := logging.GetLogger().With("action", "EncodeData")
+	logger := logging.GetLogger().With("action", "EncodeData").With("request-id", f.requestId)
 	// the nil check here MUST NEVER be removed
 	// there are cases (e.g. malformed HTTP request) where envoy will automatically
 	// jump from the decoding phase to the encoding phase
 	if f.tx == nil || f.tx.IsRuleEngineOff() || f.connection.IsWebsocket() {
 		if f.connection.IsWebsocket() {
-			logger.Debug("Skip response body processing (websocket connection)", "request-id", f.requestId)
+			logger.Debug("Skip response body processing (websocket connection)")
 		}
 		return api.Continue
 	}
@@ -248,7 +248,6 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "")
 		return api.LocalReply
 	}
-	logger = logger.With("request-id", f.requestId)
 	logger.Debug("Processing incoming response data", "size", buffer.Len())
 	if !f.tx.IsResponseBodyAccessible() {
 		logger.Debug("Skipping response body processing, SecResponseBodyAccess is off")
