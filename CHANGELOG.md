@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.3.0] - 2026-03-12
+
+### Changed
+- Update coraza to version 3.4.0 ([#69](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/69))([kabbohus](https://github.com/kabbohus))
+- Update envoy to version 1.37.1 ([#69](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/69))([kabbohus](https://github.com/kabbohus))
+
+### Fixed
+- A bug in Coraza results in a wrong HTTP status code returned, if `SecResponseBodyLimit` is reached and `SecResponseBodyLimitAction` is set to `Reject`. Coraza incorrectly returns HTTP 413 instead of HTTP 500 ([#69](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/69))([kabbohus](https://github.com/kabbohus))
+
 ## [v1.2.3] - 2026-03-06
 
 ### Fixed
