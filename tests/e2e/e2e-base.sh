@@ -125,11 +125,9 @@ check_status "${envoy_url_post}" 200 -X POST -H 'Content-Type: application/x-www
 # Testing response is rejected when SecResponseBodyLimitAction is set to reject
 # and the response body exceeds the configured limit
 # The generated response is 80 bytes, SecResponsBodyLimit is set to 70 bytes
-# TODO: the expected response 413 is a bug in coraza, needs to be changed when its fixed
-# https://github.com/corazawaf/coraza/issues/1377
 ((step+=1))
 echo "[${step}/${total_steps}] (onRespnseBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
-check_status "${envoy_url_unfiltered}/bytes/80" 413 -H 'Host: baz.example.com'
+check_status "${envoy_url_unfiltered}/bytes/80" 500 -H 'Host: baz.example.com'
 
 
 ## Testing extra requests examples from the readme and some CRS rules in anomaly score mode.
