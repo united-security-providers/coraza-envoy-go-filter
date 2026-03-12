@@ -25,6 +25,7 @@ static_resources:
                       plugin_config:
                           "@type": type.googleapis.com/xds.type.v3.TypedStruct
                           value:
+                              log_format: ftw
                               directives: |
                                 {
                                   "waf1":{

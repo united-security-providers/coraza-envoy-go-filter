@@ -5,10 +5,10 @@
 package config
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	xds "github.com/cncf/xds/go/xds/type/v3"
@@ -44,27 +44,8 @@ type Directives struct {
 
 type HostDirectiveMap map[string]string
 
-type JSONRuleLogEntry struct {
-	RuleID          int      `json:"id"`
-	Category        string   `json:"category"`
-	Severity        string   `json:"severity"`
-	Data            string   `json:"data"`
-	Message         string   `json:"message"`
-	MatchedData     string   `json:"matched_data"`
-	MatchedDataName string   `json:"matched_data_name"`
-	Tags            []string `json:"tags"`
-}
-
-type JSONErrorLogLine struct {
-	Url            string           `json:"request.path"`
-	Rule           JSONRuleLogEntry `json:"crs.violated_rule"`
-	ClientIP       string           `json:"client.address"`
-	TransactionID  string           `json:"transaction.id"`
-	RuleSetVersion string           `json:"crs.version"`
-	RequestID      string           `json:"request.id"`
-}
-
 var filePathPrefix = regexp.MustCompile(".*/")
+var maxMessageSize = 250
 var logFormat = logging.FormatText
 
 func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any, error) {
@@ -149,16 +130,15 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any,
 	// read log format
 	if logFormatString, ok := v.AsMap()["log_format"].(string); ok {
 		if strings.ToLower(logFormatString) == "plain" {
-			logFormatString = "text"
+			logFormatString = logging.FormatText.String()
 			logger.Warn("DEPRECATION: 'plain' has been changed to 'text'")
 		}
 
-		if strings.EqualFold(logFormatString, "json") {
-			config.LogFormat = logging.FormatJson
-		} else if strings.EqualFold(logFormatString, "text") {
-			config.LogFormat = logging.FormatText
-		} else {
-			return nil, errors.New("invalid log_format. Only 'json' and 'text' is supported")
+		switch format := logging.LogFormat(strings.ToLower(logFormatString)); format {
+		case logging.FormatJson, logging.FormatText, logging.FormatFtw:
+			config.LogFormat = format
+		default:
+			return nil, fmt.Errorf("invalid log_format. Only '%s' and '%s' is supported", logging.FormatJson, logging.FormatText)
 		}
 	} else {
 		config.LogFormat = logging.FormatText
@@ -174,7 +154,23 @@ func (p Parser) Merge(parentConfig any, childConfig any) any {
 }
 
 func errorCallback(error ctypes.MatchedRule) {
-	var msg string
+	// FTW has its own log format because they expect the log to be formatted
+	// in a specific way. Coraza already has a method that formats it correctly.
+	if logFormat == logging.FormatFtw {
+		msg := error.ErrorLog()
+		switch error.Rule().Severity() {
+		case ctypes.RuleSeverityEmergency, ctypes.RuleSeverityAlert, ctypes.RuleSeverityCritical:
+			api.LogCritical(msg)
+		case ctypes.RuleSeverityError:
+			api.LogError(msg)
+		case ctypes.RuleSeverityWarning:
+			api.LogWarn(msg)
+		case ctypes.RuleSeverityNotice, ctypes.RuleSeverityInfo, ctypes.RuleSeverityDebug:
+			api.LogInfo(msg)
+		}
+
+		return
+	}
 
 	// the transaction ID was set to the request ID on transaction initalization, see filter.go
 	// see https://github.com/corazawaf/coraza/discussions/1186
@@ -191,47 +187,68 @@ func errorCallback(error ctypes.MatchedRule) {
 	if cfi != "" {
 		category = cfi
 	}
-
-	if logFormat == logging.FormatJson {
-		line := JSONErrorLogLine{
-			TransactionID:  error.TransactionID(),
-			RuleSetVersion: error.Rule().Version(),
-			Url:            error.URI(),
-			Rule: JSONRuleLogEntry{
-				RuleID:          error.Rule().ID(),
-				Category:        category,
-				Severity:        strings.ToUpper(error.Rule().Severity().String()),
-				Data:            error.Data(),
-				Message:         error.Message(),
-				MatchedData:     error.MatchedDatas()[0].Variable().Name(),
-				MatchedDataName: error.MatchedDatas()[0].Key(),
-				Tags:            error.Rule().Tags(),
-			},
-			ClientIP:  error.ClientIPAddress(),
-			RequestID: xReqID,
+	matchData := error.MatchedDatas()[0]
+	rule := error.Rule()
+	msg := matchData.Message()
+	for _, md := range error.MatchedDatas() {
+		if md.Message() != "" {
+			msg = md.Message()
+			break
 		}
-		bytes, _ := json.Marshal(line)
-		msg = string(bytes)
-	} else {
-		msg = error.ErrorLog()
+	}
+	msg = "WAF rule triggered: " + msg
+	if len(msg) > maxMessageSize {
+		msg = msg[:maxMessageSize]
+	}
+	value := matchData.Value()
+	if len(value) > maxMessageSize {
+		value = value[:maxMessageSize]
+	}
+	data := matchData.Data()
+	if len(data) > maxMessageSize {
+		data = data[:maxMessageSize]
 	}
 
+	logger := logging.GetLogger().With(
+		"tx", error.TransactionID(),
+		"hostname", error.ServerIPAddress(),
+		"uri", error.URI(),
+		"client", error.ClientIPAddress(),
+		"request_id", xReqID,
+	)
+	logger = logger.WithGroup("crs").With(
+		"version", rule.Version(),
+	)
+	logger = logger.WithGroup("violated_rule").With(
+		"id", strconv.Itoa(rule.ID()),
+		"revision", rule.Revision(),
+		"version", rule.Version(),
+		"file", rule.File(),
+		"line", strconv.Itoa(rule.Line()),
+		"message", error.Message(),
+		"data", data,
+		"severity", rule.Severity().String(),
+		"maturity", strconv.Itoa(rule.Maturity()),
+		"accuracy", strconv.Itoa(rule.Accuracy()),
+		"category", category,
+		"tags", rule.Tags(),
+	)
+
+	logger = logger.WithGroup("match").With(
+		"name", matchData.Variable().Name(),
+		"key", matchData.Key(),
+		"op", rule.Operator(),
+		"value", value,
+	)
+
 	switch error.Rule().Severity() {
-	case ctypes.RuleSeverityEmergency:
-		api.LogCritical(msg)
-	case ctypes.RuleSeverityAlert:
-		api.LogCritical(msg)
-	case ctypes.RuleSeverityCritical:
-		api.LogCritical(msg)
+	case ctypes.RuleSeverityEmergency, ctypes.RuleSeverityAlert, ctypes.RuleSeverityCritical:
+		logger.Critical(msg)
 	case ctypes.RuleSeverityError:
-		api.LogError(msg)
+		logger.Error(msg)
 	case ctypes.RuleSeverityWarning:
-		api.LogWarn(msg)
-	case ctypes.RuleSeverityNotice:
-		api.LogInfo(msg)
-	case ctypes.RuleSeverityInfo:
-		api.LogInfo(msg)
-	case ctypes.RuleSeverityDebug:
-		api.LogInfo(msg)
+		logger.Warn(msg)
+	case ctypes.RuleSeverityNotice, ctypes.RuleSeverityInfo, ctypes.RuleSeverityDebug:
+		logger.Info(msg)
 	}
 }

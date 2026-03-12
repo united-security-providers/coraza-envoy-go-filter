@@ -4,21 +4,30 @@
 package logging
 
 import (
+	"context"
 	"log/slog"
 
 	api "github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
+
+const LevelCritical = slog.Level(12)
 
 type LogFormat string
 
 const (
 	FormatText LogFormat = "text"
 	FormatJson LogFormat = "json"
+	FormatFtw  LogFormat = "ftw"
 )
+
+func (f LogFormat) String() string {
+	return string(f)
+}
 
 var logger Logger
 
 type Logger interface {
+	Critical(msg string, args ...any)
 	Error(msg string, args ...any)
 	Warn(msg string, args ...any)
 	Info(msg string, args ...any)
@@ -31,6 +40,9 @@ type envoyLogger struct {
 	l *slog.Logger
 }
 
+func (a *envoyLogger) Critical(msg string, args ...any) {
+	a.l.Log(context.Background(), LevelCritical, msg, args...)
+}
 func (a *envoyLogger) Error(msg string, args ...any) { a.l.Error(msg, args...) }
 func (a *envoyLogger) Warn(msg string, args ...any)  { a.l.Warn(msg, args...) }
 func (a *envoyLogger) Info(msg string, args ...any)  { a.l.Info(msg, args...) }
@@ -62,8 +74,10 @@ func logLevel() slog.Level {
 		return slog.LevelInfo
 	case api.Warn:
 		return slog.LevelWarn
-	case api.Error, api.Critical:
+	case api.Error:
 		return slog.LevelError
+	case api.Critical:
+		return LevelCritical
 	}
 	return slog.LevelDebug
 }

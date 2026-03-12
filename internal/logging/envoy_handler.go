@@ -57,6 +57,8 @@ func (h *envoyHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	line := builder.String()[:builder.Len()-1]
 	switch r.Level {
+	case LevelCritical:
+		api.LogCritical(line)
 	case slog.LevelError:
 		api.LogError(line)
 	case slog.LevelWarn:
