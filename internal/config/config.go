@@ -1,6 +1,6 @@
-//  Copyright © 2023 Axkea, spacewander
-//  Copyright © 2025 United Security Providers AG, Switzerland
-//  SPDX-License-Identifier: Apache-2.0
+// Copyright © 2023 Axkea, spacewander
+// Copyright © 2025 United Security Providers AG, Switzerland
+// SPDX-License-Identifier: Apache-2.0
 
 package config
 
@@ -20,7 +20,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"coraza-waf/internal/libinjection"
-	"coraza-waf/internal/logger"
+	"coraza-waf/internal/logging"
 	"coraza-waf/internal/re2"
 )
 
@@ -31,7 +31,7 @@ type Configuration struct {
 	DefaultDirective string
 	HostDirectiveMap HostDirectiveMap
 	WafMaps          WafMaps
-	LogFormat        string
+	LogFormat        logging.LogFormat
 }
 
 type WafMaps map[string]coraza.WAF
@@ -65,9 +65,9 @@ type JSONErrorLogLine struct {
 }
 
 var filePathPrefix = regexp.MustCompile(".*/")
-var logFormat string
+var logFormat = logging.FormatText
 
-func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (interface{}, error) {
+func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any, error) {
 	configStruct := &xds.TypedStruct{}
 	if err := any.UnmarshalTo(configStruct); err != nil {
 		return nil, err
@@ -144,28 +144,32 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (inte
 		}
 	}
 
+	logging.Init(logging.FormatText)
+	logger := logging.GetLogger()
 	// read log format
 	if logFormatString, ok := v.AsMap()["log_format"].(string); ok {
 		if strings.ToLower(logFormatString) == "plain" {
 			logFormatString = "text"
-			api.LogWarn(logger.BuildLoggerMessage(logFormatString).Log("DEPRECATION: 'plain' has been changed to 'text'"))
+			logger.Warn("DEPRECATION: 'plain' has been changed to 'text'")
 		}
-		if strings.ToLower(logFormatString) == "json" || strings.ToLower(logFormatString) == "text" {
-			config.LogFormat = strings.ToLower(logFormatString)
-			logFormat = strings.ToLower(logFormatString)
+
+		if strings.EqualFold(logFormatString, "json") {
+			config.LogFormat = logging.FormatJson
+		} else if strings.EqualFold(logFormatString, "text") {
+			config.LogFormat = logging.FormatText
 		} else {
 			return nil, errors.New("invalid log_format. Only 'json' and 'text' is supported")
 		}
 	} else {
-		config.LogFormat = "text"
-		logFormat = "text"
-		api.LogInfo(logger.BuildLoggerMessage(logFormat).Log("No log_format provided. Using default 'text'"))
+		config.LogFormat = logging.FormatText
+		logger.Info("No log_format provided. Using default 'text'")
 	}
 
+	logFormat = config.LogFormat
 	return &config, nil
 }
 
-func (p Parser) Merge(parentConfig interface{}, childConfig interface{}) interface{} {
+func (p Parser) Merge(parentConfig any, childConfig any) any {
 	panic("TODO")
 }
 
@@ -188,7 +192,7 @@ func errorCallback(error ctypes.MatchedRule) {
 		category = cfi
 	}
 
-	if logFormat == "json" {
+	if logFormat == logging.FormatJson {
 		line := JSONErrorLogLine{
 			TransactionID:  error.TransactionID(),
 			RuleSetVersion: error.Rule().Version(),
