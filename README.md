@@ -145,6 +145,16 @@ Loading some pieces:
 
 - In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./src/rules/crs-setup.conf.example)).
 
+#### Updating CRS
+
+To update the CRS version simply run:
+
+```bash
+update_crs.sh <CRS_VERSION>
+```
+
+After that, the rules directory in `internal/config/rules/crs` should contain the specified version.
+
 ## Testing
 
 ### Running go-ftw (CRS Regression tests)
