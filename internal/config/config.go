@@ -242,9 +242,7 @@ func errorCallback(error ctypes.MatchedRule) {
 	)
 
 	switch error.Rule().Severity() {
-	case ctypes.RuleSeverityEmergency, ctypes.RuleSeverityAlert, ctypes.RuleSeverityCritical:
-		logger.Critical(msg)
-	case ctypes.RuleSeverityError:
+	case ctypes.RuleSeverityEmergency, ctypes.RuleSeverityAlert, ctypes.RuleSeverityCritical, ctypes.RuleSeverityError:
 		logger.Error(msg)
 	case ctypes.RuleSeverityWarning:
 		logger.Warn(msg)
