@@ -14,7 +14,12 @@ type LogFormat string
 const (
 	FormatText LogFormat = "text"
 	FormatJson LogFormat = "json"
+	FormatFtw  LogFormat = "ftw"
 )
+
+func (f LogFormat) String() string {
+	return string(f)
+}
 
 var logger Logger
 
@@ -62,7 +67,7 @@ func logLevel() slog.Level {
 		return slog.LevelInfo
 	case api.Warn:
 		return slog.LevelWarn
-	case api.Error, api.Critical:
+	case api.Error:
 		return slog.LevelError
 	}
 	return slog.LevelDebug
