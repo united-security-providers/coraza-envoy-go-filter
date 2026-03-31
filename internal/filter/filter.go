@@ -311,7 +311,26 @@ func (f *Filter) initializeTx(logger logging.Logger, headerMap api.RequestHeader
 	waf := f.Config.WafMaps[f.Config.DefaultDirective]
 	ruleName, ok := f.Config.HostDirectiveMap[host]
 	if ok {
+		logger.Debug("using host configuration for tx", "waf", ruleName)
 		waf = f.Config.WafMaps[ruleName]
+	} else {
+		ruleName := ""
+		if headerMap.Scheme() == "https" {
+			ruleName, ok = f.Config.HostDirectiveMap[host+":443"]
+			if ok {
+				waf = f.Config.WafMaps[ruleName]
+			}
+		} else if headerMap.Scheme() == "http" {
+			ruleName, ok = f.Config.HostDirectiveMap[host+":80"]
+			if ok {
+				waf = f.Config.WafMaps[ruleName]
+			}
+		}
+		if ruleName == "" {
+			logger.Debug("using default host configuration for tx", "waf", f.Config.DefaultDirective)
+		} else {
+			logger.Debug("using host configuration for tx", "waf", ruleName)
+		}
 	}
 	// the ID of the transaction is set to the ID of the request
 	// see errorCallback() in parse.go for more details
