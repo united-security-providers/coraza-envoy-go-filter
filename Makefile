@@ -16,11 +16,14 @@ performanceBuild:
 buildTestEnvoy:
 	docker build --target envoy --build-arg BUILD_TAGS=$(BUILD-TAGS) . -t coraza-waf-envoy
 
-runExample: build buildTestEnvoy teardownExample
-	docker compose --file example/docker-compose.yml up -d
-
-teardownExample:
-	docker compose --file example/docker-compose.yml down
+start-watcher: clean build buildTestEnvoy
+	docker compose down
+	docker compose up -d
+	@echo "Watching coraza-waf.so for changes..."
+	@while inotifywait --quiet -e create -e attrib -e modify $(BUILD-DIRECTORY); do \
+		echo "Change detected! Restarting envoy..." && \
+		docker compose restart envoy || docker compose up -d envoy; \
+	done
 
 e2e: clean build buildTestEnvoy
 	docker compose --file tests/e2e/docker-compose.yml up --abort-on-container-exit tests; \
@@ -31,7 +34,7 @@ ftw: clean build buildTestEnvoy
 	docker compose --file tests/ftw/docker-compose.yml down
 
 clean:
-	docker compose --file example/docker-compose.yml down
+	docker compose down
 	docker compose --file tests/e2e/docker-compose.yml down
 	docker compose --file tests/ftw/docker-compose.yml down
 	rm -rf $(BUILD-DIRECTORY)/*

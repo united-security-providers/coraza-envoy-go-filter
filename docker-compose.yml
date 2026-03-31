@@ -1,0 +1,26 @@
+services:
+  backend:
+    image: mccutchen/go-httpbin:2.18.1
+    environment:
+      - MAX_BODY_SIZE=15728640
+    ports:
+      - 8081:8080
+  envoy:
+    depends_on:
+      - backend
+    image: coraza-waf-envoy
+    build:
+      context: .
+    command:
+      - -c
+      - /etc/envoy/envoy.yaml
+      - --log-format [%Y-%m-%d %T.%f][%t][%l][%n] [%g:%#] %v
+    volumes:
+      - ./example/envoy.yaml:/etc/envoy/envoy.yaml:ro
+      - ./build/:/build/:ro
+    ports:
+      - 10000:10000
+      # admin UI port
+      - 9999:9999
+    environment:
+      - GODEBUG=cgocheck=0
