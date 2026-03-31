@@ -3,6 +3,7 @@
 ## [v1.4.0] - 2026-XX-XX
 
 ### Changed
+- If the host directive cannot be resolved using the request’s Host header, the system now attempts to append the appropriate port (HTTP or HTTPS). If it still cannot be found, it falls back to the default directive. ([#73](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/73))([kabbohus](https://github.com/kabbohus))
 - Update coraza to version 3.5.0 ([#71](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/71))([kabbohus](https://github.com/kabbohus))
 - Switch to using slog for logging ([#67](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/67))([kabbohus](https://github.com/kabbohus)) ([#70](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/70))([kabbohus](https://github.com/kabbohus))
 
