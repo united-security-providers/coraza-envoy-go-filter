@@ -20,7 +20,7 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
                       library_id: coraza-waf
-                      library_path: /etc/envoy/coraza-waf.so
+                      library_path: /build/coraza-waf.so
                       plugin_name: coraza-waf
                       plugin_config:
                           "@type": type.googleapis.com/xds.type.v3.TypedStruct
@@ -85,7 +85,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 10.5.0.5
+                      address: backend
                       port_value: 8080
 admin:
   access_log_path: /dev/null
