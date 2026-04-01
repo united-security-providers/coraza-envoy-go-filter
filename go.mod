@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
 	github.com/corazawaf/coraza-wasilibs v0.2.0
-	github.com/corazawaf/coraza/v3 v3.4.0
+	github.com/corazawaf/coraza/v3 v3.6.0
 	github.com/envoyproxy/envoy v1.37.1
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
@@ -34,10 +34,10 @@ require (
 	github.com/wasilibs/go-aho-corasick v0.6.0 // indirect
 	github.com/wasilibs/go-libinjection v0.5.0 // indirect
 	github.com/wasilibs/go-re2 v1.6.0 // indirect
-	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250728155136-f173205681a0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250728155136-f173205681a0 // indirect
 	rsc.io/binaryregexp v0.2.0 // indirect
