@@ -3,7 +3,7 @@
 ## [v1.4.0] - 2026-XX-XX
 
 ### Changed
-- Update coraza to version 3.5.0 ([#71](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/71))([kabbohus](https://github.com/kabbohus))
+- Update coraza to version 3.6.0 ([#71](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/71))([kabbohus](https://github.com/kabbohus)) ([#74](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/74))([kabbohus](https://github.com/kabbohus))
 - Switch to using slog for logging ([#67](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/67))([kabbohus](https://github.com/kabbohus)) ([#70](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/70))([kabbohus](https://github.com/kabbohus))
 
 ## [v1.3.0] - 2026-03-12
