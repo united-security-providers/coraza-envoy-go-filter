@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
 	github.com/corazawaf/coraza-wasilibs v0.2.0
-	github.com/corazawaf/coraza/v3 v3.6.0
+	github.com/corazawaf/coraza/v3 v3.7.0
 	github.com/envoyproxy/envoy v1.37.1
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
@@ -22,7 +22,7 @@ require (
 	github.com/gotnospirit/messageformat v0.0.0-20221001023931-dfe49f1eb092 // indirect
 	github.com/kaptinlin/go-i18n v0.1.4 // indirect
 	github.com/kaptinlin/jsonschema v0.4.6 // indirect
-	github.com/magefile/mage v1.15.1-0.20250615140142-78acbaf2e3ae // indirect
+	github.com/magefile/mage v1.17.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20250424160509-463d218d4745 // indirect
