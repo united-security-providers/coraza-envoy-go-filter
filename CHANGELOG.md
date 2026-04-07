@@ -3,7 +3,7 @@
 ## [v1.4.0] - 2026-XX-XX
 
 ### Changed
-- Update coraza to version 3.6.0 ([#71](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/71))([kabbohus](https://github.com/kabbohus)) ([#74](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/74))([kabbohus](https://github.com/kabbohus))
+- Update coraza to version 3.7.0 ([#71](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/71))([kabbohus](https://github.com/kabbohus)) ([#74](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/74))([kabbohus](https://github.com/kabbohus)) ([#75](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/75))([kabbohus](https://github.com/kabbohus))
 - The Coraza filter now automatically appends the appropriate port (HTTP or HTTPS) to the Host header when no direct match is found in the host directive map. If a match is still not found, it gracefully falls back to the default directive. ([#73](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/73))([kabbohus](https://github.com/kabbohus))
 - Switch to using slog for logging ([#67](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/67))([kabbohus](https://github.com/kabbohus)) ([#70](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/70))([kabbohus](https://github.com/kabbohus))
 
