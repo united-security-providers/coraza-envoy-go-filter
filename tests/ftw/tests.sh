@@ -34,7 +34,7 @@ FTW_CLOUDMODE=${FTW_CLOUDMODE:-false}
 
 FTW_INCLUDE=$([ "${FTW_INCLUDE}" == "" ] && echo "" || echo "-i ${FTW_INCLUDE}")
 
-if [[ -v $FTW_FAILFAST ]]; then
+if [ "${FTW_FAILFAST+x}" ]; then
   FTW_FAILFAST=" --fail-fast"
 else
   FTW_FAILFAST=""
