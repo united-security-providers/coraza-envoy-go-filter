@@ -56,5 +56,6 @@ services:
     environment:
       - FTW_CLOUDMODE
       - FTW_INCLUDE
+      - FTW_FAILFAST
     volumes:
       - ./logs:/etc/envoy/logs:ro
