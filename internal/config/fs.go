@@ -12,23 +12,23 @@ import (
 )
 
 var (
-	//go:embed rules
-	crs  embed.FS
-	root fs.FS
+	//go:embed coreruleset/lts
+	ltsCRS embed.FS
+	root   fs.FS
 )
 
 func init() {
-	rules, _ := fs.Sub(crs, "rules")
+	ltsRules, _ := fs.Sub(ltsCRS, "coreruleset/lts")
 	root = &rulesFS{
-		rules,
+		ltsRules,
 		map[string]string{
-			"@recommended-conf":    "coraza.recommended.conf",
-			"@demo-conf":           "coraza-demo.conf",
-			"@crs-setup-demo-conf": "crs-setup-demo.conf",
-			"@ftw-conf":            "ftw-config.conf",
+			"@recommended-conf-lts":    "coraza.recommended.conf",
+			"@demo-conf-lts":           "coraza-demo.conf",
+			"@crs-setup-demo-conf-lts": "crs-setup-demo.conf",
+			"@ftw-conf-lts":            "ftw-config.conf",
 		},
 		map[string]string{
-			"@owasp_crs": "crs",
+			"@owasp_crs_lts": "rules",
 		},
 	}
 }
