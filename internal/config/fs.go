@@ -22,11 +22,10 @@ func init() {
 	root = &rulesFS{
 		rules,
 		map[string]string{
-			"@recommended-conf":    "coraza.conf-recommended.conf",
+			"@recommended-conf":    "coraza.recommended.conf",
 			"@demo-conf":           "coraza-demo.conf",
 			"@crs-setup-demo-conf": "crs-setup-demo.conf",
 			"@ftw-conf":            "ftw-config.conf",
-			"@crs-setup-conf":      "crs-setup.conf.example",
 		},
 		map[string]string{
 			"@owasp_crs": "crs",

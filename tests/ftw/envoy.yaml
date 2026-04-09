@@ -32,7 +32,6 @@ static_resources:
                                         "simple_directives":[
                                               "Include @recommended-conf",
                                               "Include @ftw-conf",
-                                              "Include @crs-setup-conf",
                                               "Include @owasp_crs/*.conf"
                                           ]
                                     }

@@ -236,13 +236,6 @@ test_overrides:
 
   # Tests not compatible with Coraza
   - rule_id: 922130
-    test_ids: [3,5,6]
-    reason: |
-      Valid Multipart parsing payloads. Ensure Coraza does not trigger rules 200002 (REQBODY_ERROR), 200003 (MULTIPART_STRICT_ERROR), 922130.
-    output:
-      log:
-        no_expect_ids: [200002,200003,922130]
-  - rule_id: 922130
     test_ids: [1,2,7]
     reason: |
       Multipart parsing tests. 922130 rule is not reached, Coraza triggers rule 200003 (MULTIPART_STRICT_ERROR) at parsing time"
@@ -348,14 +341,6 @@ test_overrides:
       log:
         no_expect_ids: [920270]
         expect_ids: [920274]
-  - rule_id: 922130
-    test_ids: [4]
-    reason: |
-      The match_regex is changed to make it LogFormat agnostic. Rule 922130 is triggered.
-    output:
-      log:
-        expect_ids: [922130]
-        match_regex: 'id.*922130.*"Multipart header contains characters outside of valid range".*'
 
 
   # Tests not entirely clear why the behave different...

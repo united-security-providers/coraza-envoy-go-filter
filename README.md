@@ -163,6 +163,12 @@ One can also run a single test by executing:
 FTW_INCLUDE=920410 make ftw
 ```
 
+Run the tests and abort on the first test that fails:
+
+```bash
+FTW_FAILFAST=1 make ftw
+```
+
 
 ### Running e2e tests
 

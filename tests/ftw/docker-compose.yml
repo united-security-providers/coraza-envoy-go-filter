@@ -4,7 +4,7 @@
 ---
 services:
   albedo:
-    image: ghcr.io/coreruleset/albedo:0.2.0
+    image: ghcr.io/coreruleset/albedo:0.3.0
     environment:
       - MAX_BODY_SIZE=15728640 # 15 MiB
 
@@ -56,5 +56,6 @@ services:
     environment:
       - FTW_CLOUDMODE
       - FTW_INCLUDE
+      - FTW_FAILFAST
     volumes:
       - ./logs:/etc/envoy/logs:ro

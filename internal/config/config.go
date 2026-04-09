@@ -156,6 +156,7 @@ func (p Parser) Merge(parentConfig any, childConfig any) any {
 func errorCallback(error ctypes.MatchedRule) {
 	// FTW has its own log format because they expect the log to be formatted
 	// in a specific way. Coraza already has a method that formats it correctly.
+
 	if logFormat == logging.FormatFtw {
 		msg := error.ErrorLog()
 		switch error.Rule().Severity() {
@@ -167,8 +168,10 @@ func errorCallback(error ctypes.MatchedRule) {
 			api.LogWarn(msg)
 		case ctypes.RuleSeverityNotice, ctypes.RuleSeverityInfo, ctypes.RuleSeverityDebug:
 			api.LogInfo(msg)
+		default:
+			// in case we don't have a rule severity make sure the rule appears in the logs by using error level
+			api.LogError(msg)
 		}
-
 		return
 	}
 
@@ -248,5 +251,8 @@ func errorCallback(error ctypes.MatchedRule) {
 		logger.Warn(msg)
 	case ctypes.RuleSeverityNotice, ctypes.RuleSeverityInfo, ctypes.RuleSeverityDebug:
 		logger.Info(msg)
+	default:
+		// in case we don't have a rule severity make sure the rule appears in the logs by using error level
+		logger.Error(msg)
 	}
 }
