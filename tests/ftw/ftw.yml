@@ -11,6 +11,3 @@ testoverride:
     port: 8090
     headers:
       Host: "foo.example.com"
-  ignore:
-    '921250-1': 'Upstream bug in coraza. Test is ignored until it is fixed there'
-    '921250-2': 'Upstream bug in coraza. Test is ignored until it is fixed there'
