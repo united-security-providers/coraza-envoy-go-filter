@@ -29,7 +29,7 @@ static_resources:
                                 {
                                   "waf1":{
                                         "simple_directives":[
-                                              "Include @demo-conf-lts",
+                                              "Include @coraza-lts",
                                               "Include @crs-setup-lts",
                                               "SecDefaultAction \"phase:3,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:4,log,auditlog,pass\"",
@@ -41,7 +41,7 @@ static_resources:
                                     },
                                 "waf2":{
                                         "simple_directives":[
-                                              "Include @demo-conf-lts",
+                                              "Include @coraza-lts",
                                               "Include @crs-setup-lts",
                                               "SecDefaultAction \"phase:3,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:4,log,auditlog,pass\"",

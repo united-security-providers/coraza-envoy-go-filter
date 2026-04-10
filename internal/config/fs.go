@@ -22,7 +22,7 @@ func init() {
 	root = &rulesFS{
 		ltsRules,
 		map[string]string{
-			"@demo-conf-lts":  "coraza-demo.conf",
+			"@coraza-lts":     "coraza.conf",     // configures rule engine for coraza
 			"@crs-setup-lts":  "crs-setup.conf",  // configures coreruleset
 			"@crs-ftw-lts":    "crs-ftw.conf",    // configures coreruleset for ftw tests
 			"@coraza-ftw-lts": "coraza-ftw.conf", // configures coraza for ftw tests
