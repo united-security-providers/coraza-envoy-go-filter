@@ -37,7 +37,7 @@ static_resources:
                                   "waf1":{
                                     "simple_directives":[
                                       "SecRuleEngine On",
-                                      "SecAction \"id:100000,phase:1,nolog,pass,t:none,setvar:tx.inbound_anomaly_score_threshold=5,setvar:tx.outbound_anomaly_score_threshold=4,setvar:tx.inbound_blocked=false,setvar:tx.outbound_blocked=false,setvar:tx.crs_setup_version=4.18.0\"",
+                                      "SecAction \"id:100000,phase:1,nolog,pass,t:none,setvar:tx.inbound_anomaly_score_threshold=5,setvar:tx.outbound_anomaly_score_threshold=4,setvar:tx.inbound_blocked=false,setvar:tx.outbound_blocked=false,setvar:tx.crs_setup_version=4250\"",
                                       "SecAction \"id:100001,phase:1,pass,nolog,t:none,setvar:tx.detection_paranoia_level=4\"",
                                       "SecAction \"id:100002,phase:1,pass,nolog,t:none,setvar:tx.blocking_paranoia_level=4\"",
                                       "SecRequestBodyAccess on",
