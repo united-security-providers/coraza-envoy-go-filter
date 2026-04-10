@@ -22,10 +22,10 @@ func init() {
 	root = &rulesFS{
 		ltsRules,
 		map[string]string{
-			"@demo-conf-lts":           "coraza-demo.conf",
-			"@crs-setup-demo-conf-lts": "crs-setup-demo.conf",
-			"@crs-ftw-lts":             "crs-ftw.conf",    // configures coreruleset for ftw tests
-			"@coraza-ftw-lts":          "coraza-ftw.conf", // configures coraza for ftw tests
+			"@demo-conf-lts":  "coraza-demo.conf",
+			"@crs-setup-lts":  "crs-setup.conf",  // configures coreruleset
+			"@crs-ftw-lts":    "crs-ftw.conf",    // configures coreruleset for ftw tests
+			"@coraza-ftw-lts": "coraza-ftw.conf", // configures coraza for ftw tests
 		},
 		map[string]string{
 			"@owasp_crs_lts": "rules",
