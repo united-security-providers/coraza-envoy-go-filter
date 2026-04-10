@@ -1,7 +1,10 @@
 # Copyright 2022 The OWASP Coraza contributors
 # SPDX-License-Identifier: Apache-2.0
+ARG CRS_VERSION=4.18.0
+ARG FTW_VERSION=2.1.0
 
-FROM ghcr.io/coreruleset/go-ftw:2.1.0
+FROM ghcr.io/coreruleset/go-ftw:${FTW_VERSION}
+ARG CRS_VERSION
 
 RUN sed -i 's/https/http/' /etc/apk/repositories
 
@@ -10,8 +13,8 @@ RUN apk update && apk add curl
 WORKDIR /workspace
 
 # Download CRS
-ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v4.18.0.tar.gz /workspace/coreruleset/
-RUN cd coreruleset && tar -xf v4.18.0.tar.gz --strip-components 1
+ADD https://github.com/coreruleset/coreruleset/archive/refs/tags/v${CRS_VERSION}.tar.gz /workspace/coreruleset/
+RUN cd coreruleset && tar -xf v${CRS_VERSION}.tar.gz --strip-components 1
 
 COPY ./ftw.yml /workspace/ftw.yml
 COPY ./overrides.yml /workspace/overrides.yml
