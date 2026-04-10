@@ -25,7 +25,7 @@ func init() {
 			"@recommended-conf-lts":    "coraza.recommended.conf",
 			"@demo-conf-lts":           "coraza-demo.conf",
 			"@crs-setup-demo-conf-lts": "crs-setup-demo.conf",
-			"@ftw-conf-lts":            "ftw-config.conf",
+			"@crs-ftw-lts":             "crs-ftw.conf",
 		},
 		map[string]string{
 			"@owasp_crs_lts": "rules",

@@ -31,7 +31,7 @@ static_resources:
                                   "waf1":{
                                         "simple_directives":[
                                               "Include @recommended-conf-lts",
-                                              "Include @ftw-conf-lts",
+                                              "Include @crs-ftw-lts",
                                               "Include @owasp_crs_lts/*.conf"
                                           ]
                                     }

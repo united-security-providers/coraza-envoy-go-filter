@@ -30,7 +30,7 @@ static_resources:
                                   "waf0":{
                                     "simple_directives":[
                                       "Include @demo-conf",
-                                      "Include @ftw-conf",
+                                      "Include @crs-ftw-lts",
                                       "Include @usp_gql/*.conf"
                                     ]
                                   },
