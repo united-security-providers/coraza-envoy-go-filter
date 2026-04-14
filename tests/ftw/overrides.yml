@@ -404,3 +404,14 @@ test_overrides:
       I think envoy removes the newline character from the header.
     output:
       status: 200
+
+
+  # hacks
+  - rule_id: 941120
+    test_ids: [8]
+    reason: |
+      For some weird reason i have to redeclare the uri here. It's actually exaclty the same as here:
+      https://github.com/coreruleset/coreruleset/blob/v4.25.0/tests/regression/tests/REQUEST-941-APPLICATION-ATTACK-XSS/941120.yaml#L130
+      Reducing the regex to 48 chars in rule 941120 works too, are two chars somehow gone? if so why does redeclaring it here help?
+    input:
+      uri: "/get?%20%20onthisisaverylongwordthathasmorethanfiftycharacters%20=vardata"
