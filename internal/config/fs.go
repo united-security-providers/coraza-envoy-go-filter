@@ -12,23 +12,35 @@ import (
 )
 
 var (
-	//go:embed coreruleset/lts
-	ltsCRS embed.FS
-	root   fs.FS
+	//go:embed coreruleset
+	crs  embed.FS
+	root fs.FS
 )
 
 func init() {
-	ltsRules, _ := fs.Sub(ltsCRS, "coreruleset/lts")
+	crsFS, err := fs.Sub(crs, "coreruleset")
+	if err != nil {
+		panic(err)
+	}
 	root = &rulesFS{
-		ltsRules,
+		crsFS,
 		map[string]string{
-			"@coraza-lts":     "coraza.conf",     // configures rule engine for coraza
-			"@crs-setup-lts":  "crs-setup.conf",  // configures coreruleset
-			"@crs-ftw-lts":    "crs-ftw.conf",    // configures coreruleset for ftw tests
-			"@coraza-ftw-lts": "coraza-ftw.conf", // configures coraza for ftw tests
+			// LTS
+			"@coraza-lts":    "lts/coraza.conf",    // configures rule engine for coraza
+			"@crs-setup-lts": "lts/crs-setup.conf", // configures coreruleset
+			// LATEST
+			"@coraza-latest":    "latest/coraza.conf",    // configures rule engine for coraza
+			"@crs-setup-latest": "latest/crs-setup.conf", // configures coreruleset
+			// FTW
+			// TODO: remove these from release-builds?  (via buildflag?)
+			"@crs-ftw-lts":       "lts/crs-ftw.conf",       // configures lts coreruleset for ftw tests
+			"@coraza-ftw-lts":    "lts/coraza-ftw.conf",    // configures coraza for ftw tests
+			"@crs-ftw-latest":    "latest/crs-ftw.conf",    // configures latest coreruleset for ftw tests
+			"@coraza-ftw-latest": "latest/coraza-ftw.conf", // configures coraza for ftw tests
 		},
 		map[string]string{
-			"@owasp_crs_lts": "rules",
+			"@owasp_crs_lts":    "lts/rules",    // lts rules
+			"@owasp_crs_latest": "latest/rules", // latest rules
 		},
 	}
 }
