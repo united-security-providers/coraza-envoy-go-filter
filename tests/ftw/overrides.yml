@@ -30,15 +30,6 @@ test_overrides:
       status: 400
       log:
         no_expect_ids: [920100]
-  - rule_id: 949110
-    test_ids: [4]
-    reason: |
-       Invalid HTTP method REALLYLONGUNREALMETHOD is directly rejected by envoy with HTTP 400 response.
-       The request does not reach coraza therefore the rule is not triggered.
-    output:
-      status: 400
-      log:
-        no_expect_ids: [949110]
   - rule_id: 920100
     test_ids: [14]
     reason: |
@@ -63,6 +54,15 @@ test_overrides:
       status: 400
       log:
         no_expect_ids: [934120]
+  - rule_id: 949110
+    test_ids: [4]
+    reason: |
+       Invalid HTTP method REALLYLONGUNREALMETHOD is directly rejected by envoy with HTTP 400 response.
+       The request does not reach coraza therefore the rule is not triggered.
+    output:
+      status: 400
+      log:
+        no_expect_ids: [949110]
   # protocol enforcement
   - rule_id: 920280
     test_ids: [3]
@@ -102,14 +102,6 @@ test_overrides:
       status: 426
       log:
         no_expect_ids: [920430]
-  - rule_id: 944200
-    test_ids: [1]
-    reason: |
-      Original test uses HTTP/1.0, so Envoy responds with HTTP 426 Uprade Required.
-    output:
-      status: 426
-      log:
-        no_expect_ids: [944200]
   - rule_id: 941210
     test_ids: [6]
     reason: |
@@ -118,8 +110,25 @@ test_overrides:
       status: 426
       log:
         no_expect_ids: [941210]
+  - rule_id: 944200
+    test_ids: [1]
+    reason: |
+      Original test uses HTTP/1.0, so Envoy responds with HTTP 426 Uprade Required.
+    output:
+      status: 426
+      log:
+        no_expect_ids: [944200]
 
   # header sanitizing
+  - rule_id: 920210
+    test_ids: [2,3,4,6,7]
+    reason: |
+      Envoy removes the Connection header, thats why the rule doesn't match.
+      See: https://github.com/istio/istio/issues/14075#issuecomment-492941926
+    output:
+      status: 200
+      log:
+        no_expect_ids: [920181]
   - rule_id: 932161
     test_ids: [7,9,10,11,12]
     reason: |
@@ -144,15 +153,6 @@ test_overrides:
     output:
       log:
         no_expect_ids: [932237]
-#  - rule_id: 932237
-#    test_ids: [8,18]
-#    reason: |
-#      These tests try to do RCE injection in the Referer header.
-#      But the referrer header is sanitized by Envoy and removed from the request.
-#      TODO: in test 932237-7 the reverer header is set to "id" and reaches coraza, find out why this is not sanitized by envoy....
-#    output:
-#      log:
-#        no_expect_ids: [932237]
   - rule_id: 932239
     test_ids: [6,7,19,27,29]
     reason: |
@@ -202,25 +202,7 @@ test_overrides:
       log:
         no_expect_ids: [942280]
 
-  - rule_id: 920210
-    test_ids: [2,3,4,6,7]
-    reason: |
-      Envoy removes the Connection header, thats why the rule doesn't match.
-      See: https://github.com/istio/istio/issues/14075#issuecomment-492941926
-    output:
-      status: 200
-      log:
-        no_expect_ids: [920181]
   # other Envoy specific
-  - rule_id: 920274
-    test_ids: [2,3,5]
-    reason: |
-      False Positives: Envoy Populates the :path header, therefore invalid characters are detected and
-      Coraza correctly triggers the rule 920274.
-    output:
-      log:
-        status: 200
-        expect_ids: [920274]
   - rule_id: 920100
     test_ids: [4]
     reason: |
@@ -248,6 +230,15 @@ test_overrides:
       status: 200
       log:
         no_expect_ids: [920100]
+  - rule_id: 920274
+    test_ids: [2,3,5]
+    reason: |
+      False Positives: Envoy Populates the :path header, therefore invalid characters are detected and
+      Coraza correctly triggers the rule 920274.
+    output:
+      log:
+        status: 200
+        expect_ids: [920274]
 
 
   # Tests not compatible with Coraza
@@ -263,22 +254,6 @@ test_overrides:
   # Test overrides because of `coraza.rule.multiphase_evaluation` build flag
   # see: https://github.com/corazawaf/coraza/blob/main/testing/coreruleset/.ftw-multiphase.yml
   # and: https://github.com/corazawaf/coraza/issues/1336
-  - rule_id: 932200
-    test_ids: [13]
-    reason: |
-      The match_regex is changed to match against ARGS_GET instead of ARGS because coraza-waf is built with multi phase evaluation on.
-    output:
-      log:
-        expect_ids: [932200]
-        match_regex: 'found within ARGS_GET:host:'
-  - rule_id: 933120
-    test_ids: [2]
-    reason: |
-      The match_regex is changed to match against ARGS_POST instead of ARGS because coraza-waf is built with multi phase evaluation on.
-    output:
-      log:
-        expect_ids: [933120]
-        match_regex: 'session.referer_check=t found within ARGS_POST:var:'
   - rule_id: 920540
     test_ids: [4]
     reason: |
@@ -302,6 +277,14 @@ test_overrides:
       log:
         expect_ids: [931130]
         match_regex: 'found within ARGS_GET:x'
+  - rule_id: 932200
+    test_ids: [13]
+    reason: |
+      The match_regex is changed to match against ARGS_GET instead of ARGS because coraza-waf is built with multi phase evaluation on.
+    output:
+      log:
+        expect_ids: [932200]
+        match_regex: 'found within ARGS_GET:host:'
   - rule_id: 932300
     test_ids: [10]
     reason: |
@@ -310,20 +293,29 @@ test_overrides:
       log:
         expect_ids: [932300]
         match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS_POST:textarea:.*MAIL FROM:.*Smith@bar.com'
+  - rule_id: 933120
+    test_ids: [2]
+    reason: |
+      The match_regex is changed to match against ARGS_POST instead of ARGS because coraza-waf is built with multi phase evaluation on.
+    output:
+      log:
+        expect_ids: [933120]
+        match_regex: 'session.referer_check=t found within ARGS_POST:var:'
 
 
   # Tests that are different because of our testing setup
   # In most cases this is because we overwrite the host header
-  - rule_id: 920280
-    test_ids: [1]
+  - rule_id: 920270
+    test_ids: [4]
     reason: |
-      920280-1 tests an empty Host: header which can only be done with HTTP/1.0.
-      But we overwrite both, the Host and the protocol in our test setup.
-      Note that once the change that tests default to HTTP/1.1 is released, it's likely that envoy then responds with 426 Upgrade Required.
+      The test expects response code 400 because apache drops the request due to the % character in the host header.
+      In the test setup the Host header is replaced so we get an HTTP 200 response instead.
+      The rewriting is also the reason why the rule doesn't match (no more % character).
     output:
+      status: 200
       log:
-        status: 200
-        no_expect_ids: [920280]
+        no_expect_ids: [920270]
+        expect_ids: [920274]
   - rule_id: 920274
     test_ids: [1]
     reason: |
@@ -335,6 +327,16 @@ test_overrides:
       log:
         status: 200
         expect_ids: [920274]
+  - rule_id: 920280
+    test_ids: [1]
+    reason: |
+      920280-1 tests an empty Host: header which can only be done with HTTP/1.0.
+      But we overwrite both, the Host and the protocol in our test setup.
+      Note that once the change that tests default to HTTP/1.1 is released, it's likely that envoy then responds with 426 Upgrade Required.
+    output:
+      log:
+        status: 200
+        no_expect_ids: [920280]
   - rule_id: 920290
     test_ids: [1,4]
     reason: |
@@ -382,17 +384,6 @@ test_overrides:
       retry_once: false
       log:
         no_expect_ids: [980170]
-  - rule_id: 920270
-    test_ids: [4]
-    reason: |
-      The test expects response code 400 because apache drops the request due to the % character in the host header.
-      In the test setup the Host header is replaced so we get an HTTP 200 response instead.
-      The rewriting is also the reason why the rule doesn't match (no more % character).
-    output:
-      status: 200
-      log:
-        no_expect_ids: [920270]
-        expect_ids: [920274]
 
 
   # Tests not entirely clear why the behave different...
