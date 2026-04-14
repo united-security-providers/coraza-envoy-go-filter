@@ -137,14 +137,22 @@ test_overrides:
       log:
         no_expect_ids: [932207]
   - rule_id: 932237
-    test_ids: [8,18]
+    test_ids: [4,12]
     reason: |
       These tests try to do RCE injection in the Referer header.
       But the referrer header is sanitized by Envoy and removed from the request.
-      TODO: in test 932237-7 the reverer header is set to "id" and reaches coraza, find out why this is not sanitized by envoy....
     output:
       log:
         no_expect_ids: [932237]
+#  - rule_id: 932237
+#    test_ids: [8,18]
+#    reason: |
+#      These tests try to do RCE injection in the Referer header.
+#      But the referrer header is sanitized by Envoy and removed from the request.
+#      TODO: in test 932237-7 the reverer header is set to "id" and reaches coraza, find out why this is not sanitized by envoy....
+#    output:
+#      log:
+#        no_expect_ids: [932237]
   - rule_id: 932239
     test_ids: [6,7,19,27,29]
     reason: |
@@ -153,6 +161,14 @@ test_overrides:
     output:
       log:
         no_expect_ids: [932237]
+  - rule_id: 932390
+    test_ids: [9]
+    reason: |
+      These tests try to do RCE injection in the Referer header.
+      But the referrer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [932390]
   - rule_id: 941101
     test_ids: [1]
     reason: |
@@ -163,6 +179,14 @@ test_overrides:
         no_expect_ids: [941101]
   - rule_id: 941110
     test_ids: [4]
+    reason: |
+      These tests try to do XSS injection in the Referer header.
+      But the referrer header is sanitized by Envoy and removed from the request.
+    output:
+      log:
+        no_expect_ids: [941110]
+  - rule_id: 941120
+    test_ids: [49,50]
     reason: |
       These tests try to do XSS injection in the Referer header.
       But the referrer header is sanitized by Envoy and removed from the request.
@@ -188,14 +212,6 @@ test_overrides:
       log:
         no_expect_ids: [920181]
   # other Envoy specific
-  - rule_id: 932300
-    test_ids: [10]
-    reason: |
-      The match_regex is changed to make it LogFormat agnostic and because Envoy encodes < and >.
-    output:
-      log:
-        expect_ids: [932300]
-        match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS_POST:textarea:.*MAIL FROM:.*Smith@bar.com'
   - rule_id: 920274
     test_ids: [2,3,5]
     reason: |
@@ -242,6 +258,11 @@ test_overrides:
     output:
       log:
         expect_ids: [200002,200003]
+
+
+  # Test overrides because of `coraza.rule.multiphase_evaluation` build flag
+  # see: https://github.com/corazawaf/coraza/blob/main/testing/coreruleset/.ftw-multiphase.yml
+  # and: https://github.com/corazawaf/coraza/issues/1336
   - rule_id: 932200
     test_ids: [13]
     reason: |
@@ -258,6 +279,37 @@ test_overrides:
       log:
         expect_ids: [933120]
         match_regex: 'session.referer_check=t found within ARGS_POST:var:'
+  - rule_id: 920540
+    test_ids: [4]
+    reason: |
+      The match_regex is changed to match against ARGS_POST instead of ARGS because coraza-waf is built with multi phase evaluation on.
+    output:
+      log:
+        expect_ids: [920540]
+        match_regex: 'ARGS_POST:testarg'
+  - rule_id: 920540
+    test_ids: [5]
+    reason: |
+      Multiphase: skip:1 guard (920539) stays in phase 2 while 920540 is inferred to phase 1. False positive, so we expect the ID in the logs.
+    output:
+      log:
+        expect_ids: [920540]
+  - rule_id: 931130
+    test_ids: [24]
+    reason: |
+      The match_regex is changed to match against ARGS_GET instead of ARGS because coraza-waf is built with multi phase evaluation on.
+    output:
+      log:
+        expect_ids: [931130]
+        match_regex: 'found within ARGS_GET:x'
+  - rule_id: 932300
+    test_ids: [10]
+    reason: |
+      The match_regex is changed to make it LogFormat agnostic and because Envoy encodes < and > and ARGS_POST.
+    output:
+      log:
+        expect_ids: [932300]
+        match_regex: 'Matched Data:.*MAIL FROM:.*Smith@bar.com.*found within ARGS_POST:textarea:.*MAIL FROM:.*Smith@bar.com'
 
 
   # Tests that are different because of our testing setup
@@ -314,7 +366,7 @@ test_overrides:
       log:
         expect_ids: [931130]
   - rule_id: 943110
-    test_ids: [4]
+    test_ids: [4,30,32,39]
     reason: |
       Original tests is a negative cases with a valid host and referrer. But in the test setup
       the Host is rewritten to foo.example.com and the referrer is sanitized.
