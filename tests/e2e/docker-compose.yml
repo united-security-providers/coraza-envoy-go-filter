@@ -4,7 +4,7 @@
 ---
 services:
   httpbin:
-    image: mccutchen/go-httpbin:2.18.1
+    image: mccutchen/go-httpbin:2.22.1
   sse-server:
     build:
       context: ./sse-server
