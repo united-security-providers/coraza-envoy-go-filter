@@ -4,12 +4,12 @@
 ---
 services:
   httpbin:
-    image: mccutchen/go-httpbin:2.18.1
+    image: mccutchen/go-httpbin:2.22.1
   sse-server:
     build:
       context: ./sse-server
   chown:
-    image: alpine:3.16
+    image: alpine:3.23
     command:
       - /bin/sh
       - -c
