@@ -46,7 +46,7 @@ jobs:
           context: .
           target: envoy-coraza
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: envoy-coraza:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Release Candidate
         uses: softprops/action-gh-release@v3
