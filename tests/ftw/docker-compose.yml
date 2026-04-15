@@ -40,7 +40,7 @@ services:
   goFilter-logs:
     depends_on:
       - envoy
-    image: debian:11-slim
+    image: debian:13-slim
     entrypoint: bash
     command:
       - -c
