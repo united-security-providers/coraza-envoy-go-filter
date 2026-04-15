@@ -11,14 +11,35 @@ updates:
       interval: "daily"
     assignees:
       - "daum3ns"
-      - "arminabf"
-      - "kabbohus"
+      - "HusseinKabbout"
+      - "sh00mster"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     assignees:
       - "daum3ns"
-      - "arminabf"
-      - "kabbohus"
+      - "HusseinKabbout"
+      - "sh00mster"
+  - package-ecosystem: "docker"
+    directories:
+      - "/"
+      - "/tests/ftw"
+      - "/tests/e2e"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "daum3ns"
+      - "HusseinKabbout"
+      - "sh00mster"
+  - package-ecosystem: "docker-compose"
+    directories:
+      - "/"
+      - "/tests/ftw"
+      - "/tests/e2e"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "daum3ns"
+      - "HusseinKabbout"
       - "sh00mster"
