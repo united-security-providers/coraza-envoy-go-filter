@@ -78,13 +78,13 @@ In order to run the coraza go filter, we need to spin up an envoy configuration 
                           {
                                   "waf1":{
                                         "simple_directives":[
-                                              "Include @demo-conf",
-                                              "Include @crs-setup-demo-conf",
+                                              "Include @coraza-lts",
+                                              "Include @crs-setup-lts",
                                               "SecDefaultAction \"phase:3,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:4,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                               "SecDebugLogLevel 3",
-                                              "Include @owasp_crs/*.conf",
+                                              "Include @owasp_crs_lts/*.conf",
                                               "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                           ]
                                     }
@@ -99,9 +99,24 @@ In order to run the coraza go filter, we need to spin up an envoy configuration 
 
 ### Using CRS
 
-[Core Rule Set](https://github.com/coreruleset/coreruleset) comes embedded in the extension, in order to use it in the config, you just need to include it directly in the rules：
+Two versions of the [Core Rule Set](https://github.com/coreruleset/coreruleset) come embedded in the extension.
 
-Loading entire coreruleset:
+* LTS: long term supported CRS version 
+* latest: the latest CRS version
+
+This allows to update the filter without the need to also update the CRS by staying on the "lts" version. This can be handy in sophisticated setups with a lot of rule exclusions, where switching the CRS version means a lot of migration effort. 
+
+Additionally to the rules, configuration files for setting up the rule engine and coraza are embedded as well:
+
+* [@coraza-lts](./internal/config/coreruleset/lts/coraza.conf): configures lts rule engine for coraza
+* [@crs-setup-lts](./internal/config/coreruleset/lts/crs-setup.conf): setup for lts coreruleset
+* [@coraza-latest](./internal/config/coreruleset/lts/coraza.conf): configures latest rule engine for coraza
+* [@crs-setup-latest](./internal/config/coreruleset/latest/crs-setup.conf): configures latest coreruleset
+
+
+In order to use these in the config, you just need to include it directly in the rules：
+
+Example loading entire LTS coreruleset:
 ```yaml
                     plugin_config:
                       "@type": type.googleapis.com/xds.type.v3.TypedStruct
@@ -110,18 +125,18 @@ Loading entire coreruleset:
                           {
                                   "waf1":{
                                         "simple_directives":[
-                                                "Include @demo-conf",
+                                                "Include @coraza-lts",
                                                 "SecDebugLogLevel 9",
                                                 "SecRuleEngine On",
-                                                "Include @crs-setup-demo-conf",
-                                                "Include @owasp_crs/*.conf"
+                                                "Include @crs-setup-lts",
+                                                "Include @owasp_crs_lts/*.conf"
                                           ]
                                     }
                                 }
                         default_directive: "waf1"
 ```
 
-Loading some pieces:
+Loading some pieces of the latest ruleset:
 ```yaml
                     plugin_config:
                       "@type": type.googleapis.com/xds.type.v3.TypedStruct
@@ -130,11 +145,11 @@ Loading some pieces:
                           {
                                   "waf1":{
                                         "simple_directives":[
-                                                "Include @demo-conf",
+                                                "Include @coraza-latest",
                                                 "SecDebugLogLevel 9",
                                                 "SecRuleEngine On",
-                                                "Include @crs-setup-demo-conf",
-                                                "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
+                                                "Include @crs-setup-latest",
+                                                "Include @owasp_crs_latest/REQUEST-901-INITIALIZATION.conf"
                                           ]
                                     }
                                 }
@@ -145,17 +160,35 @@ Loading some pieces:
 
 - In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./src/rules/crs-setup.conf.example)).
 
+#### FTW configuration files
+
+If you want to run the ftw test suite, the configuration files are included in the shared object as well:
+
+* [@crs-ftw-lts](./internal/config/coreruleset/lts/crs-ftw.conf): configures lts rule engine for ftw tests
+* [@coraza-ftw-lts](./internal/config/coreruleset/lts/coraza-ftw.conf): configures coraza for ftw tests
+* [@crs-ftw-latest](./internal/config/coreruleset/lts/crs-ftw.conf): configures latest rule engine for ftw tests
+* [@coraza-ftw-latest](./internal/config/coreruleset/latest/coraza-ftw.conf): configures coraza for ftw tests
+
 ## Testing
 
 ### Running go-ftw (CRS Regression tests)
 
-The following command runs the [go-ftw](https://github.com/coreruleset/go-ftw) test suite against the filter with the CRS fully loaded.
+The following command runs the [go-ftw](https://github.com/coreruleset/go-ftw) test suite two times against the filter with the CRS lts/latest fully loaded.
 
 ```bash
 make ftw
 ```
 
-Take a look at its config [ftw.yml](./ftw/ftw.yml) and [overrides.yml](./ftw/overrides.yml) file for details about tests currently excluded and overriden.
+It's also possible to run tests against a specific CRS version:
+```bash
+# run ftw tests against lts CRS
+make ftw-lts
+
+# run ftw tests against latest CRS
+make ftw-latest
+```
+
+Take a look at the config files [ftw-lts.yml](./tests/ftw/ftw-lts.yml), [overrides-lts.yml](./tests/ftw/overrides-lts.yml) and [ftw-latest.yml](./tests/ftw/ftw-latest.yml), [overrides-latest.yml](./tests/ftw/overrides-latest.yml) for details about tests currently excluded and overridden.
 
 One can also run a single test by executing:
 
