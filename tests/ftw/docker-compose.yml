@@ -9,7 +9,7 @@ services:
       - MAX_BODY_SIZE=15728640 # 15 MiB
 
   chown:
-    image: alpine:3.16
+    image: alpine:3.23
     command:
       - /bin/sh
       - -c
