@@ -11,7 +11,7 @@ updates:
       interval: "daily"
     assignees:
       - "daum3ns"
-      - "kabbohus"
+      - "HusseinKabbout"
       - "sh00mster"
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -19,7 +19,7 @@ updates:
       interval: "weekly"
     assignees:
       - "daum3ns"
-      - "kabbohus"
+      - "HusseinKabbout"
       - "sh00mster"
   - package-ecosystem: "docker"
     directories:
@@ -30,7 +30,7 @@ updates:
       interval: "daily"
     assignees:
       - "daum3ns"
-      - "kabbohus"
+      - "HusseinKabbout"
       - "sh00mster"
   - package-ecosystem: "docker-compose"
     directories:
@@ -41,5 +41,5 @@ updates:
       interval: "daily"
     assignees:
       - "daum3ns"
-      - "kabbohus"
+      - "HusseinKabbout"
       - "sh00mster"
