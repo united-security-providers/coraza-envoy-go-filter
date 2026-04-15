@@ -30,6 +30,7 @@ while [[ "$status_code" -eq "000" ]]; do
 done
 echo -e "\n[Ok] Got status code $status_code, expected 200. Ready to start."
 
+
 FTW_CLOUDMODE=${FTW_CLOUDMODE:-false}
 
 FTW_INCLUDE=$([ "${FTW_INCLUDE}" == "" ] && echo "" || echo "-i ${FTW_INCLUDE}")

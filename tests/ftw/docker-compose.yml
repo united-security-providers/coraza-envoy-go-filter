@@ -29,7 +29,7 @@ services:
       - --log-path
       - /etc/envoy/logs/envoy.log
     volumes:
-      - ./envoy.yaml:/etc/envoy/envoy.yaml
+      - ./${ENVOY_CONFIG}:/etc/envoy/envoy.yaml
       - ../../build/coraza-waf.so:/etc/envoy/coraza-waf.so
       - ./logs:/etc/envoy/logs:rw
     ports:
@@ -53,6 +53,12 @@ services:
       - goFilter-logs
     build:
       context: .
+      dockerfile: Dockerfile
+      args:
+        CRS_VERSION: ${CRS_VERSION:-4.25.0}
+        FTW_VERSION: ${FTW_VERSION:-2.1.0}
+        FTW_CONFIG: ${FTW_CONFIG}
+        FTW_OVERRIDES: ${FTW_OVERRIDES}
     environment:
       - FTW_CLOUDMODE
       - FTW_INCLUDE

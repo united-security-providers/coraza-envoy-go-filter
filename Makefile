@@ -1,4 +1,4 @@
-BUILD-TAGS := coraza.rule.multiphase_evaluation,memoize_builders
+BUILD-TAGS := coraza.rule.multiphase_evaluation
 GOLANG-CI-LINT-VERSION := v2.10.1
 BUILD-DIRECTORY := ./build
 
@@ -31,8 +31,16 @@ e2e: clean build buildTestEnvoy
 	docker compose --file tests/e2e/docker-compose.yml down; \
 	exit $$EXIT_CODE
 
-ftw: clean build buildTestEnvoy
-	docker compose --file tests/ftw/docker-compose.yml up --build ftw-crs --exit-code-from ftw-crs; \
+ftw: ftw-lts ftw-latest
+
+ftw-lts: clean build buildTestEnvoy
+	docker compose --file tests/ftw/docker-compose.yml --env-file tests/ftw/.env.lts up --build ftw-crs --exit-code-from ftw-crs; \
+	EXIT_CODE=$$?; \
+	docker compose --file tests/ftw/docker-compose.yml down; \
+	exit $$EXIT_CODE
+
+ftw-latest: clean build buildTestEnvoy
+	docker compose --file tests/ftw/docker-compose.yml --env-file tests/ftw/.env.latest up --build ftw-crs --exit-code-from ftw-crs; \
 	EXIT_CODE=$$?; \
 	docker compose --file tests/ftw/docker-compose.yml down; \
 	exit $$EXIT_CODE
