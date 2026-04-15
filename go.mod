@@ -6,7 +6,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20250501225837-2ac532fd4443
 	github.com/corazawaf/coraza-wasilibs v0.2.0
 	github.com/corazawaf/coraza/v3 v3.7.0
-	github.com/envoyproxy/envoy v1.37.1
+	github.com/envoyproxy/envoy v1.37.2
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
 	google.golang.org/protobuf v1.36.11
