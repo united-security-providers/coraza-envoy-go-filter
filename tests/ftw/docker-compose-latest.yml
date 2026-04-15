@@ -29,7 +29,7 @@ services:
       - --log-path
       - /etc/envoy/logs/envoy.log
     volumes:
-      - ./envoy.yaml:/etc/envoy/envoy.yaml
+      - ./envoy-latest.yaml:/etc/envoy/envoy.yaml
       - ../../build/coraza-waf.so:/etc/envoy/coraza-waf.so
       - ./logs:/etc/envoy/logs:rw
     ports:
@@ -53,6 +53,7 @@ services:
       - goFilter-logs
     build:
       context: .
+      dockerfile: Dockerfile-latest
     environment:
       - FTW_CLOUDMODE
       - FTW_INCLUDE
