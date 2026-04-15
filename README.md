@@ -2,55 +2,6 @@
 
 * [Coraza](https://github.com/corazawaf/coraza) Web Application Firewall implemented as Envoy Go Filter.
 
-## Compilation
-
-See [Makefile](./Makefile) for all targets.
-
-### Building the filter
-
-```bash
-make build
-# or
-make performanceBuild
-```
-
-You will find the go waf plugin under `./build/coraza-waf.so`.
-
-### Performance
-
-There is [a known performance issue with larger request bodies in Coraza](https://github.com/corazawaf/coraza/issues/1176).
-To help mitigate this, a new build target named `performanceBuild` has been introduced.
-This target compiles the filter with support for both [re2](https://github.com/google/re2) and
-[libinjection](https://github.com/libinjection/libinjection) to improve throughput.
-The only downside is that this build introduces runtime dependencies on `re2` and `libinjection`.
-
-You can enable this behavior through the configuration. For example:
-
-```yaml
-  ...
-
-  filter_chains:
-    - filters:
-      - name: envoy.filters.network.http_connection_manager
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          stat_prefix: ingress_http
-          http_filters:
-            - name: envoy.filters.http.golang
-              typed_config:
-                "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                library_id: coraza-waf
-                library_path: /etc/envoy/coraza-waf.so
-                plugin_name: coraza-waf
-                plugin_config:
-                  "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                  value:
-                    use_re2: true
-                    use_libinjection: true
-```
-
-Setting these configuration options in the normal build will have no effect on coraza.
-
 ## Getting started
 
 ### Running the docker image
@@ -278,6 +229,55 @@ If you want to run the ftw test suite, the configuration files are included in t
 * [@coraza-ftw-lts](./internal/config/coreruleset/lts/coraza-ftw.conf): configures coraza for ftw tests
 * [@crs-ftw-latest](./internal/config/coreruleset/lts/crs-ftw.conf): configures latest rule engine for ftw tests
 * [@coraza-ftw-latest](./internal/config/coreruleset/latest/coraza-ftw.conf): configures coraza for ftw tests
+
+## Compilation
+
+See [Makefile](./Makefile) for all targets.
+
+### Building the filter
+
+```bash
+make build
+# or
+make performanceBuild
+```
+
+You will find the go waf plugin under `./build/coraza-waf.so`.
+
+### Performance
+
+There is [a known performance issue with larger request bodies in Coraza](https://github.com/corazawaf/coraza/issues/1176).
+To help mitigate this, a new build target named `performanceBuild` has been introduced.
+This target compiles the filter with support for both [re2](https://github.com/google/re2) and
+[libinjection](https://github.com/libinjection/libinjection) to improve throughput.
+The only downside is that this build introduces runtime dependencies on `re2` and `libinjection`.
+
+You can enable this behavior through the configuration. For example:
+
+```yaml
+  ...
+
+  filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          http_filters:
+            - name: envoy.filters.http.golang
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
+                library_id: coraza-waf
+                library_path: /etc/envoy/coraza-waf.so
+                plugin_name: coraza-waf
+                plugin_config:
+                  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                  value:
+                    use_re2: true
+                    use_libinjection: true
+```
+
+Setting these configuration options in the normal build will have no effect on coraza.
 
 ## Testing
 
