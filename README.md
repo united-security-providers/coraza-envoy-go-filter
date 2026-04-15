@@ -2,7 +2,7 @@
 
 * [Coraza](https://github.com/corazawaf/coraza) Web Application Firewall implemented as Envoy Go Filter.
 
-## Getting started
+## Compilation
 
 See [Makefile](./Makefile) for all targets.
 
@@ -51,6 +51,15 @@ You can enable this behavior through the configuration. For example:
 
 Setting these configuration options in the normal build will have no effect on coraza.
 
+## Getting started
+
+### Running the docker image
+
+```bash
+docker pull ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+docker run -p 8080:10000 -v ./<path_to_local_envoy.yaml>:/etc/envoy/envoy.yaml ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+
 ### Running the filter in an Envoy process
 
 In order to run the coraza go filter, we need to spin up an envoy configuration including this as the filter config
@@ -87,22 +96,123 @@ In order to run the coraza go filter, we need to spin up an envoy configuration 
                                               "Include @owasp_crs_lts/*.conf",
                                               "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                           ]
+                                    },
+                                    "off":{
+                                      "simple_directives":[
+                                        "SecRuleEngine Off"
+                                      ]
                                     }
                                 }
                         default_directive: "waf1"
                         host_directive_map: |
                           {
                             "foo.example.com":"waf1",
-                            "bar.example.com":"waf1"
+                            "bar.example.com":"off"
                           }
+```
+
+### Using with EnvoyGateway
+
+Enable [EnvoyPatchPolicy](https://gateway.envoyproxy.io/docs/tasks/extensibility/envoy-patch-policy/#enable-envoypatchpolicy)
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: envoy-gateway-config
+  namespace: envoy-gateway-system
+data:
+  envoy-gateway.yaml: |
+    apiVersion: gateway.envoyproxy.io/v1alpha1
+    kind: EnvoyGateway
+    provider:
+      type: Kubernetes
+    gateway:
+      controllerName: gateway.envoyproxy.io/gatewayclass-controller
+    extensionApis:
+      enableEnvoyPatchPolicy: true
+```
+
+Update the EnvoyProxy to use the united-security-providers/envoy-coraza image:
+```yaml
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: eg
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        container:
+          image: ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+
+Enable the plugin with an EnvoyPatchPolicy:
+```yaml
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyPatchPolicy
+metadata:
+  name: coraza-patch-policy
+  namespace: envoy-gateway-system
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: eg-internal
+  type: JSONPatch
+  jsonPatches:
+  - type: "type.googleapis.com/envoy.config.listener.v3.Listener"
+    ## The name is in the format <namespace>/<gateway>/<listener> as per the XDS Name Scheme V2 - https://gateway.envoyproxy.io/docs/tasks/extensibility/envoy-patch-policy/#xds-name-scheme-v2
+    name: envoy-gateway-system/eg/https
+    operation:
+      op: add
+      ## Needs to be added as the first item in the 'http_filters' array
+      path: "/filter_chains/0/filters/0/typed_config/http_filters/0"
+      value:
+        name: envoy.filters.http.golang
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
+          library_id: coraza-waf
+          library_path: /etc/envoy/coraza-waf.so
+          plugin_name: coraza-waf
+          plugin_config:
+            "@type": type.googleapis.com/xds.type.v3.TypedStruct
+            value:
+              ## setting the logs to json format, so they are the same as the default EnvoyGateway Access Logs
+              log_format: "json"
+              ## configure coraza/CRS
+              directives: |
+                {
+                  "default":{
+                    "simple_directives":[
+                      "Include @coraza-lts",
+                      "SecDebugLogLevel 9",
+                      "SecRuleEngine On",
+                      "Include @crs-setup-lts",
+                      "Include @owasp_crs_lts/*.conf"
+                    ]
+                  },
+                  "off":{
+                    "simple_directives":[
+                      "SecRuleEngine Off"
+                    ]
+                  }
+                }
+              default_directive: "default"
+              host_directive_map: |
+                {
+                  "foo.example.com":"off",
+                  "bar.example.com":"default"
+                }
 ```
 
 ### Using CRS
 
 Two versions of the [Core Rule Set](https://github.com/coreruleset/coreruleset) come embedded in the extension.
 
-* LTS: long term supported CRS version 
-* latest: the latest CRS version
+* LTS: long term supported CRS version [@owasp_crs_lts/*.conf](./internal/config/coreruleset/lts/rules)
+* latest: the latest CRS version  [@owasp_crs_latest/*.conf](./internal/config/coreruleset/latest/rules)
 
 This allows to update the filter without the need to also update the CRS by staying on the "lts" version. This can be handy in sophisticated setups with a lot of rule exclusions, where switching the CRS version means a lot of migration effort. 
 
