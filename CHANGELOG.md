@@ -1,6 +1,6 @@
 # Changelog
 
-## [v2.0.0] - 2026-XX-XX
+## [v2.0.0-rc3] - 2026-04-16
 
 *The included configuration files and their paths have changed. Please consult the [updated README section](./README.md#using-crs) for details.*
 
