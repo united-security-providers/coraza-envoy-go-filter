@@ -12,7 +12,7 @@ docker pull ghcr.io/united-security-providers/envoy-coraza:v2.0.0
 docker run -p 8080:10000 ghcr.io/united-security-providers/envoy-coraza:v2.0.0
 ```
 
-Then visit http://localhost:8080 and then http://localhost:8080/alert('xss'). The second request should be blocked and you should see `WAF rule triggered: Javascript method detected` in the container logs.
+First visit http://localhost:8080 and then http://localhost:8080/alert('xss'). The second request should be blocked and you should see `WAF rule triggered: Javascript method detected` in the container logs.
 
 ### Running the filter in an Envoy process
 
