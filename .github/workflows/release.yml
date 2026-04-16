@@ -45,7 +45,6 @@ jobs:
         with:
           context: .
           target: envoy-coraza
-          build-args: BUILD_TAGS=coraza.rule.multiphase_evaluation
           push: true
           tags: ghcr.io/united-security-providers/envoy-coraza:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
