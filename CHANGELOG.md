@@ -6,6 +6,7 @@
 
 ### Added
 - **Breaking:** Add support for "lts" and "latest" versions of CRS ([#81](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/80))([daum3ns](https://github.com/daum3ns))
+- Build and publish docker image. Describe usage in EnvoyGateway ([#91](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/91))([daum3ns](https://github.com/daum3ns))
 
 ### Changed
 - Update CRS to version 4.25 ([#81](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/80))([daum3ns](https://github.com/daum3ns))
