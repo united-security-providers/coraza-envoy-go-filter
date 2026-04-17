@@ -36,7 +36,10 @@ static_resources:
                                               "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                               "SecDebugLogLevel 3",
                                               "Include @owasp_crs_lts/*.conf",
-                                              "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
+                                              "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"",
+                                              "SecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\"",
+                                              "SecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\"",
+                                              "SecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                           ]
                                     },
                                   "waf2":{
@@ -53,7 +56,10 @@ static_resources:
                                               "SecRequestBodyInMemoryLimit 40",
                                               "SecRequestBodyLimit 40",
                                               "SecRequestBodyLimitAction ProcessPartial",
-                                              "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
+                                              "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"",
+                                              "SecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\"", 
+                                              "SecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\"",
+                                              "SecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                           ]
                                     },
                                   "waf3":{
@@ -100,6 +106,13 @@ static_resources:
                                               "Include @owasp_crs_lts/*.conf",
                                               "SecRule RESPONSE_CONTENT_TYPE \"text/event-stream\" \"id:1001,phase:3,log,allow,ctl:responseBodyAccess=Off\"" 
                                           ]
+                                    },
+                                  "custom-rules":{
+                                        "simple_directives":[
+                                              "SecRuleEngine On",
+                                              "Include /etc/envoy/my_custom_setup.conf",
+                                              "Include /etc/envoy/my_custom_rules/*.conf"
+                                          ]
                                     }
                                 }
                               default_directive: "waf1"
@@ -110,7 +123,8 @@ static_resources:
                                   "baz.example.com":"waf3",
                                   "body-off.example.com":"waf4",
                                   "no-waf.example.com":"no-waf",
-                                  "sse.example.com":"sse-response-body-off"
+                                  "sse.example.com":"sse-response-body-off",
+                                  "custom.example.com":"custom-rules"
                                 }
                   - name: envoy.filters.http.router
                     typed_config:
