@@ -79,6 +79,14 @@ check_status "${envoy_url_post}" 403 -X POST -H 'Content-Type: application/x-www
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when outside SecRequestBodyLimit"
 check_status "${envoy_url_post}" 200 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "this very long prefix is just a little more than 40 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
 
+# NEW IN CORAZA 3.3.4  -> used to be 200 now its 400
+# Testing body detection when reaching SecRequestBodyLimit (ProcessPartial) for JSON
+# In this test the pattern triggering the rule is NOT within SecRequestBodyLimit
+# SecRequestBodyLimit is set to 40 and the malicious payload starts after 70 bytes
+((step+=1))
+echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (json body) when outside SecRequestBodyLimit"
+check_status "${envoy_url_post}" 200 -X POST -H 'Content-Type: application/json' -H 'Host: bar.example.com' --data "{ \"msg\": \"this very long prefix is just a little more than 40 bytes ${truePositiveBodyPayload} suffix is 20 bytes\" }"
+
 # Testing request is rejected when SecRequestBodyLimitAction is set to reject
 # and the request body exceeds the configured limit
 # SecRequestBodyLimit is set to 40 and we send 49 bytes
