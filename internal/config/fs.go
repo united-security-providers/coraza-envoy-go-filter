@@ -8,6 +8,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"os"
 	"strings"
 )
 
@@ -52,10 +53,17 @@ type rulesFS struct {
 }
 
 func (r rulesFS) Open(name string) (fs.File, error) {
-	return r.fs.Open(r.mapPath(name))
+	if strings.HasPrefix(name, "@") {
+		return r.fs.Open(r.mapPath(name))
+	}
+	return os.Open(name)
+
 }
 
 func (r rulesFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	if !strings.HasPrefix(name, "@") {
+		return os.ReadDir(name)
+	}
 	for a, dst := range r.dirsMapping {
 		if a == name {
 			return fs.ReadDir(r.fs, dst)
@@ -70,7 +78,10 @@ func (r rulesFS) ReadDir(name string) ([]fs.DirEntry, error) {
 }
 
 func (r rulesFS) ReadFile(name string) ([]byte, error) {
-	return fs.ReadFile(r.fs, r.mapPath(name))
+	if strings.HasPrefix(name, "@") {
+		return fs.ReadFile(r.fs, r.mapPath(name))
+	}
+	return os.ReadFile(name)
 }
 
 func (r rulesFS) mapPath(p string) string {
