@@ -5,6 +5,7 @@
 *The included configuration files have changed. Please consult the [updated README section](./README.md#using-crs) for details.*
 
 ### Added
+- Add support for per route and per virtual host level configuration ([98](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/98))([daum3ns](https://github.com/daum3ns))
 - Add support to load rules from filesystem ([#97](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/97))([daum3ns](https://github.com/daum3ns))
 - Build and publish docker image. Describe usage in EnvoyGateway ([#91](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/91))([daum3ns](https://github.com/daum3ns))
 
