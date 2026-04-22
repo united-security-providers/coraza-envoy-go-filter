@@ -4,10 +4,6 @@
 #
 # shared functions accross e2e test scripts
 
-function util_hello() {
-  echo "hello"
-}
-
 # wait_for_service waits until the given URL returns a 200 status code.
 # $1: The URL to send requests to.
 # $2: The max number of requests to send before giving up.

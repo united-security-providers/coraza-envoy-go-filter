@@ -73,7 +73,7 @@ echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (bo
 check_status "${envoy_url_post}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "prefix is 20 bytes ${truePositiveBodyPayload} suffix is 20 bytes"
 
 # Testing body detection when reaching SecRequestBodyLimit (ProcessPartial)
-# In this test the the pattern triggering the rule is NOT within SecRequestBodyLimit
+# In this test the pattern triggering the rule is NOT within SecRequestBodyLimit
 # SecRequestBodyLimit is set to 40 and the malicious payload starts after 58 bytes
 ((step+=1))
 echo "[${step}/${total_steps}] (onRequestBody) Testing true positive request (body) when outside SecRequestBodyLimit"
@@ -115,7 +115,7 @@ echo "[${step}/${total_steps}] (onResponseBody) Testing true positive response (
 check_status "${envoy_url_post}" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Host: bar.example.com' --data "${truePositiveBodyPayloadForResponseBody}"
 
 # Testing response body detection when reaching SecResponseBodyLimit (ProcessPartial)
-# In this test the the malicious payload is NOT detectable within SecResponseBodyLimit
+# In this test the malicious payload is NOT detectable within SecResponseBodyLimit
 # SecResponsBodyLimit is set to 700 bytes, the prefix ensures that the payload
 # is behind 700 bytes in the response
 ((step+=1))
@@ -126,7 +126,7 @@ check_status "${envoy_url_post}" 200 -X POST -H 'Content-Type: application/x-www
 # and the response body exceeds the configured limit
 # The generated response is 80 bytes, SecResponsBodyLimit is set to 70 bytes
 ((step+=1))
-echo "[${step}/${total_steps}] (onRespnseBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
+echo "[${step}/${total_steps}] (onResponseBody) Testing request is rejected when body is bigger than SecRequestBodyLimit and action is set to reject"
 check_status "${envoy_url_unfiltered}/bytes/80" 500 -H 'Host: baz.example.com'
 
 
@@ -134,7 +134,7 @@ check_status "${envoy_url_unfiltered}/bytes/80" 500 -H 'Host: baz.example.com'
 
 # Testing XSS detection during phase 1
 ((step+=1))
-echo "[${step}/${total_steps}] Testing XSS detefction at request headers"
+echo "[${step}/${total_steps}] Testing XSS detection at request headers"
 check_status "${envoy_url_echo}?arg=<script>alert(0)</script>" 403
 
 # Testing SQLI detection during phase 2
