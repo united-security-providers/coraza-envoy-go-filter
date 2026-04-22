@@ -32,7 +32,7 @@ echo "#                  E2E BASE TESTS                  #"
 echo "####################################################"
 
 step=1
-total_steps=19
+total_steps=24
 
 ## Testing that basic coraza phases are working
 
@@ -151,6 +151,28 @@ check_status "${envoy_url_echo}" 403 --user-agent "gobuster/3.2.0 (X11; U; Linux
 ((step+=1))
 echo "[${step}/${total_steps}] True negative GET request with user-agent"
 check_status "${envoy_url_echo}" 200 --user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+
+
+## Testing per route configuration
+((step+=1))
+echo "[${step}/${total_steps}] Testing per route config true negative"
+check_status "${envoy_url_unfiltered}/other-waf" 404
+
+((step+=1))
+echo "[${step}/${total_steps}] Testing other wafs do not block per route config true negative"
+check_status "${envoy_url_unfiltered}/other-waf/admin" 404
+
+((step+=1))
+echo "[${step}/${total_steps}] Testing other waf does not block per route config even if host matches true negative"
+check_status "${envoy_url_unfiltered}/other-waf/admin" 404 -H 'Host: foo.example.com'
+
+((step+=1))
+echo "[${step}/${total_steps}] Testing per route config true positive"
+check_status "${envoy_url_unfiltered}/other-waf/other-admin" 403
+
+((step+=1))
+echo "[${step}/${total_steps}] Testing per route true positive request body"
+check_status "${envoy_url_unfiltered}/other-waf" 403 -X POST -H 'Content-Type: application/x-www-form-urlencoded' --data "evilpayload"
 
 
 echo "####################################################"

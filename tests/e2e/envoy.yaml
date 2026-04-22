@@ -132,6 +132,32 @@ static_resources:
                           route:
                             cluster: sse_service
                         - match:
+                            prefix: "/other-waf"
+                          route:
+                            host_rewrite_literal: 0.0.0.0:8080
+                            cluster: service_httpbin
+                          typed_per_filter_config:
+                            envoy.filters.http.golang:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.ConfigsPerRoute
+                              plugins_config:
+                                coraza-waf:
+                                  config:
+                                    "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                                    value:
+                                      directives: |
+                                        {
+                                          "route-level-waf":{
+                                                "simple_directives":[
+                                                      "Include @coraza-lts",
+                                                      "Include @crs-setup-lts",
+                                                      "Include @owasp_crs_lts/*.conf",
+                                                      "SecRule REQUEST_URI \"@contains /other-admin\" \"id:301,phase:1,t:lowercase,deny\"",
+                                                      "SecRule REQUEST_BODY \"@rx evilpayload\" \"id:102,phase:2,t:lowercase,deny\""
+                                                ]
+                                            }
+                                        }
+                                      default_directive: "route-level-waf"
+                        - match:
                             prefix: "/"
                           route:
                             host_rewrite_literal: 0.0.0.0:8080
