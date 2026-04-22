@@ -2,14 +2,14 @@
 
 ## [v2.0.0] - 2026-XX-XX
 
-*The included configuration files and their paths have changed. Please consult the [updated README section](./README.md#using-crs) for details.*
+*The included configuration files have changed. Please consult the [updated README section](./README.md#using-crs) for details.*
 
 ### Added
-- **Breaking:** Add support for "lts" and "latest" versions of CRS ([#81](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/80))([daum3ns](https://github.com/daum3ns))
+- Add support to load rules from filesystem ([#97](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/97))([daum3ns](https://github.com/daum3ns))
 - Build and publish docker image. Describe usage in EnvoyGateway ([#91](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/91))([daum3ns](https://github.com/daum3ns))
 
 ### Changed
-- Update CRS to version 4.25 ([#81](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/80))([daum3ns](https://github.com/daum3ns))
+- **Breaking:** Update CRS to version 4.25 ([#81](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/80))([daum3ns](https://github.com/daum3ns))
 - Update envoy to version 1.37.2 ([#79](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/79))([daum3ns](https://github.com/daum3ns))
 - Update go to version 1.25.9 ([#77](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/77))([daum3ns](https://github.com/daum3ns))
 - Update coraza to version 3.7.0 ([#71](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/71))([kabbohus](https://github.com/kabbohus)) ([#74](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/74))([kabbohus](https://github.com/kabbohus)) ([#75](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/75))([kabbohus](https://github.com/kabbohus))

@@ -45,9 +45,9 @@ static_resources:
                     {
                       "waf1":{
                             "simple_directives":[
-                                  "Include @coraza-lts",
-                                  "Include @crs-setup-lts",
-                                  "Include @owasp_crs_lts/*.conf"
+                                  "Include @coraza-setup",
+                                  "Include @crs-setup",
+                                  "Include @owasp_crs/*.conf"
                             ]
                         }
                     }

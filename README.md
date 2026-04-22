@@ -12,7 +12,10 @@ docker pull ghcr.io/united-security-providers/envoy-coraza:v2.0.0
 docker run -p 8080:10000 ghcr.io/united-security-providers/envoy-coraza:v2.0.0
 ```
 
-First visit http://localhost:8080 and then http://localhost:8080/alert('xss'). The second request should be blocked and you should see `WAF rule triggered: Javascript method detected` in the container logs.
+First visit http://localhost:8080 and then http://localhost:8080/alert('xss').
+
+> [!NOTE]
+> The second request should be blocked and you should see `WAF rule triggered: Javascript method detected` in the container logs.
 
 ### Running the filter in an Envoy process
 
@@ -163,24 +166,19 @@ spec:
 
 ### Using CRS
 
-Two versions of the [Core Rule Set](https://github.com/coreruleset/coreruleset) come embedded in the extension.
+The [Core Rule Set](https://github.com/coreruleset/coreruleset) comes embedded in the extension. 
 
-* LTS: long term supported CRS version [@owasp_crs_lts/*.conf](./internal/config/coreruleset/lts/rules)
-* latest: the latest CRS version  [@owasp_crs_latest/*.conf](./internal/config/coreruleset/latest/rules)
+> [!TIP]
+> You can also load a [different CRS version or your own rules from filesystem.](#using-custom-rules-or-load-a-different-crs-version)
 
-This allows to update the filter without the need to also update the CRS by staying on the "lts" version. This can be handy in sophisticated setups with a lot of rule exclusions, where switching the CRS version means a lot of migration effort. 
+Additionally to the rules, configuration files for setting up the rule engine and coraza are embedded as well.
+To include embedded rules and config files, the **@** sign is used when referencing a path. 
 
-Additionally to the rules, configuration files for setting up the rule engine and coraza are embedded as well:
+* [@owasp_crs/*.conf](./internal/config/coreruleset/rules): the CRS rules
+* [@coraza-setup](./internal/config/coreruleset/coraza.conf): configures the rule engine for coraza
+* [@crs-setup](./internal/config/coreruleset/crs-setup.conf): setup coreruleset
 
-* [@coraza-lts](./internal/config/coreruleset/lts/coraza.conf): configures lts rule engine for coraza
-* [@crs-setup-lts](./internal/config/coreruleset/lts/crs-setup.conf): setup for lts coreruleset
-* [@coraza-latest](./internal/config/coreruleset/lts/coraza.conf): configures latest rule engine for coraza
-* [@crs-setup-latest](./internal/config/coreruleset/latest/crs-setup.conf): configures latest coreruleset
-
-
-In order to use these in the config, you just need to include it directly in the rules：
-
-Example loading entire LTS coreruleset:
+Example loading entire coreruleset:
 ```yaml
                     plugin_config:
                       "@type": type.googleapis.com/xds.type.v3.TypedStruct
@@ -189,18 +187,18 @@ Example loading entire LTS coreruleset:
                           {
                                   "waf1":{
                                         "simple_directives":[
-                                                "Include @coraza-lts",
+                                                "Include @coraza-setup",
                                                 "SecDebugLogLevel 9",
                                                 "SecRuleEngine On",
-                                                "Include @crs-setup-lts",
-                                                "Include @owasp_crs_lts/*.conf"
+                                                "Include @crs-setup",
+                                                "Include @owasp_crs/*.conf"
                                           ]
                                     }
                                 }
                         default_directive: "waf1"
 ```
 
-Loading some pieces of the latest ruleset:
+Loading some pieces of the ruleset:
 ```yaml
                     plugin_config:
                       "@type": type.googleapis.com/xds.type.v3.TypedStruct
@@ -209,11 +207,11 @@ Loading some pieces of the latest ruleset:
                           {
                                   "waf1":{
                                         "simple_directives":[
-                                                "Include @coraza-latest",
+                                                "Include @coraza-setup",
                                                 "SecDebugLogLevel 9",
                                                 "SecRuleEngine On",
-                                                "Include @crs-setup-latest",
-                                                "Include @owasp_crs_latest/REQUEST-901-INITIALIZATION.conf"
+                                                "Include @crs-setup",
+                                                "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
                                           ]
                                     }
                                 }
@@ -226,12 +224,102 @@ Loading some pieces of the latest ruleset:
 
 #### FTW configuration files
 
-If you want to run the ftw test suite, the configuration files are included in the shared object as well:
+If you want to run the ftw test suite (for example in your ci environment), the configuration files are included in the shared object as well:
 
-* [@crs-ftw-lts](./internal/config/coreruleset/lts/crs-ftw.conf): configures lts rule engine for ftw tests
-* [@coraza-ftw-lts](./internal/config/coreruleset/lts/coraza-ftw.conf): configures coraza for ftw tests
-* [@crs-ftw-latest](./internal/config/coreruleset/lts/crs-ftw.conf): configures latest rule engine for ftw tests
-* [@coraza-ftw-latest](./internal/config/coreruleset/latest/coraza-ftw.conf): configures coraza for ftw tests
+* [@crs-ftw](./internal/config/coreruleset/crs-ftw.conf): configures rule engine for ftw tests
+* [@coraza-ftw](./internal/config/coreruleset/coraza-ftw.conf): configures coraza for ftw tests
+
+### Using custom rules or load a different CRS version
+
+Additionally to the compiled in CRS, filter supports loading rules from filesystem.
+This can be useful to load custom rules, blocklists or another CRS version.
+
+#### Custom Rule example
+For example to load a file myrule.conf, we can first mount it into the container
+```bash
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./myrule.conf:/etc/envoy/myrule.conf ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+(if you run encoy directly this is of course not needed, simply put it somewhere on the filesystem)
+
+And in the envoy config we can include the file:
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+              "waf1":{
+                    "simple_directives":[
+                            "Include @coraza-latest",
+                            "SecDebugLogLevel 9",
+                            "SecRuleEngine On",
+                            "Include @crs-setup-latest",
+                            "Include @owasp_crs_latest/*.conf",
+                            "Include /etc/envoy/myrule.conf"
+                      ]
+                }
+            }
+    default_directive: "waf1"
+[...]
+```
+*Note the missing @, it means "try to load from filesystem"*
+
+#### Blocklist example
+The following example shows how to mount and use blocklist.txt:
+```bash
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./blocklist.txt:/etc/envoy/blocklist.txt ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+And in the envoy config add the rule:
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+              "waf1":{
+                    "simple_directives":[
+                            "Include @coraza-latest",
+                            "SecDebugLogLevel 9",
+                            "SecRuleEngine On",
+                            "Include @crs-setup-latest",
+                            "Include @owasp_crs_latest/*.conf",
+                            "SecRule REMOTE_ADDR \"@ipMatchFromFile /etc/envoy/blocklist.txt\" \"id:200003,phase:1,deny,status:403,msg:'IP Blocked by Blocklist'\"
+                      ]
+                }
+            }
+    default_directive: "waf1"
+[...]
+```
+
+#### Loading another CRS version example
+
+Example loading CRS 4.22 (assuming you have the rules locally): 
+```bash
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./cureruleset-4.22:/etc/envoy/crs-4.22  ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+And in the envoy config load the ruleset:
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+              "waf1":{
+                    "simple_directives":[
+                            "Include @coraza-latest",
+                            "SecDebugLogLevel 9",
+                            "SecRuleEngine On",
+                            "Include /etc/envoy/crs-4.22/crs-setup.conf.example",
+                            "Include /etc/envoy/crs-4.22/*.conf"
+                      ]
+                }
+            }
+    default_directive: "waf1"
+[...]
+```
 
 ## Compilation
 
@@ -280,7 +368,8 @@ You can enable this behavior through the configuration. For example:
                     use_libinjection: true
 ```
 
-Setting these configuration options in the normal build will have no effect on coraza.
+> [!NOTE]
+> Setting these configuration options in the normal build will have no effect on coraza.
 
 ## Testing
 

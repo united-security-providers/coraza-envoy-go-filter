@@ -32,7 +32,7 @@ echo "#                  E2E BASE TESTS                  #"
 echo "####################################################"
 
 step=1
-total_steps=28
+total_steps=32
 
 ## Testing that basic coraza phases are working
 
@@ -192,6 +192,29 @@ check_status "${envoy_url_unfiltered}/health/vhost-admin" 403 -H 'Host: foo.vhos
 ((step+=1))
 echo "[${step}/${total_steps}] Testing per virtual host true positive request body"
 check_status "${envoy_url_unfiltered}/health" 403 -X POST -H 'Host: foo.vhost-example.com' -H 'Content-Type: application/x-www-form-urlencoded' --data "evilpayload_vhost"
+
+
+## Testing loading of filesystem rules
+# Test valid request
+((step+=1))
+echo "[${step}/${total_steps}] (load from filesystem) Testing true negative request"
+check_status "${envoy_url_unfiltered}/anything" 200 -H 'Host: custom.example.com'
+
+# Test blocked request
+((step+=1))
+echo "[${step}/${total_steps}] (load from filesystem) Testing rule from loaded file blocks"
+check_status "${envoy_url_unfiltered}/evil" 403 -H 'Host: custom.example.com'
+
+# Test second imported rule file
+((step+=1))
+echo "[${step}/${total_steps}] (load from filesystem)  Testing rule from loaded file blocks 2"
+check_status "${envoy_url_unfiltered}/dangerous" 403 -H 'Host: custom.example.com'
+
+# Test other rules are not active
+# /admin doesn't exist -> 404
+((step+=1))
+echo "[${step}/${total_steps}] (load from filesystem) Testing other waf does not block"
+check_status "${envoy_url_unfiltered}/admin" 404 -H 'Host: custom.example.com'
 
 
 echo "####################################################"

@@ -29,13 +29,13 @@ static_resources:
                                 {
                                   "waf1":{
                                         "simple_directives":[
-                                              "Include @coraza-lts",
-                                              "Include @crs-setup-lts",
+                                              "Include @coraza-setup",
+                                              "Include @crs-setup",
                                               "SecDefaultAction \"phase:3,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:4,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                               "SecDebugLogLevel 3",
-                                              "Include @owasp_crs_lts/*.conf",
+                                              "Include @owasp_crs/*.conf",
                                               "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"",
                                               "SecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\"",
                                               "SecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\"",
@@ -44,13 +44,13 @@ static_resources:
                                     },
                                   "waf2":{
                                         "simple_directives":[
-                                              "Include @coraza-lts",
-                                              "Include @crs-setup-lts",
+                                              "Include @coraza-setup",
+                                              "Include @crs-setup",
                                               "SecDefaultAction \"phase:3,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:4,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                               "SecDebugLogLevel 3",
-                                              "Include @owasp_crs_lts/*.conf",
+                                              "Include @owasp_crs/*.conf",
                                               "SecResponseBodyLimit 700",
                                               "SecResponseBodyLimitAction ProcessPartial",
                                               "SecRequestBodyInMemoryLimit 40",
@@ -58,19 +58,19 @@ static_resources:
                                               "SecRequestBodyLimitAction ProcessPartial",
                                               "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"",
                                               "SecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\"",
-                                              "SecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\"", 
+                                              "SecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\"",
                                               "SecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                           ]
                                     },
                                   "waf3":{
                                         "simple_directives":[
-                                              "Include @coraza-lts",
-                                              "Include @crs-setup-lts",
+                                              "Include @coraza-setup",
+                                              "Include @crs-setup",
                                               "SecDefaultAction \"phase:3,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:4,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                               "SecDebugLogLevel 3",
-                                              "Include @owasp_crs_lts/*.conf",
+                                              "Include @owasp_crs/*.conf",
                                               "SecResponseBodyLimit 70",
                                               "SecResponseBodyLimitAction Reject",
                                               "SecRequestBodyInMemoryLimit 40",
@@ -80,13 +80,13 @@ static_resources:
                                     },
                                   "waf4":{
                                         "simple_directives":[
-                                              "Include @coraza-lts",
-                                              "Include @crs-setup-lts",
+                                              "Include @coraza-setup",
+                                              "Include @crs-setup",
                                               "SecDefaultAction \"phase:3,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:4,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                               "SecDebugLogLevel 3",
-                                              "Include @owasp_crs_lts/*.conf",
+                                              "Include @owasp_crs/*.conf",
                                               "SecResponseBodyAccess Off"
                                           ]
                                     },
@@ -97,14 +97,21 @@ static_resources:
                                     },
                                   "sse-response-body-off":{
                                         "simple_directives":[
-                                              "Include @coraza-lts",
-                                              "Include @crs-setup-lts",
+                                              "Include @coraza-setup",
+                                              "Include @crs-setup",
                                               "SecDefaultAction \"phase:3,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:4,log,auditlog,pass\"",
                                               "SecDefaultAction \"phase:5,log,auditlog,pass\"",
                                               "SecDebugLogLevel 3",
-                                              "Include @owasp_crs_lts/*.conf",
+                                              "Include @owasp_crs/*.conf",
                                               "SecRule RESPONSE_CONTENT_TYPE \"text/event-stream\" \"id:1001,phase:3,log,allow,ctl:responseBodyAccess=Off\"" 
+                                          ]
+                                    },
+                                  "custom-rules":{
+                                        "simple_directives":[
+                                              "SecRuleEngine On",
+                                              "Include /etc/envoy/custom_setup.conf",
+                                              "Include /etc/envoy/custom_rules/*.conf"
                                           ]
                                     }
                                 }
@@ -116,7 +123,8 @@ static_resources:
                                   "baz.example.com":"waf3",
                                   "body-off.example.com":"waf4",
                                   "no-waf.example.com":"no-waf",
-                                  "sse.example.com":"sse-response-body-off"
+                                  "sse.example.com":"sse-response-body-off",
+                                  "custom.example.com":"custom-rules"
                                 }
                   - name: envoy.filters.http.router
                     typed_config:
@@ -149,9 +157,9 @@ static_resources:
                                         {
                                           "route-level-waf":{
                                                 "simple_directives":[
-                                                      "Include @coraza-lts",
-                                                      "Include @crs-setup-lts",
-                                                      "Include @owasp_crs_lts/*.conf",
+                                                      "Include @coraza-setup",
+                                                      "Include @crs-setup",
+                                                      "Include @owasp_crs/*.conf",
                                                       "SecRule REQUEST_URI \"@contains /other-admin\" \"id:301,phase:1,t:lowercase,deny\"",
                                                       "SecRule REQUEST_BODY \"@rx evilpayload\" \"id:102,phase:2,t:lowercase,deny\""
                                                 ]
@@ -183,9 +191,9 @@ static_resources:
                                         {
                                           "vhost-level-waf":{
                                                 "simple_directives":[
-                                                      "Include @coraza-lts",
-                                                      "Include @crs-setup-lts",
-                                                      "Include @owasp_crs_lts/*.conf",
+                                                      "Include @coraza-setup",
+                                                      "Include @crs-setup",
+                                                      "Include @owasp_crs/*.conf",
                                                       "SecRule REQUEST_URI \"@contains /vhost-admin\" \"id:301,phase:1,t:lowercase,deny\"",
                                                       "SecRule REQUEST_BODY \"@rx evilpayload_vhost\" \"id:102,phase:2,t:lowercase,deny\""
                                                 ]

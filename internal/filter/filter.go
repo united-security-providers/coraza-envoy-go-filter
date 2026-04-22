@@ -279,11 +279,11 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	if endStream {
 		err := f.validateResponseBody(logger)
 		if err != nil {
+			logger.Error("response validation failed", "error", err.Error())
 			err := buffer.Set(bytes.Repeat([]byte("\x00"), buffer.Len()))
 			if err != nil {
 				logger.Error("failed to write into internal buffer", "error", err)
 			}
-			logger.Error("response validation failed", "error", err.Error())
 			return api.LocalReply
 		}
 	}
