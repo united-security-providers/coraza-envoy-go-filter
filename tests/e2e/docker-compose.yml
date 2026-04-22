@@ -30,8 +30,8 @@ services:
       - /etc/envoy/logs/envoy.log
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ./my_custom_setup.conf:/etc/envoy/my_custom_setup.conf
-      - ./my_custom_rules:/etc/envoy/my_custom_rules
+      - ./my_custom_setup.conf:/etc/envoy/custom_setup.conf
+      - ./my_custom_rules:/etc/envoy/custom_rules
       - ../../build/coraza-waf.so:/etc/envoy/coraza-waf.so
       - ./logs:/etc/envoy/logs:rw
     ports:
