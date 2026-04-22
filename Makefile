@@ -31,16 +31,8 @@ e2e: clean build buildTestEnvoy
 	docker compose --file tests/e2e/docker-compose.yml down; \
 	exit $$EXIT_CODE
 
-ftw: ftw-lts ftw-latest
-
-ftw-lts: clean build buildTestEnvoy
-	docker compose --file tests/ftw/docker-compose.yml --env-file tests/ftw/.env.lts up --build ftw-crs --exit-code-from ftw-crs; \
-	EXIT_CODE=$$?; \
-	docker compose --file tests/ftw/docker-compose.yml down; \
-	exit $$EXIT_CODE
-
-ftw-latest: clean build buildTestEnvoy
-	docker compose --file tests/ftw/docker-compose.yml --env-file tests/ftw/.env.latest up --build ftw-crs --exit-code-from ftw-crs; \
+ftw: clean build buildTestEnvoy
+	docker compose --file tests/ftw/docker-compose.yml up --build ftw-crs --exit-code-from ftw-crs; \
 	EXIT_CODE=$$?; \
 	docker compose --file tests/ftw/docker-compose.yml down; \
 	exit $$EXIT_CODE
