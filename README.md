@@ -233,6 +233,98 @@ If you want to run the ftw test suite, the configuration files are included in t
 * [@crs-ftw-latest](./internal/config/coreruleset/lts/crs-ftw.conf): configures latest rule engine for ftw tests
 * [@coraza-ftw-latest](./internal/config/coreruleset/latest/coraza-ftw.conf): configures coraza for ftw tests
 
+### Using custom rules or load a different CRS version
+
+Additionally to the compiled in CRS, filter supports loading rules from filesystem.
+This can be useful to load custom rules, blocklists or another CRS version.
+
+#### Custom Rule example
+For example to load a file myrule.conf, we can first mount it into the container
+```bash
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./myrule.conf:/etc/envoy/myrule.conf ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+(if you run encoy directly this is of course not needed, simply put it somewhere on the filesystem)
+
+And in the envoy config we can include the file:
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+              "waf1":{
+                    "simple_directives":[
+                            "Include @coraza-latest",
+                            "SecDebugLogLevel 9",
+                            "SecRuleEngine On",
+                            "Include @crs-setup-latest",
+                            "Include @owasp_crs_latest/*.conf",
+                            "Include /etc/envoy/myrule.conf
+                      ]
+                }
+            }
+    default_directive: "waf1"
+[...]
+```
+*Note the missing @, it means "try to load from filesystem"*
+
+#### Blocklist example
+The following example shows how to mount and use blocklist.txt:
+```bash
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./blocklist.txt:/etc/envoy/blocklist.txt ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+And in the envoy config add the rule:
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+              "waf1":{
+                    "simple_directives":[
+                            "Include @coraza-latest",
+                            "SecDebugLogLevel 9",
+                            "SecRuleEngine On",
+                            "Include @crs-setup-latest",
+                            "Include @owasp_crs_latest/*.conf",
+                            "SecRule REMOTE_ADDR \"@ipMatchFromFile /etc/envoy/blocklist.txt\" \"id:200003,phase:1,deny,status:403,msg:'IP Blocked by Blocklist'\"
+                      ]
+                }
+            }
+    default_directive: "waf1"
+[...]
+```
+
+#### Loading another CRS version example
+
+Example loading CRS 4.22 (assuming you have the rules locally): 
+```bash
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./cureruleset-4.22:/etc/envoy/crs-4.22  ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+And in the envoy config load the ruleset:
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+              "waf1":{
+                    "simple_directives":[
+                            "Include @coraza-latest",
+                            "SecDebugLogLevel 9",
+                            "SecRuleEngine On",
+                            "Include /etc/envoy/crs-4.22/crs-setup.conf.example",
+                            "Include /etc/envoy/crs-4.22/*.conf"
+                      ]
+                }
+            }
+    default_directive: "waf1"
+[...]
+```
+
 ## Compilation
 
 See [Makefile](./Makefile) for all targets.
