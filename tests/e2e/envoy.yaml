@@ -110,8 +110,8 @@ static_resources:
                                   "custom-rules":{
                                         "simple_directives":[
                                               "SecRuleEngine On",
-                                              "Include /etc/envoy/my_custom_setup.conf",
-                                              "Include /etc/envoy/my_custom_rules/*.conf"
+                                              "Include /etc/envoy/custom_setup.conf",
+                                              "Include /etc/envoy/custom_rules/*.conf"
                                           ]
                                     }
                                 }
