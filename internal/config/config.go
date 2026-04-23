@@ -150,7 +150,8 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any,
 }
 
 func (p Parser) Merge(parentConfig any, childConfig any) any {
-	panic("TODO")
+	// simply return the child config
+	return childConfig
 }
 
 func errorCallback(error ctypes.MatchedRule) {

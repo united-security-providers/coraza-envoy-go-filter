@@ -57,7 +57,7 @@ static_resources:
                                               "SecRequestBodyLimit 40",
                                               "SecRequestBodyLimitAction ProcessPartial",
                                               "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\"",
-                                              "SecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\"", 
+                                              "SecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\"",
                                               "SecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\"",
                                               "SecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
                                           ]
@@ -133,18 +133,73 @@ static_resources:
                   name: local_route
                   virtual_hosts:
                     - name: local_service
-                      domains: ["*"]
+                      domains: ["*.example.com"]
                       routes:
                         - match:
                             prefix: "/events"
                           route:
                             cluster: sse_service
                         - match:
+                            prefix: "/other-waf"
+                          route:
+                            host_rewrite_literal: 0.0.0.0:8080
+                            cluster: service_httpbin
+                          # per route config
+                          typed_per_filter_config:
+                            envoy.filters.http.golang:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.ConfigsPerRoute
+                              plugins_config:
+                                coraza-waf:
+                                  config:
+                                    "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                                    value:
+                                      directives: |
+                                        {
+                                          "route-level-waf":{
+                                                "simple_directives":[
+                                                      "Include @coraza-setup",
+                                                      "Include @crs-setup",
+                                                      "Include @owasp_crs/*.conf",
+                                                      "SecRule REQUEST_URI \"@contains /other-admin\" \"id:301,phase:1,t:lowercase,deny\"",
+                                                      "SecRule REQUEST_BODY \"@rx evilpayload\" \"id:102,phase:2,t:lowercase,deny\""
+                                                ]
+                                            }
+                                        }
+                                      default_directive: "route-level-waf"
+                        - match:
                             prefix: "/"
                           route:
                             host_rewrite_literal: 0.0.0.0:8080
                             cluster: service_httpbin
-
+                    # per virtual host config
+                    - name: external_service
+                      domains: [ "*.vhost-example.com" ]
+                      routes:
+                        - match:
+                            prefix: "/"
+                          route:
+                            cluster: sse_service
+                          typed_per_filter_config:
+                            envoy.filters.http.golang:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.ConfigsPerRoute
+                              plugins_config:
+                                coraza-waf:
+                                  config:
+                                    "@type": type.googleapis.com/xds.type.v3.TypedStruct
+                                    value:
+                                      directives: |
+                                        {
+                                          "vhost-level-waf":{
+                                                "simple_directives":[
+                                                      "Include @coraza-setup",
+                                                      "Include @crs-setup",
+                                                      "Include @owasp_crs/*.conf",
+                                                      "SecRule REQUEST_URI \"@contains /vhost-admin\" \"id:301,phase:1,t:lowercase,deny\"",
+                                                      "SecRule REQUEST_BODY \"@rx evilpayload_vhost\" \"id:102,phase:2,t:lowercase,deny\""
+                                                ]
+                                            }
+                                        }
+                                      default_directive: "vhost-level-waf"
   clusters:
     - name: service_httpbin
       type: LOGICAL_DNS
