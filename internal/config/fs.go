@@ -8,6 +8,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"os"
 	"strings"
 )
 
@@ -25,22 +26,14 @@ func init() {
 	root = &rulesFS{
 		crsFS,
 		map[string]string{
-			// LTS
-			"@coraza-lts":    "lts/coraza.conf",    // configures rule engine for coraza
-			"@crs-setup-lts": "lts/crs-setup.conf", // configures coreruleset
-			// LATEST
-			"@coraza-latest":    "latest/coraza.conf",    // configures rule engine for coraza
-			"@crs-setup-latest": "latest/crs-setup.conf", // configures coreruleset
-			// FTW
+			"@coraza-setup": "coraza.conf",    // configures rule engine for coraza
+			"@crs-setup":    "crs-setup.conf", // configures coreruleset
 			// TODO: remove these from release-builds?  (via buildflag?)
-			"@crs-ftw-lts":       "lts/crs-ftw.conf",       // configures lts coreruleset for ftw tests
-			"@coraza-ftw-lts":    "lts/coraza-ftw.conf",    // configures coraza for ftw tests
-			"@crs-ftw-latest":    "latest/crs-ftw.conf",    // configures latest coreruleset for ftw tests
-			"@coraza-ftw-latest": "latest/coraza-ftw.conf", // configures coraza for ftw tests
+			"@crs-ftw":    "crs-ftw.conf",    // configures coreruleset for ftw tests
+			"@coraza-ftw": "coraza-ftw.conf", // configures coraza for ftw tests
 		},
 		map[string]string{
-			"@owasp_crs_lts":    "lts/rules",    // lts rules
-			"@owasp_crs_latest": "latest/rules", // latest rules
+			"@owasp_crs": "rules", // crs rules
 		},
 	}
 }
@@ -52,10 +45,17 @@ type rulesFS struct {
 }
 
 func (r rulesFS) Open(name string) (fs.File, error) {
-	return r.fs.Open(r.mapPath(name))
+	if strings.HasPrefix(name, "@") {
+		return r.fs.Open(r.mapPath(name))
+	}
+	return os.Open(name)
+
 }
 
 func (r rulesFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	if !strings.HasPrefix(name, "@") {
+		return os.ReadDir(name)
+	}
 	for a, dst := range r.dirsMapping {
 		if a == name {
 			return fs.ReadDir(r.fs, dst)
@@ -70,7 +70,10 @@ func (r rulesFS) ReadDir(name string) ([]fs.DirEntry, error) {
 }
 
 func (r rulesFS) ReadFile(name string) ([]byte, error) {
-	return fs.ReadFile(r.fs, r.mapPath(name))
+	if strings.HasPrefix(name, "@") {
+		return fs.ReadFile(r.fs, r.mapPath(name))
+	}
+	return os.ReadFile(name)
 }
 
 func (r rulesFS) mapPath(p string) string {
