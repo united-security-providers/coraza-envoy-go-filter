@@ -379,15 +379,7 @@ func TestE2ECRSSQLiDetection(t *testing.T) {
 
 func TestE2ECRSTruePositiveUserAgent(t *testing.T) {
 	backendLogs.Reset()
-	req, err := http.NewRequest(http.MethodGet, envoyEndpoint+"/anything", nil)
-	require.NoError(t, err)
-	req.Header.Set("User-Agent", "gobuster/3.2.0 (X11; U; Linux i686; en-US; rv:1.7)")
-	req.Header.Set("Host", "foo.example.com")
-	req.Header.Set("Accept", "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5")
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-	require.Equal(t, http.StatusForbidden, resp.StatusCode)
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything", http.MethodGet, http.StatusForbidden, true, "", "User-Agent", "gobuster/3.2.0 (X11; U; Linux i686; en-US; rv:1.7)", "Accept", "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5")
 	checkNotInLogs(t, http.MethodGet, "/anything")
 }
 
