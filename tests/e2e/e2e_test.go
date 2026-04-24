@@ -223,7 +223,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func checkRequest(t *testing.T, host string, url string, method string, expectedStatus int, expectEmptyBody *bool, data string, additionalHeaders ...string) (int, string) {
+func checkRequest(t *testing.T, host string, url string, method string, expectedStatus int, expectEmptyBody bool, data string, additionalHeaders ...string) (int, string) {
 	client := http.Client{}
 	var req *http.Request
 	var err error
@@ -251,12 +251,10 @@ func checkRequest(t *testing.T, host string, url string, method string, expected
 
 	require.Equal(t, expectedStatus, resp.StatusCode)
 
-	if expectEmptyBody != nil {
-		if *expectEmptyBody {
-			require.Empty(t, string(body))
-		} else {
-			require.NotEmpty(t, string(body))
-		}
+	if expectEmptyBody {
+		require.Empty(t, string(body))
+	} else {
+		require.NotEmpty(t, string(body))
 	}
 
 	return resp.StatusCode, string(body)
@@ -278,120 +276,104 @@ func checkNotInLogs(t *testing.T, method string, url string) {
 }
 
 func TestE2EBasicReachability(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything?test=backend-available", http.MethodGet, http.StatusOK, &empty, "")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything?test=backend-available", http.MethodGet, http.StatusOK, false, "")
 	checkInLogs(t, http.StatusOK, http.MethodGet, "/anything\\?test=backend-available")
 }
 
 // Testing request/response phases
 func TestE2ETrueNegativeRequestHeaderPhase(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything?arg=arg_1", http.MethodGet, http.StatusOK, &empty, "")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything?arg=arg_1", http.MethodGet, http.StatusOK, false, "")
 	checkInLogs(t, http.StatusOK, http.MethodGet, "/anything\\?arg=arg_1")
 }
 
 func TestE2ETruePositiveRequestHeaderPhase(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/admin", http.MethodGet, http.StatusForbidden, &empty, "")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/admin", http.MethodGet, http.StatusForbidden, true, "")
 	checkNotInLogs(t, http.MethodGet, "/admin")
 }
 
 func TestE2ETrueNegativeRequestBodyPhase(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusOK, &empty, "This is a valid payload")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusOK, false, "This is a valid payload")
 	checkInLogs(t, http.StatusOK, http.MethodPost, "/post")
 }
 
 func TestE2ETruePositiveRequestBodyPhase(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, &empty, "maliciouspayload")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, true, "maliciouspayload")
 	checkNotInLogs(t, http.MethodPost, "/post")
 }
 
 func TestE2ETruePositiveRequestBodyInsideLimitProcessPartial(t *testing.T) {
 	data := fmt.Sprintf("prefix is 20 bytes %s suffix is 20 bytes", "maliciouspayload")
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "bar.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, &empty, data)
+	checkRequest(t, "bar.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, true, data)
 	checkNotInLogs(t, http.MethodPost, "/post")
 }
 
 func TestE2ETruePositiveRequestBodyOutsideLimitProcessPartial(t *testing.T) {
 	data := fmt.Sprintf("this very long prefix is just a little more than 40 bytes %s suffix is 20 bytes", "maliciouspayload")
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "bar.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusOK, &empty, data)
+	checkRequest(t, "bar.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusOK, false, data)
 	checkInLogs(t, http.StatusOK, http.MethodPost, "/post")
 }
 
 func TestE2ERequestBodyLimitReject(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "baz.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusRequestEntityTooLarge, &empty, "this payload is just a little more than 40 bytes")
+	checkRequest(t, "baz.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusRequestEntityTooLarge, true, "this payload is just a little more than 40 bytes")
 	checkNotInLogs(t, http.MethodPost, "/post")
 }
 
 func TestE2ETruePositiveResponseHeaderPhase(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/status/406", http.MethodGet, http.StatusForbidden, &empty, "")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/status/406", http.MethodGet, http.StatusForbidden, true, "")
 	//httpbin sends the status code so we expect the request in the logs
 	checkInLogs(t, http.StatusNotAcceptable, http.MethodGet, "/status/406")
 }
 
 func TestE2ETrueNegativeResponseBodyPhase(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusOK, &empty, "This is a valid payload")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusOK, false, "This is a valid payload")
 	checkInLogs(t, http.StatusOK, http.MethodPost, "/post")
 }
 
 func TestE2ETruePositiveResponseBodyPhase(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, &empty, "responsebodycode")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, true, "responsebodycode")
 	checkInLogs(t, http.StatusOK, http.MethodPost, "/post")
 }
 
 func TestE2ETruePositiveResponseBodyInsideLimitProcessPartial(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "bar.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, &empty, "responsebodycode")
+	checkRequest(t, "bar.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, true, "responsebodycode")
 	checkInLogs(t, http.StatusOK, http.MethodPost, "/post")
 }
 
 func TestE2ETruePositiveResponseBodyOutsideLimitProcessPartial(t *testing.T) {
 	data := fmt.Sprintf("this very very very very very very long prefix ensures that the payload is outside the parseable response because it is 105 bytes long%s", "responsebodycode")
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "bar.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusOK, &empty, data, "Content-Type", "application/x-www-form-urlencoded")
+	checkRequest(t, "bar.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusOK, false, data, "Content-Type", "application/x-www-form-urlencoded")
 	checkInLogs(t, http.StatusOK, http.MethodPost, "/post")
 }
 
 func TestE2EResponseBodyLimitReject(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "baz.example.com", envoyEndpoint+"/bytes/80", http.MethodGet, http.StatusInternalServerError, &empty, "")
+	checkRequest(t, "baz.example.com", envoyEndpoint+"/bytes/80", http.MethodGet, http.StatusInternalServerError, true, "")
 	checkInLogs(t, http.StatusOK, http.MethodGet, "/bytes/80")
 }
 
 // Testing some CRS rules
 func TestE2ECRSXSSDetection(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything?arg=<script>alert(0)</script>", http.MethodGet, http.StatusForbidden, &empty, "")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything?arg=<script>alert(0)</script>", http.MethodGet, http.StatusForbidden, true, "")
 	checkNotInLogs(t, http.MethodGet, "/anything")
 }
 
 func TestE2ECRSSQLiDetection(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, &empty, "1%27%20ORDER%20BY%203--%2B")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/post", http.MethodPost, http.StatusForbidden, true, "1%27%20ORDER%20BY%203--%2B")
 	checkNotInLogs(t, http.MethodPost, "/post")
 }
 
@@ -410,93 +392,80 @@ func TestE2ECRSTruePositiveUserAgent(t *testing.T) {
 }
 
 func TestE2ECRSTrueNegativeUserAgent(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything", http.MethodGet, http.StatusOK, &empty, "", "User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/anything", http.MethodGet, http.StatusOK, false, "", "User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
 	checkInLogs(t, http.StatusOK, http.MethodGet, "/anything")
 }
 
 // Testing per route/virtual host configurations
 func TestE2EPerRouteConfigTrueNegative(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/other-waf", http.MethodGet, http.StatusNotFound, &empty, "")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/other-waf", http.MethodGet, http.StatusNotFound, false, "")
 	checkInLogs(t, http.StatusNotFound, http.MethodGet, "/other-waf")
 }
 
 func TestE2EPerRouteConfigOtherWafNotBlock(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/other-waf/admin", http.MethodGet, http.StatusNotFound, &empty, "")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/other-waf/admin", http.MethodGet, http.StatusNotFound, false, "")
 	checkInLogs(t, http.StatusNotFound, http.MethodGet, "/other-waf/admin")
 }
 
 func TestE2EPerRouteConfigTruePositiveRequestHeaderPhase(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/other-waf/other-admin", http.MethodGet, http.StatusForbidden, &empty, "")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/other-waf/other-admin", http.MethodGet, http.StatusForbidden, true, "")
 	checkNotInLogs(t, http.MethodGet, "/other-waf/other-admin")
 }
 
 func TestE2EPerRouteTruePositiveRequestBodyPhase(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.example.com", envoyEndpoint+"/other-waf", http.MethodPost, http.StatusForbidden, &empty, "evilpayload")
+	checkRequest(t, "foo.example.com", envoyEndpoint+"/other-waf", http.MethodPost, http.StatusForbidden, true, "evilpayload")
 	checkNotInLogs(t, http.MethodPost, "/other-waf")
 }
 
 func TestE2EPerVirtualHostConfigTrueNegative(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.vhost-example.com", envoyEndpoint+"/health", http.MethodGet, http.StatusOK, &empty, "")
+	checkRequest(t, "foo.vhost-example.com", envoyEndpoint+"/health", http.MethodGet, http.StatusOK, false, "")
 	// uses sse-server as backend so we cant expect logs
 }
 
 func TestE2EPerVirtualHostOtherWafNotBlock(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "foo.vhost-example.com", envoyEndpoint+"/health/admin", http.MethodGet, http.StatusNotFound, &empty, "")
+	checkRequest(t, "foo.vhost-example.com", envoyEndpoint+"/health/admin", http.MethodGet, http.StatusNotFound, false, "")
 	// uses sse-server as backend so we cant expect logs
 }
 
 func TestE2EPerVirtualHostConfigTruePositiveRequestHeaderPhase(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.vhost-example.com", envoyEndpoint+"/health/vhost-admin", http.MethodGet, http.StatusForbidden, &empty, "")
+	checkRequest(t, "foo.vhost-example.com", envoyEndpoint+"/health/vhost-admin", http.MethodGet, http.StatusForbidden, true, "")
 	checkNotInLogs(t, http.MethodGet, "/health/vhost-admin")
 }
 
 func TestE2EPerVirtualHostTruePositiveRequestBodyPhase(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "foo.vhost-example.com", envoyEndpoint+"/health", http.MethodPost, http.StatusForbidden, &empty, "evilpayload_vhost")
+	checkRequest(t, "foo.vhost-example.com", envoyEndpoint+"/health", http.MethodPost, http.StatusForbidden, true, "evilpayload_vhost")
 	checkNotInLogs(t, http.MethodPost, "/health")
 }
 
 func TestE2EFilesystemRuleTrueNegative(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "custom.example.com", envoyEndpoint+"/anything", http.MethodGet, http.StatusOK, &empty, "")
+	checkRequest(t, "custom.example.com", envoyEndpoint+"/anything", http.MethodGet, http.StatusOK, false, "")
 	checkInLogs(t, http.StatusOK, http.MethodGet, "/anything")
 }
 
 func TestE2EFilesystemRuleTruePositive(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "custom.example.com", envoyEndpoint+"/evil", http.MethodGet, http.StatusForbidden, &empty, "")
+	checkRequest(t, "custom.example.com", envoyEndpoint+"/evil", http.MethodGet, http.StatusForbidden, true, "")
 	checkNotInLogs(t, http.MethodGet, "/evil")
 }
 
 func TestE2EFilesystemRuleTruePositiveFromOtherFile(t *testing.T) {
-	empty := true
 	backendLogs.Reset()
-	checkRequest(t, "custom.example.com", envoyEndpoint+"/dangerous", http.MethodGet, http.StatusForbidden, &empty, "")
+	checkRequest(t, "custom.example.com", envoyEndpoint+"/dangerous", http.MethodGet, http.StatusForbidden, true, "")
 	checkNotInLogs(t, http.MethodGet, "/dangerous")
 }
 
 func TestE2EFilesystemRuleOtherWafNotBlock(t *testing.T) {
-	empty := false
 	backendLogs.Reset()
-	checkRequest(t, "custom.example.com", envoyEndpoint+"/admin", http.MethodGet, http.StatusNotFound, &empty, "")
+	checkRequest(t, "custom.example.com", envoyEndpoint+"/admin", http.MethodGet, http.StatusNotFound, false, "")
 	checkInLogs(t, http.StatusNotFound, http.MethodGet, "/admin")
 }
