@@ -23,7 +23,7 @@ type SSEResult struct {
 
 func readSSEEvents(host string, url string, expectedCount int, timeout time.Duration, additionalHeaders ...string) ([]SSEResult, error) {
 	start := time.Now()
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +57,6 @@ func readSSEEvents(host string, url string, expectedCount int, timeout time.Dura
 			break
 		}
 	}
-	fmt.Println("SSE results:", len(results))
-	fmt.Println("response code:", resp.StatusCode)
 	return results, scanner.Err()
 }
 
@@ -71,8 +69,6 @@ func verifySSETiming(results []SSEResult, tolerance time.Duration) error {
 		}
 		if diff > tolerance {
 			return fmt.Errorf("event %d arrived at %v, expected %v +/- %v", r.EventNumber, r.Elapsed, expected, tolerance)
-		} else {
-			fmt.Printf("event %d arrived at %v, this is OK!\n", r.EventNumber, r.Elapsed)
 		}
 	}
 	return nil
