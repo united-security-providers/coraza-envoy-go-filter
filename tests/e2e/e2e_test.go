@@ -177,7 +177,7 @@ func setupEnvironment(enableLogs bool) (string, func(), error) {
 		sseServer.Terminate(ctx)
 		envoy.Terminate(ctx)
 		net.Remove(ctx)
-		return "", nil, fmt.Errorf("get envoy endpoint: %w", err)
+		return "", nil, fmt.Errorf("coult not get envoy endpoint: %w", err)
 	}
 
 	cleanup := func() {
