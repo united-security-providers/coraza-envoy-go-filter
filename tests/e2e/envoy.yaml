@@ -142,7 +142,6 @@ static_resources:
                         - match:
                             prefix: "/other-waf"
                           route:
-                            host_rewrite_literal: 0.0.0.0:8080
                             cluster: service_httpbin
                           # per route config
                           typed_per_filter_config:
@@ -169,7 +168,6 @@ static_resources:
                         - match:
                             prefix: "/"
                           route:
-                            host_rewrite_literal: 0.0.0.0:8080
                             cluster: service_httpbin
                     # per virtual host config
                     - name: external_service
@@ -202,9 +200,8 @@ static_resources:
                                       default_directive: "vhost-level-waf"
   clusters:
     - name: service_httpbin
-      type: LOGICAL_DNS
-      # Comment out the following line to test on v6 networks
-      dns_lookup_family: V4_ONLY
+      type: STRICT_DNS
+      connect_timeout: 1s
       load_assignment:
         cluster_name: service_httpbin
         endpoints:
@@ -215,8 +212,8 @@ static_resources:
                       address: httpbin
                       port_value: 8080
     - name: sse_service
-      type: LOGICAL_DNS
-      dns_lookup_family: V4_ONLY
+      type: STRICT_DNS
+      connect_timeout: 1s
       load_assignment:
         cluster_name: sse_service
         endpoints:

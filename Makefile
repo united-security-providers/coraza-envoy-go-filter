@@ -16,6 +16,10 @@ performanceBuild:
 buildTestEnvoy:
 	docker build --target envoy . -t coraza-waf-envoy
 
+# Build SSE server image for e2e tests
+buildTestSSE:
+	docker build -t e2e-sse-server tests/e2e/sse-server/
+
 start-watcher: clean build buildTestEnvoy
 	docker compose down
 	docker compose up -d
@@ -30,6 +34,11 @@ e2e: clean build buildTestEnvoy
 	EXIT_CODE=$$?; \
 	docker compose --file tests/e2e/docker-compose.yml down; \
 	exit $$EXIT_CODE
+
+# Testcontainers-based e2e tests
+test: build buildTestEnvoy buildTestSSE
+	go test -v -count=1 ./tests/e2e/...
+
 
 ftw: clean build buildTestEnvoy
 	docker compose --file tests/ftw/docker-compose.yml up --build ftw-crs --exit-code-from ftw-crs; \
