@@ -14,3 +14,9 @@ linters:
       - path: tests/e2e/sse-server/*
         linters:
           - errcheck
+      - path: tests/e2e/e2e_test.go
+        linters:
+          - errcheck
+      - path: tests/e2e/e2e_sse_test.go
+        linters:
+          - errcheck

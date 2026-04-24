@@ -5,4 +5,3 @@ gen
 build/
 tests/ftw/logs
 example/logs
-tests/e2e/logs

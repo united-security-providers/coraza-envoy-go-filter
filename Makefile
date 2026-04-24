@@ -16,6 +16,10 @@ performanceBuild:
 buildTestEnvoy:
 	docker build --target envoy . -t coraza-waf-envoy
 
+# Build SSE server image for e2e tests
+buildTestSSE:
+	docker build -t e2e-sse-server tests/e2e/sse-server/
+
 start-watcher: clean build buildTestEnvoy
 	docker compose down
 	docker compose up -d
@@ -25,11 +29,9 @@ start-watcher: clean build buildTestEnvoy
 		docker compose restart envoy || docker compose up -d envoy; \
 	done
 
-e2e: clean build buildTestEnvoy
-	docker compose --file tests/e2e/docker-compose.yml up --build --abort-on-container-exit tests; \
-	EXIT_CODE=$$?; \
-	docker compose --file tests/e2e/docker-compose.yml down; \
-	exit $$EXIT_CODE
+e2e: clean build buildTestEnvoy buildTestSSE
+	go test -v ./tests/e2e/...
+
 
 ftw: clean build buildTestEnvoy
 	docker compose --file tests/ftw/docker-compose.yml up --build ftw-crs --exit-code-from ftw-crs; \
@@ -39,10 +41,10 @@ ftw: clean build buildTestEnvoy
 
 clean:
 	docker compose down
-	docker compose --file tests/e2e/docker-compose.yml down
 	docker compose --file tests/ftw/docker-compose.yml down
 	docker rmi -f coraza-waf-builder coraza-waf-envoy ftw-ftw-crs e2e-sse-server e2e-tests envoy-coraza
 	rm -rf $(BUILD-DIRECTORY)/*
+	go clean -testcache
 
 lint:
 	go run "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANG-CI-LINT-VERSION)" run
