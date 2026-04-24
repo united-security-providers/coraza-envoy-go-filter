@@ -29,8 +29,7 @@ start-watcher: clean build buildTestEnvoy
 		docker compose restart envoy || docker compose up -d envoy; \
 	done
 
-e2e: build buildTestEnvoy buildTestSSE
-	go clean -testcache
+e2e: clean build buildTestEnvoy buildTestSSE
 	go test -v ./tests/e2e/...
 
 
