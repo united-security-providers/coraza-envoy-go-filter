@@ -168,7 +168,7 @@ func setupEnvironment(enableLogs bool) (string, func(), error) {
 		httpbin.Terminate(ctx)
 		sseServer.Terminate(ctx)
 		net.Remove(ctx)
-		return "", nil, fmt.Errorf("start envoy: %w", err)
+		return "", nil, fmt.Errorf("could not start envoy: %w", err)
 	}
 
 	endpoint, err := envoy.PortEndpoint(ctx, "8081", "http")
