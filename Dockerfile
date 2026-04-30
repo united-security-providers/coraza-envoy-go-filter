@@ -1,6 +1,6 @@
 ARG BUILD_TAGS=coraza.rule.multiphase_evaluation
 
-FROM envoyproxy/envoy:contrib-v1.37.2 AS envoy
+FROM envoyproxy/envoy:contrib-v1.38.0 AS envoy
 ARG BUILD_TAGS
 
 RUN apt update && apt install -y libtool autoconf make libre2-dev curl tar python3 g++
@@ -21,7 +21,7 @@ COPY main.go go.mod go.sum .
 RUN /usr/lib/go-1.23/bin/go build -o coraza-waf.so -buildmode=c-shared -tags=$BUILD_TAGS .
 ENTRYPOINT ["/usr/bin/cp", "/src/coraza-waf.so", "/build"]
 
-FROM envoyproxy/envoy:contrib-v1.37.2 AS envoy-coraza
+FROM envoyproxy/envoy:contrib-v1.38.0 AS envoy-coraza
 COPY --from=build /usr/local/lib/libinjection.so* /usr/local/lib/
 COPY --from=build /src/coraza-waf.so /etc/envoy/coraza-waf.so
 COPY ./example/envoy.docker.yaml /etc/envoy/envoy.yaml
