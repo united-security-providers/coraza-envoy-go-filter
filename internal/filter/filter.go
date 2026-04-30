@@ -314,17 +314,14 @@ func (f *Filter) initializeTx(logger logging.Logger, headerMap api.RequestHeader
 	if ok {
 		wafFound = true
 		waf = f.Config.WafMaps[ruleName]
-	} else if headerMap.Scheme() == "https" && !strings.HasSuffix(host, ":443") {
-		ruleName, ok = f.Config.HostDirectiveMap[host+":443"]
-		if ok {
-			wafFound = true
-			waf = f.Config.WafMaps[ruleName]
-		}
-	} else if headerMap.Scheme() == "http" && !strings.HasSuffix(host, ":80") {
-		ruleName, ok = f.Config.HostDirectiveMap[host+":80"]
-		if ok {
-			wafFound = true
-			waf = f.Config.WafMaps[ruleName]
+	} else {
+		hostWithoutPort, _, err := net.SplitHostPort(host)
+		if err == nil {
+			ruleName, ok = f.Config.HostDirectiveMap[hostWithoutPort]
+			if ok {
+				wafFound = true
+				waf = f.Config.WafMaps[ruleName]
+			}
 		}
 	}
 	if wafFound {
