@@ -64,7 +64,7 @@ plugin_config:
 
 For a complete example Envoy configuration please refer to [envoy.yaml](./example/envoy.yaml).
 
-#### host_directive_map lookup
+### host_directive_map lookup
 
 For each request the filter resolves the directive set as follows:
 
