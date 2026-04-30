@@ -17,26 +17,100 @@ First visit http://localhost:8080 and then http://localhost:8080/alert('xss').
 > [!NOTE]
 > The second request should be blocked and you should see `WAF rule triggered: Javascript method detected` in the container logs.
 
-### Running the filter in an Envoy process
+## Configuration
 
-In order to run the coraza go filter, we need to spin up an envoy configuration including this as the filter config
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `directives` | JSON string | Yes | - | Defines the WAF configurations available to the filter, e.g. one with CRS fully enforced and one with the engine off. It is a JSON object where each key is a WAF name and each value is an object with a `simple_directives` array of SecLang directive strings. |
+| `default_directive` | string | Yes | - | The fallback WAF to use when no host mapping matches. Must be a key defined in `directives`. |
+| `host_directive_map` | JSON string | No | `{}` | Defines how requests are mapped to WAFs. See [matching behaviour](#host_directive_map-lookup) below. |
+| `log_format` | string | No | `text` | Filter log format. Valid values: `text`, `json`. |
+| `use_re2` | boolean | No | `true` | Use the RE2 regex engine. Only has effect in the [performance build](#performance). |
+| `use_libinjection` | boolean | No | `true` | Use libinjection for SQL injection and XSS detection. Only has effect in the [performance build](#performance). |
+
+Example:
 
 ```yaml
-    ...
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+        "waf1": {
+          "simple_directives": [
+            "Include @coraza-lts",
+            "Include @crs-setup-lts",
+            "SecDefaultAction \"phase:3,log,auditlog,pass\"",
+            "SecDefaultAction \"phase:4,log,auditlog,pass\"",
+            "SecDefaultAction \"phase:5,log,auditlog,pass\"",
+            "SecDebugLogLevel 3",
+            "Include @owasp_crs_lts/*.conf"
+          ]
+        },
+        "off": {
+          "simple_directives": [
+            "SecRuleEngine Off"
+          ]
+        }
+      }
+    default_directive: "waf1"
+    host_directive_map: |
+      {
+        "foo.example.com": "waf1",
+        "bar.example.com": "off"
+      }
+    log_format: "text"
+```
 
-    filter_chains:
-      - filters:
-          - name: envoy.filters.network.http_connection_manager
-            typed_config:
-              "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-              stat_prefix: ingress_http
-              http_filters:
-                - name: envoy.filters.http.golang
-                  typed_config:
-                    "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
-                    library_id: coraza-waf
-                    library_path: /etc/envoy/coraza-waf.so
-                    plugin_name: coraza-waf
+For a complete example Envoy configuration please refer to [envoy.yaml](./example/envoy.yaml).
+
+#### host_directive_map lookup
+
+For each request the filter resolves the directive set as follows:
+
+1. **Exact match**: the Host header as received (e.g. `foo.example.com:8443`) is looked up directly.
+2. **Hostname-only match**: if the Host header contains a port and no exact match was found, the port is stripped and the lookup is retried (e.g. `foo.example.com`).
+3. **Default**: if neither lookup matched, `default_directive` is used.
+
+To match traffic arriving on a specific port only, include the port in the host map key (e.g. `"foo.example.com:80": "waf1"`). A key without a port (e.g. `"foo.example.com"`) matches any port not covered by a more specific entry.
+
+### Using CRS
+
+The [Core Rule Set](https://github.com/coreruleset/coreruleset) comes embedded in the extension.
+
+> [!TIP]
+> You can also load a [different CRS version or your own rules from filesystem.](#using-custom-rules-or-load-a-different-crs-version)
+
+Additionally to the rules, configuration files for setting up the rule engine and coraza are embedded as well.
+To include embedded rules and config files, the **@** sign is used when referencing a path.
+
+* [@owasp_crs/*.conf](./internal/config/coreruleset/rules): the CRS rules
+* [@coraza-setup](./internal/config/coreruleset/coraza.conf): configures the rule engine for coraza
+* [@crs-setup](./internal/config/coreruleset/crs-setup.conf): setup coreruleset
+
+Example loading entire coreruleset:
+
+```yaml
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+        "waf1":{
+          "simple_directives":[
+            "Include @coraza-setup",
+            "SecDebugLogLevel 9",
+            "SecRuleEngine On",
+            "Include @crs-setup",
+            "Include @owasp_crs/*.conf"
+          ]
+        }
+      }
+    default_directive: "waf1"
+```
+
+Loading some pieces of the ruleset:
+```yaml
                     plugin_config:
                       "@type": type.googleapis.com/xds.type.v3.TypedStruct
                       value:
@@ -44,33 +118,178 @@ In order to run the coraza go filter, we need to spin up an envoy configuration 
                           {
                                   "waf1":{
                                         "simple_directives":[
-                                              "Include @coraza-lts",
-                                              "Include @crs-setup-lts",
-                                              "SecDefaultAction \"phase:3,log,auditlog,pass\"",
-                                              "SecDefaultAction \"phase:4,log,auditlog,pass\"",
-                                              "SecDefaultAction \"phase:5,log,auditlog,pass\"",
-                                              "SecDebugLogLevel 3",
-                                              "Include @owasp_crs_lts/*.conf",
-                                              "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\" \nSecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\" \nSecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\" \nSecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
+                                                "Include @coraza-setup",
+                                                "SecDebugLogLevel 9",
+                                                "SecRuleEngine On",
+                                                "Include @crs-setup",
+                                                "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
                                           ]
-                                    },
-                                    "off":{
-                                      "simple_directives":[
-                                        "SecRuleEngine Off"
-                                      ]
                                     }
                                 }
                         default_directive: "waf1"
-                        host_directive_map: |
-                          {
-                            "foo.example.com":"waf1",
-                            "bar.example.com":"off"
-                          }
+```
+
+#### Recommendations using CRS with Envoy Go
+
+- In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./src/rules/crs-setup.conf.example)).
+
+#### FTW configuration files
+
+If you want to run the ftw test suite (for example in your ci environment), the configuration files are included in the shared object as well:
+
+* [@crs-ftw](./internal/config/coreruleset/crs-ftw.conf): configures rule engine for ftw tests
+* [@coraza-ftw](./internal/config/coreruleset/coraza-ftw.conf): configures coraza for ftw tests
+
+### Using custom rules or load a different CRS version
+
+Additionally to the compiled in CRS, filter supports loading rules from filesystem.
+This can be useful to load custom rules, blocklists or another CRS version.
+
+#### Custom Rule example
+
+For example to load a file myrule.conf, we can first mount it into the container
+
+```bash
+docker run -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./myrule.conf:/etc/envoy/myrule.conf ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+
+*If you run encoy directly this is of course not needed, simply put it somewhere on the filesystem*
+
+And in the envoy config we can include the file:
+
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+              "waf1":{
+                    "simple_directives":[
+                            "Include @coraza-latest",
+                            "SecDebugLogLevel 9",
+                            "SecRuleEngine On",
+                            "Include @crs-setup-latest",
+                            "Include @owasp_crs_latest/*.conf",
+                            "Include /etc/envoy/myrule.conf"
+                      ]
+                }
+            }
+    default_directive: "waf1"
+[...]
+```
+
+*Note the missing @, it means "try to load from filesystem"*
+
+#### Blocklist example
+
+The following example shows how to mount and use `blocklist.txt`:
+
+```bash
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./blocklist.txt:/etc/envoy/blocklist.txt ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+
+And in the envoy config add the rule:
+
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+        "waf1":{
+          "simple_directives":[
+            "Include @coraza-latest",
+            "SecDebugLogLevel 9",
+            "SecRuleEngine On",
+            "Include @crs-setup-latest",
+            "Include @owasp_crs_latest/*.conf",
+            "SecRule REMOTE_ADDR \"@ipMatchFromFile /etc/envoy/blocklist.txt\" \"id:200003,phase:1,deny,status:403,msg:'IP Blocked by Blocklist'\"
+          ]
+        }
+      }
+    default_directive: "waf1"
+[...]
+```
+
+#### Loading another CRS version example
+
+Example loading CRS 4.22 (assuming you have the rules locally):
+
+```bash
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./cureruleset-4.22:/etc/envoy/crs-4.22  ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+```
+
+And in the envoy config load the ruleset:
+
+```yaml
+[...]
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives: |
+      {
+        "waf1":{
+          "simple_directives":[
+            "Include @coraza-latest",
+            "SecDebugLogLevel 9",
+            "SecRuleEngine On",
+            "Include /etc/envoy/crs-4.22/crs-setup.conf.example",
+            "Include /etc/envoy/crs-4.22/*.conf"
+          ]
+        }
+      }
+    default_directive: "waf1"
+[...]
+```
+
+### Log format
+
+By the dafault the filter writes plain text logs.
+
+The log format can be changed to json using the `log_format` configuraion option:
+
+```yaml
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    log_format: "json"
+    directives: |
+         [ ... ....  ]
+    default_directive: "waf1"
+```
+
+**Note that this setting does not automatically set the AuditLog Engine to JSON**
+
+If an audit log in json is desired, it must be configured with SecLang. For example:
+
+```yaml
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    log_format: "json"
+    directives: |
+      {
+        "waf1":{
+          "simple_directives":[
+            [ ..... ]
+            "SecAuditLog /etc/envoy/logs/audit.log",
+            "SecAuditLogParts ABCFHKZ",
+            "SecAuditEngine RelevantOnly",
+            "SecAuditLogRelevantStatus ^(?:5|4)",
+            "SecAuditLogFormat JSON",
+            [ ..... ]
+          ]
+        },
+      }
+    default_directive: "waf1"
 ```
 
 ### Using with EnvoyGateway
 
-Enable [EnvoyPatchPolicy](https://gateway.envoyproxy.io/docs/tasks/extensibility/envoy-patch-policy/#enable-envoypatchpolicy)
+1. Enable [EnvoyPatchPolicy](https://gateway.envoyproxy.io/docs/tasks/extensibility/envoy-patch-policy/#enable-envoypatchpolicy)
+
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -89,7 +308,8 @@ data:
       enableEnvoyPatchPolicy: true
 ```
 
-Update the EnvoyProxy to use the united-security-providers/envoy-coraza image:
+2. Update the EnvoyProxy to use the united-security-providers/envoy-coraza image:
+
 ```yaml
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -105,7 +325,8 @@ spec:
           image: ghcr.io/united-security-providers/envoy-coraza:v2.0.0
 ```
 
-Enable the plugin with an EnvoyPatchPolicy:
+3. Enable the plugin with an EnvoyPatchPolicy:
+
 ```yaml
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyPatchPolicy
@@ -162,163 +383,6 @@ spec:
                   "foo.example.com":"off",
                   "bar.example.com":"default"
                 }
-```
-
-### Using CRS
-
-The [Core Rule Set](https://github.com/coreruleset/coreruleset) comes embedded in the extension. 
-
-> [!TIP]
-> You can also load a [different CRS version or your own rules from filesystem.](#using-custom-rules-or-load-a-different-crs-version)
-
-Additionally to the rules, configuration files for setting up the rule engine and coraza are embedded as well.
-To include embedded rules and config files, the **@** sign is used when referencing a path. 
-
-* [@owasp_crs/*.conf](./internal/config/coreruleset/rules): the CRS rules
-* [@coraza-setup](./internal/config/coreruleset/coraza.conf): configures the rule engine for coraza
-* [@crs-setup](./internal/config/coreruleset/crs-setup.conf): setup coreruleset
-
-Example loading entire coreruleset:
-```yaml
-                    plugin_config:
-                      "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                      value:
-                        directives: |
-                          {
-                                  "waf1":{
-                                        "simple_directives":[
-                                                "Include @coraza-setup",
-                                                "SecDebugLogLevel 9",
-                                                "SecRuleEngine On",
-                                                "Include @crs-setup",
-                                                "Include @owasp_crs/*.conf"
-                                          ]
-                                    }
-                                }
-                        default_directive: "waf1"
-```
-
-Loading some pieces of the ruleset:
-```yaml
-                    plugin_config:
-                      "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                      value:
-                        directives: |
-                          {
-                                  "waf1":{
-                                        "simple_directives":[
-                                                "Include @coraza-setup",
-                                                "SecDebugLogLevel 9",
-                                                "SecRuleEngine On",
-                                                "Include @crs-setup",
-                                                "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
-                                          ]
-                                    }
-                                }
-                        default_directive: "waf1"
-```
-
-#### Recommendations using CRS with Envoy Go
-
-- In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./src/rules/crs-setup.conf.example)).
-
-#### FTW configuration files
-
-If you want to run the ftw test suite (for example in your ci environment), the configuration files are included in the shared object as well:
-
-* [@crs-ftw](./internal/config/coreruleset/crs-ftw.conf): configures rule engine for ftw tests
-* [@coraza-ftw](./internal/config/coreruleset/coraza-ftw.conf): configures coraza for ftw tests
-
-### Using custom rules or load a different CRS version
-
-Additionally to the compiled in CRS, filter supports loading rules from filesystem.
-This can be useful to load custom rules, blocklists or another CRS version.
-
-#### Custom Rule example
-For example to load a file myrule.conf, we can first mount it into the container
-```bash
-docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./myrule.conf:/etc/envoy/myrule.conf ghcr.io/united-security-providers/envoy-coraza:v2.0.0
-```
-(if you run encoy directly this is of course not needed, simply put it somewhere on the filesystem)
-
-And in the envoy config we can include the file:
-```yaml
-[...]
-plugin_config:
-  "@type": type.googleapis.com/xds.type.v3.TypedStruct
-  value:
-    directives: |
-      {
-              "waf1":{
-                    "simple_directives":[
-                            "Include @coraza-latest",
-                            "SecDebugLogLevel 9",
-                            "SecRuleEngine On",
-                            "Include @crs-setup-latest",
-                            "Include @owasp_crs_latest/*.conf",
-                            "Include /etc/envoy/myrule.conf"
-                      ]
-                }
-            }
-    default_directive: "waf1"
-[...]
-```
-*Note the missing @, it means "try to load from filesystem"*
-
-#### Blocklist example
-The following example shows how to mount and use blocklist.txt:
-```bash
-docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./blocklist.txt:/etc/envoy/blocklist.txt ghcr.io/united-security-providers/envoy-coraza:v2.0.0
-```
-And in the envoy config add the rule:
-```yaml
-[...]
-plugin_config:
-  "@type": type.googleapis.com/xds.type.v3.TypedStruct
-  value:
-    directives: |
-      {
-              "waf1":{
-                    "simple_directives":[
-                            "Include @coraza-latest",
-                            "SecDebugLogLevel 9",
-                            "SecRuleEngine On",
-                            "Include @crs-setup-latest",
-                            "Include @owasp_crs_latest/*.conf",
-                            "SecRule REMOTE_ADDR \"@ipMatchFromFile /etc/envoy/blocklist.txt\" \"id:200003,phase:1,deny,status:403,msg:'IP Blocked by Blocklist'\"
-                      ]
-                }
-            }
-    default_directive: "waf1"
-[...]
-```
-
-#### Loading another CRS version example
-
-Example loading CRS 4.22 (assuming you have the rules locally): 
-```bash
-docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./cureruleset-4.22:/etc/envoy/crs-4.22  ghcr.io/united-security-providers/envoy-coraza:v2.0.0
-```
-And in the envoy config load the ruleset:
-```yaml
-[...]
-plugin_config:
-  "@type": type.googleapis.com/xds.type.v3.TypedStruct
-  value:
-    directives: |
-      {
-              "waf1":{
-                    "simple_directives":[
-                            "Include @coraza-latest",
-                            "SecDebugLogLevel 9",
-                            "SecRuleEngine On",
-                            "Include /etc/envoy/crs-4.22/crs-setup.conf.example",
-                            "Include /etc/envoy/crs-4.22/*.conf"
-                      ]
-                }
-            }
-    default_directive: "waf1"
-[...]
 ```
 
 ## Compilation
@@ -382,6 +446,7 @@ make ftw
 ```
 
 It's also possible to run tests against a specific CRS version:
+
 ```bash
 # run ftw tests against lts CRS
 make ftw-lts
@@ -411,44 +476,4 @@ The following command runs a small set of end to end tests against the filter wi
 
 ```bash
 make e2e
-```
-
-## Log format
-
-By the dafault the filter writes plain text logs.
-The log format can be changed to json using the `log_format` configuraion option:
-```yaml
-                    plugin_config:
-                      "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                      value:
-                        log_format: "json"
-                        directives: |
-                             [ ... ....  ]
-                        default_directive: "waf1"
-```
-
-**Note that this setting does not automatically set the AuditLog Engine to JSON**
-
-If an audit log in json is desired, it must be configured with SecLang. For example:
-```yaml
-
-                      plugin_config:
-                          "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                          value:
-                              log_format: "json"
-                              directives: |
-                                {
-                                  "waf1":{
-                                        "simple_directives":[
-                                              [ ..... ]
-                                              "SecAuditLog /etc/envoy/logs/audit.log",
-                                              "SecAuditLogParts ABCFHKZ",
-                                              "SecAuditEngine RelevantOnly",
-                                              "SecAuditLogRelevantStatus ^(?:5|4)",
-                                              "SecAuditLogFormat JSON",
-                                              [ ..... ]
-                                        ]
-                                    },
-                                }
-                              default_directive: "waf1"
 ```
