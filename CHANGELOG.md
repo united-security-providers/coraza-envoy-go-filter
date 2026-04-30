@@ -11,7 +11,7 @@
 
 ### Changed
 - **Breaking:** Update CRS to version 4.25 ([#81](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/80))([daum3ns](https://github.com/daum3ns))
-- Update envoy to version 1.37.2 ([#79](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/79))([daum3ns](https://github.com/daum3ns))
+- Update envoy to version 1.38.0 ([#101](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/101))([daum3ns](https://github.com/daum3ns)) ([#79](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/79))([daum3ns](https://github.com/daum3ns))
 - Update go to version 1.25.9 ([#77](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/77))([daum3ns](https://github.com/daum3ns))
 - Update coraza to version 3.7.0 ([#71](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/71))([kabbohus](https://github.com/kabbohus)) ([#74](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/74))([kabbohus](https://github.com/kabbohus)) ([#75](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/75))([kabbohus](https://github.com/kabbohus))
 - The Coraza filter now automatically appends the appropriate port (HTTP or HTTPS) to the Host header when no direct match is found in the host directive map. If a match is still not found, it gracefully falls back to the default directive. ([#73](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/73))([kabbohus](https://github.com/kabbohus))
