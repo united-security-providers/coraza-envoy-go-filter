@@ -52,7 +52,7 @@ internal/re2/                   → CGO re2 registration (performance build)
 
 ## Key conventions & quirks
 
-- **Copyright header required**: `Copyright © 2023 Axkea, spacewander` + `Copyright © 2025 United Security Providers AG, Switzerland` + `SPDX-License-Identifier: Apache-2.0`
+- **Copyright header required**: `Copyright © 2025 United Security Providers AG, Switzerland` + `SPDX-License-Identifier: Apache-2.0`
 - **Build tags**: `coraza.rule.multiphase_evaluation,memoize_builders` (default). Performance adds `libinjection_cgo,re2_cgo`.
 - **Import order**: stdlib → third-party → `coraza-waf/internal/...`
 - **No panic** outside the type assertion in `filterFactory()` in `main.go`
