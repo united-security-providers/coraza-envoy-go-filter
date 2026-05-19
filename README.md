@@ -21,9 +21,9 @@ First visit http://localhost:8080 and then http://localhost:8080/alert('xss').
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-| `directives` | JSON string | Yes | - | Defines the WAF configurations available to the filter, e.g. one with CRS fully enforced and one with the engine off. It is a JSON object where each key is a WAF name and each value is an object with a `simple_directives` array of SecLang directive strings. |
+| `directives` | YAML map | Yes | - | Defines the WAF configurations available to the filter, e.g. one with CRS fully enforced and one with the engine off. It is a map where each key is a WAF name and each value is an object with a `simple_directives` list of SecLang directive strings. |
 | `default_directive` | string | Yes | - | The fallback WAF to use when no host mapping matches. Must be a key defined in `directives`. |
-| `host_directive_map` | JSON string | No | `{}` | Defines how requests are mapped to WAFs. See [matching behaviour](#host_directive_map-lookup) below. |
+| `host_directive_map` | YAML map | No | `{}` | Defines how requests are mapped to WAFs. See [matching behaviour](#host_directive_map-lookup) below. |
 | `log_format` | string | No | `text` | Filter log format. Valid values: `text`, `json`. |
 | `use_re2` | boolean | No | `true` | Use the RE2 regex engine. Only has effect in the [performance build](#performance). |
 | `use_libinjection` | boolean | No | `true` | Use libinjection for SQL injection and XSS detection. Only has effect in the [performance build](#performance). |
@@ -34,31 +34,23 @@ Example:
 plugin_config:
   "@type": type.googleapis.com/xds.type.v3.TypedStruct
   value:
-    directives: |
-      {
-        "waf1": {
-          "simple_directives": [
-            "Include @coraza-lts",
-            "Include @crs-setup-lts",
-            "SecDefaultAction \"phase:3,log,auditlog,pass\"",
-            "SecDefaultAction \"phase:4,log,auditlog,pass\"",
-            "SecDefaultAction \"phase:5,log,auditlog,pass\"",
-            "SecDebugLogLevel 3",
-            "Include @owasp_crs_lts/*.conf"
-          ]
-        },
-        "off": {
-          "simple_directives": [
-            "SecRuleEngine Off"
-          ]
-        }
-      }
+    directives:
+      waf1:
+        simple_directives:
+          - "Include @coraza-lts"
+          - "Include @crs-setup-lts"
+          - "SecDefaultAction \"phase:3,log,auditlog,pass\""
+          - "SecDefaultAction \"phase:4,log,auditlog,pass\""
+          - "SecDefaultAction \"phase:5,log,auditlog,pass\""
+          - "SecDebugLogLevel 3"
+          - "Include @owasp_crs_lts/*.conf"
+      off:
+        simple_directives:
+          - "SecRuleEngine Off"
     default_directive: "waf1"
-    host_directive_map: |
-      {
-        "foo.example.com": "waf1",
-        "bar.example.com": "off"
-      }
+    host_directive_map:
+      "foo.example.com": "waf1"
+      "bar.example.com": "off"
     log_format: "text"
 ```
 
@@ -94,18 +86,14 @@ Example loading entire coreruleset:
 plugin_config:
   "@type": type.googleapis.com/xds.type.v3.TypedStruct
   value:
-    directives: |
-      {
-        "waf1":{
-          "simple_directives":[
-            "Include @coraza-setup",
-            "SecDebugLogLevel 9",
-            "SecRuleEngine On",
-            "Include @crs-setup",
-            "Include @owasp_crs/*.conf"
-          ]
-        }
-      }
+    directives:
+      waf1:
+        simple_directives:
+          - "Include @coraza-setup"
+          - "SecDebugLogLevel 9"
+          - "SecRuleEngine On"
+          - "Include @crs-setup"
+          - "Include @owasp_crs/*.conf"
     default_directive: "waf1"
 ```
 
@@ -114,18 +102,14 @@ Loading some pieces of the ruleset:
                     plugin_config:
                       "@type": type.googleapis.com/xds.type.v3.TypedStruct
                       value:
-                        directives: |
-                          {
-                                  "waf1":{
-                                        "simple_directives":[
-                                                "Include @coraza-setup",
-                                                "SecDebugLogLevel 9",
-                                                "SecRuleEngine On",
-                                                "Include @crs-setup",
-                                                "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
-                                          ]
-                                    }
-                                }
+                        directives:
+                          waf1:
+                            simple_directives:
+                              - "Include @coraza-setup"
+                              - "SecDebugLogLevel 9"
+                              - "SecRuleEngine On"
+                              - "Include @crs-setup"
+                              - "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
                         default_directive: "waf1"
 ```
 
@@ -162,19 +146,15 @@ And in the envoy config we can include the file:
 plugin_config:
   "@type": type.googleapis.com/xds.type.v3.TypedStruct
   value:
-    directives: |
-      {
-              "waf1":{
-                    "simple_directives":[
-                            "Include @coraza-latest",
-                            "SecDebugLogLevel 9",
-                            "SecRuleEngine On",
-                            "Include @crs-setup-latest",
-                            "Include @owasp_crs_latest/*.conf",
-                            "Include /etc/envoy/myrule.conf"
-                      ]
-                }
-            }
+    directives:
+      waf1:
+        simple_directives:
+          - "Include @coraza-latest"
+          - "SecDebugLogLevel 9"
+          - "SecRuleEngine On"
+          - "Include @crs-setup-latest"
+          - "Include @owasp_crs_latest/*.conf"
+          - "Include /etc/envoy/myrule.conf"
     default_directive: "waf1"
 [...]
 ```
@@ -196,19 +176,15 @@ And in the envoy config add the rule:
 plugin_config:
   "@type": type.googleapis.com/xds.type.v3.TypedStruct
   value:
-    directives: |
-      {
-        "waf1":{
-          "simple_directives":[
-            "Include @coraza-latest",
-            "SecDebugLogLevel 9",
-            "SecRuleEngine On",
-            "Include @crs-setup-latest",
-            "Include @owasp_crs_latest/*.conf",
-            "SecRule REMOTE_ADDR \"@ipMatchFromFile /etc/envoy/blocklist.txt\" \"id:200003,phase:1,deny,status:403,msg:'IP Blocked by Blocklist'\"
-          ]
-        }
-      }
+    directives:
+      waf1:
+        simple_directives:
+          - "Include @coraza-latest"
+          - "SecDebugLogLevel 9"
+          - "SecRuleEngine On"
+          - "Include @crs-setup-latest"
+          - "Include @owasp_crs_latest/*.conf"
+          - "SecRule REMOTE_ADDR \"@ipMatchFromFile /etc/envoy/blocklist.txt\" \"id:200003,phase:1,deny,status:403,msg:'IP Blocked by Blocklist'\"
     default_directive: "waf1"
 [...]
 ```
@@ -228,18 +204,14 @@ And in the envoy config load the ruleset:
 plugin_config:
   "@type": type.googleapis.com/xds.type.v3.TypedStruct
   value:
-    directives: |
-      {
-        "waf1":{
-          "simple_directives":[
-            "Include @coraza-latest",
-            "SecDebugLogLevel 9",
-            "SecRuleEngine On",
-            "Include /etc/envoy/crs-4.22/crs-setup.conf.example",
-            "Include /etc/envoy/crs-4.22/*.conf"
-          ]
-        }
-      }
+    directives:
+      waf1:
+        simple_directives:
+          - "Include @coraza-latest"
+          - "SecDebugLogLevel 9"
+          - "SecRuleEngine On"
+          - "Include /etc/envoy/crs-4.22/crs-setup.conf.example"
+          - "Include /etc/envoy/crs-4.22/*.conf"
     default_directive: "waf1"
 [...]
 ```
@@ -255,8 +227,10 @@ plugin_config:
   "@type": type.googleapis.com/xds.type.v3.TypedStruct
   value:
     log_format: "json"
-    directives: |
-         [ ... ....  ]
+    directives:
+      waf1:
+        simple_directives:
+          [ ... ....  ]
     default_directive: "waf1"
 ```
 
@@ -269,20 +243,15 @@ plugin_config:
   "@type": type.googleapis.com/xds.type.v3.TypedStruct
   value:
     log_format: "json"
-    directives: |
-      {
-        "waf1":{
-          "simple_directives":[
-            [ ..... ]
-            "SecAuditLog /etc/envoy/logs/audit.log",
-            "SecAuditLogParts ABCFHKZ",
-            "SecAuditEngine RelevantOnly",
-            "SecAuditLogRelevantStatus ^(?:5|4)",
-            "SecAuditLogFormat JSON",
-            [ ..... ]
-          ]
-        },
-      }
+    directives:
+      waf1:
+        simple_directives:
+          # ... other directives ...
+          - "SecAuditLog /etc/envoy/logs/audit.log"
+          - "SecAuditLogParts ABCFHKZ"
+          - "SecAuditEngine RelevantOnly"
+          - "SecAuditLogRelevantStatus ^(?:5|4)"
+          - "SecAuditLogFormat JSON"
     default_directive: "waf1"
 ```
 
@@ -360,29 +329,21 @@ spec:
               ## setting the logs to json format, so they are the same as the default EnvoyGateway Access Logs
               log_format: "json"
               ## configure coraza/CRS
-              directives: |
-                {
-                  "default":{
-                    "simple_directives":[
-                      "Include @coraza-lts",
-                      "SecDebugLogLevel 9",
-                      "SecRuleEngine On",
-                      "Include @crs-setup-lts",
-                      "Include @owasp_crs_lts/*.conf"
-                    ]
-                  },
-                  "off":{
-                    "simple_directives":[
-                      "SecRuleEngine Off"
-                    ]
-                  }
-                }
+              directives:
+                default:
+                  simple_directives:
+                    - "Include @coraza-lts"
+                    - "SecDebugLogLevel 9"
+                    - "SecRuleEngine On"
+                    - "Include @crs-setup-lts"
+                    - "Include @owasp_crs_lts/*.conf"
+                off:
+                  simple_directives:
+                    - "SecRuleEngine Off"
               default_directive: "default"
-              host_directive_map: |
-                {
-                  "foo.example.com":"off",
-                  "bar.example.com":"default"
-                }
+              host_directive_map:
+                "foo.example.com": "off"
+                "bar.example.com": "default"
 ```
 
 ## Compilation
