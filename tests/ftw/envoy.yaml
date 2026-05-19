@@ -26,22 +26,16 @@ static_resources:
                           "@type": type.googleapis.com/xds.type.v3.TypedStruct
                           value:
                               log_format: ftw
-                              directives: |
-                                {
-                                  "waf1":{
-                                        "simple_directives":[
-                                              "Include @coraza-setup",
-                                              "Include @crs-ftw",
-                                              "Include @owasp_crs/*.conf"
-                                          ]
-                                    }
-                                }
+                              directives:
+                                waf1:
+                                  simple_directives:
+                                    - "Include @coraza-setup"
+                                    - "Include @crs-ftw"
+                                    - "Include @owasp_crs/*.conf"
                               default_directive: "waf1"
-                              host_directive_map: |
-                                {
-                                  "foo.example.com":"waf1",
-                                  "bar.example.com":"waf1"
-                                }
+                              host_directive_map:
+                                "foo.example.com": "waf1"
+                                "bar.example.com": "waf1"
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

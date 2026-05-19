@@ -41,16 +41,12 @@ static_resources:
               plugin_config:
                 "@type": type.googleapis.com/xds.type.v3.TypedStruct
                 value:
-                  directives: |
-                    {
-                      "waf1":{
-                            "simple_directives":[
-                                  "Include @coraza-setup",
-                                  "Include @crs-setup",
-                                  "Include @owasp_crs/*.conf"
-                            ]
-                        }
-                    }
+                  directives:
+                    waf1:
+                      simple_directives:
+                        - "Include @coraza-setup"
+                        - "Include @crs-setup"
+                        - "Include @owasp_crs/*.conf"
                   default_directive: "waf1"
           - name: envoy.filters.http.router
             typed_config:
