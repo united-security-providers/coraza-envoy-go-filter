@@ -65,11 +65,15 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any,
 		libinjection.Register()
 	}
 
-	if directivesString, ok := v.AsMap()["directives"].(string); ok {
+	if directivesRaw, ok := v.AsMap()["directives"].(map[string]interface{}); ok {
 		var wafDirectives WafDirectives
-		err := json.UnmarshalFromString(directivesString, &wafDirectives)
+		directivesJSON, err := json.Marshal(directivesRaw)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to marshal directives: %w", err)
+		}
+		err = json.Unmarshal(directivesJSON, &wafDirectives)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse directives: %w", err)
 		}
 		if len(wafDirectives) == 0 {
 			return nil, errors.New("directives is empty")
@@ -106,22 +110,23 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any,
 		config.HostDirectiveMap = hostDirectiveMap
 
 	} else {
-		// try to read host_directives_map as JSON string
-		if hostDirectiveMapString, ok := v.AsMap()["host_directive_map"].(string); ok {
-			hostDirectiveMap := make(HostDirectiveMap)
-			err := json.UnmarshalFromString(hostDirectiveMapString, &hostDirectiveMap)
-			if err != nil {
-				return nil, err
-			}
-			for host, rule := range hostDirectiveMap {
-				_, ok := config.directives[rule]
+		// read host_directives_map as a YAML map
+		if hostDirectiveMapRaw, ok := v.AsMap()["host_directive_map"].(map[string]interface{}); ok {
+			hostDirectiveMap := make(HostDirectiveMap, len(hostDirectiveMapRaw))
+			for host, ruleRaw := range hostDirectiveMapRaw {
+				rule, ok := ruleRaw.(string)
+				if !ok {
+					return nil, fmt.Errorf("host_directive_map value for '%s' must be a string", host)
+				}
+				_, ok = config.directives[rule]
 				if !ok {
 					return nil, fmt.Errorf("the referenced directive '%s' for host %s does not exist", rule, host)
 				}
+				hostDirectiveMap[host] = rule
 			}
 			config.HostDirectiveMap = hostDirectiveMap
 		} else {
-			return nil, errors.New("host_directive_map is not a JSON string")
+			return nil, errors.New("host_directive_map must be a map of host to directive name")
 		}
 	}
 
