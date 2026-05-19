@@ -4,7 +4,7 @@
 
 ### Changed
 
-## [v2.0.0] - 2026-XX-XX
+## [v2.0.0] - 2026-05-19
 
 *The included configuration files have changed. Please consult the [updated README section](./README.md#using-crs) for details.*
 
