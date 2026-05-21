@@ -14,11 +14,11 @@ RUN mkdir /libinjection && \
 FROM envoy AS build
 ARG BUILD_TAGS
 
-RUN apt update && apt install -y golang-1.23-go
+RUN apt update && apt install -y golang-1.24-go
 WORKDIR /src
 COPY internal ./internal
 COPY main.go go.mod go.sum .
-RUN /usr/lib/go-1.23/bin/go build -o coraza-waf.so -buildmode=c-shared -tags=$BUILD_TAGS .
+RUN /usr/lib/go-1.24/bin/go build -o coraza-waf.so -buildmode=c-shared -tags=$BUILD_TAGS .
 ENTRYPOINT ["/usr/bin/cp", "/src/coraza-waf.so", "/build"]
 
 FROM envoyproxy/envoy:contrib-v1.38.0 AS envoy-coraza
