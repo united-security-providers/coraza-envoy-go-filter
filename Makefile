@@ -2,15 +2,23 @@ BUILD-TAGS := coraza.rule.multiphase_evaluation
 GOLANG-CI-LINT-VERSION := v2.10.1
 BUILD-DIRECTORY := ./build
 
+PLATFORM ?= linux/$(shell go env GOARCH)
+DOCKER_BUILDX_BUILD := docker buildx build --platform $(PLATFORM) --load
+
 .PHONY: build
 build:
 	mkdir -p $(BUILD-DIRECTORY)
 	go build -o $(BUILD-DIRECTORY)/coraza-waf.so -buildmode=c-shared -tags=$(BUILD-TAGS)
 
-performanceBuild:
+buildImage:
+	$(DOCKER_BUILDX_BUILD) --target envoy-coraza --build-arg BUILD_TAGS=$(BUILD-TAGS) . -t envoy-coraza
+
+performanceBuildImage:
+	$(DOCKER_BUILDX_BUILD) --target build --build-arg BUILD_TAGS=$(BUILD-TAGS),libinjection_cgo,re2_cgo . -t envoy-coraza-performance
+
+performanceBuild: performanceBuildImage
 	mkdir -p $(BUILD-DIRECTORY)
-	docker build --target build --build-arg BUILD_TAGS=$(BUILD-TAGS),libinjection_cgo,re2_cgo . -t coraza-waf-builder
-	docker cp $$(docker create coraza-waf-builder):/src/coraza-waf.so $(BUILD-DIRECTORY)
+	docker cp $$(docker create envoy-coraza-performance):/etc/envoy/coraza-waf.so $(BUILD-DIRECTORY)
 
 # Build the envoy image that we are going to use for tests and examples
 buildTestEnvoy:
