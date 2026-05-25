@@ -18,6 +18,15 @@ jobs:
           # we need to set a version here until https://github.com/golang/go/issues/70036 is fixed..
           go-version-input: ""
           go-version-file: go.mod
+  build_arm64:
+    name: Build (ARM64)
+    if: ${{ github.ref_type != 'tag' }}
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+      - name: Build ARM64 image
+        run: make performanceBuildImage
   run_tests:
     name: Testbench
     if: ${{ github.ref_type != 'tag' }}

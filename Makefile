@@ -50,7 +50,7 @@ ftw: clean build buildTestEnvoy
 clean:
 	docker compose down
 	docker compose --file tests/ftw/docker-compose.yml down
-	docker rmi -f coraza-waf-builder coraza-waf-envoy ftw-ftw-crs e2e-sse-server e2e-tests envoy-coraza
+	docker rmi -f coraza-waf-builder coraza-waf-envoy ftw-ftw-crs e2e-sse-server e2e-tests envoy-coraza envoy-coraza-performance
 	rm -rf $(BUILD-DIRECTORY)/*
 	go clean -testcache
 
