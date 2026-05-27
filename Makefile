@@ -18,7 +18,7 @@ performanceBuildImage:
 
 performanceBuild: performanceBuildImage
 	mkdir -p $(BUILD-DIRECTORY)
-	docker cp $$(docker create envoy-coraza-performance):/src/coraza-waf.so $(BUILD-DIRECTORY)
+	docker cp $$(docker create envoy-coraza-performance):/etc/envoy/coraza-waf.so $(BUILD-DIRECTORY)
 
 # Build the envoy image that we are going to use for tests and examples
 buildTestEnvoy:
