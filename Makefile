@@ -14,7 +14,7 @@ buildImage:
 	$(DOCKER_BUILDX_BUILD) --target envoy-coraza --build-arg BUILD_TAGS=$(BUILD-TAGS) . -t envoy-coraza
 
 performanceBuildImage:
-	$(DOCKER_BUILDX_BUILD) --target build --build-arg BUILD_TAGS=$(BUILD-TAGS),libinjection_cgo,re2_cgo . -t envoy-coraza-performance
+	$(DOCKER_BUILDX_BUILD) --target envoy-coraza --build-arg BUILD_TAGS=$(BUILD-TAGS),libinjection_cgo,re2_cgo . -t envoy-coraza-performance
 
 performanceBuild: performanceBuildImage
 	mkdir -p $(BUILD-DIRECTORY)
