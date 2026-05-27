@@ -40,15 +40,21 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository }}
-      - name: Build and push Docker image
+          images: ghcr.io/${{ github.repository_owner }}/envoy-coraza
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - name: Build and push performance Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
           target: envoy-coraza
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/united-security-providers/envoy-coraza:${{ github.ref_name }}-perf
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/envoy-coraza:${{ github.ref_name }}-perf
+            ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             BUILD_TAGS=coraza.rule.multiphase_evaluation,libinjection_cgo,re2_cgo
@@ -59,9 +65,22 @@ jobs:
           target: envoy-coraza
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/united-security-providers/envoy-coraza:${{ github.ref_name }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/envoy-coraza:${{ github.ref_name }}
+            ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Final Release
+      - name: Deploy Release Candidate
+        uses: softprops/action-gh-release@v3
+        if: ${{ contains(github.ref_name, '-rc') }}
+        with:
+          body_path: '${{ steps.notes.outputs.file }}'
+          generate_release_notes: false
+          prerelease: true
+          files: |
+            CHANGELOG.md
+            LICENSE
+            build/coraza-waf.so
+      - name: Deploy Final Release
         uses: softprops/action-gh-release@v3
         if: ${{ !contains(github.ref_name, '-') }}
         with:
