@@ -24,6 +24,7 @@ jobs:
         run: make e2e
       - name: Generate Release Notes
         id: notes
+        if: ${{ !contains(github.ref_name, '-') }}
         uses: theory/changelog-version-notes-action@v0.1.3
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
@@ -48,24 +49,23 @@ jobs:
           push: true
           tags: ghcr.io/united-security-providers/envoy-coraza:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
-      - name: Release Candidate
-        uses: softprops/action-gh-release@v3
-        if: ${{ contains(github.ref_name, '-rc') }}
-        with:
-          body_path: '${{ steps.notes.outputs.file }}'
-          generate_release_notes: false
-          prerelease: true
-          files: |
-            CHANGELOG.md
-            LICENSE
-            build/coraza-waf.so
       - name: Final Release
         uses: softprops/action-gh-release@v3
-        if: ${{ !contains(github.ref_name, '-rc') }}
+        if: ${{ !contains(github.ref_name, '-') }}
         with:
           body_path: '${{ steps.notes.outputs.file }}'
           generate_release_notes: false
           prerelease: false
+          files: |
+            CHANGELOG.md
+            LICENSE
+            build/coraza-waf.so
+      - name: Pre-release
+        uses: softprops/action-gh-release@v3
+        if: ${{ contains(github.ref_name, '-') }}
+        with:
+          generate_release_notes: true
+          prerelease: true
           files: |
             CHANGELOG.md
             LICENSE
