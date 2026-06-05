@@ -4,6 +4,13 @@
 
 ### Changed
 
+## [v2.0.1] - 2026-06-05
+
+### Changed
+
+- Update envoy to version 1.38.1 ([#112](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/112))([#113](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/113))
+- Update go to version 1.26.4 ([kabbohus](https://github.com/kabbohus))
+
 ## [v2.0.0] - 2026-05-19
 
 *The included configuration files have changed. Please consult the [updated README section](./README.md#using-crs) for details.*
