@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Changed
-- Publish the Envoy Coraza image for both amd64 and arm64 platforms. ([#104](https://github.com/united-security-providers/coraza-envoy-go-filter/issues/104)) ([aslafy-z](https://github.com/aslafy-z))
+- Publish the Envoy Coraza image for both amd64 and arm64 platforms. ([#109](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/109)) ([aslafy-z](https://github.com/aslafy-z))
 
 ## [v2.0.1] - 2026-06-05
 
