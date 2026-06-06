@@ -332,6 +332,7 @@ spec:
               directives:
                 default:
                   simple_directives:
+                    - "Include @coraza-setup"
                     - "SecDebugLogLevel 9"
                     - "SecRuleEngine On"
                     - "Include @crs-setup"
