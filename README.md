@@ -315,7 +315,7 @@ spec:
     operation:
       op: add
       ## Needs to be added as the first item in the 'http_filters' array
-      path: "/filter_chains/0/filters/0/typed_config/http_filters/0"
+      path: "/default_filter_chain/filters/0/typed_config/http_filters/0"
       value:
         name: envoy.filters.http.golang
         typed_config:
@@ -332,11 +332,11 @@ spec:
               directives:
                 default:
                   simple_directives:
-                    - "Include @coraza-lts"
+                    - "Include @coraza-setup"
                     - "SecDebugLogLevel 9"
                     - "SecRuleEngine On"
-                    - "Include @crs-setup-lts"
-                    - "Include @owasp_crs_lts/*.conf"
+                    - "Include @crs-setup"
+                    - "Include @owasp_crs/*.conf"
                 off:
                   simple_directives:
                     - "SecRuleEngine Off"
