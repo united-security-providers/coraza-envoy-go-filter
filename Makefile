@@ -7,10 +7,17 @@ build:
 	mkdir -p $(BUILD-DIRECTORY)
 	go build -o $(BUILD-DIRECTORY)/coraza-waf.so -buildmode=c-shared -tags=$(BUILD-TAGS)
 
-performanceBuild:
+buildImage:
+	docker build --target envoy-coraza --build-arg BUILD_TAGS=$(BUILD-TAGS) . -t envoy-coraza
+
+performanceBuildImage:
+	docker build --target envoy-coraza --build-arg BUILD_TAGS=$(BUILD-TAGS),libinjection_cgo,re2_cgo . -t envoy-coraza-performance
+
+performanceBuild: performanceBuildImage
 	mkdir -p $(BUILD-DIRECTORY)
-	docker build --target build --build-arg BUILD_TAGS=$(BUILD-TAGS),libinjection_cgo,re2_cgo . -t coraza-waf-builder
-	docker cp $$(docker create coraza-waf-builder):/src/coraza-waf.so $(BUILD-DIRECTORY)
+	docker_container=$$(docker create envoy-coraza-performance) && \
+	docker cp $$docker_container:/etc/envoy/coraza-waf.so $(BUILD-DIRECTORY) && \
+	docker rm $$docker_container
 
 # Build the envoy image that we are going to use for tests and examples
 buildTestEnvoy:
@@ -42,7 +49,7 @@ ftw: clean build buildTestEnvoy
 clean:
 	docker compose down
 	docker compose --file tests/ftw/docker-compose.yml down
-	docker rmi -f coraza-waf-builder coraza-waf-envoy ftw-ftw-crs e2e-sse-server e2e-tests envoy-coraza
+	docker rmi -f coraza-waf-builder coraza-waf-envoy ftw-ftw-crs e2e-sse-server e2e-tests envoy-coraza envoy-coraza-performance
 	rm -rf $(BUILD-DIRECTORY)/*
 	go clean -testcache
 

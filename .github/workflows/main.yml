@@ -19,9 +19,17 @@ jobs:
           go-version-input: ""
           go-version-file: go.mod
   run_tests:
-    name: Testbench
+    name: Testbench (${{ matrix.arch }})
     if: ${{ github.ref_type != 'tag' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: amd64
+          - os: ubuntu-24.04-arm
+            arch: arm64
     steps:
       - name: Checkout sources
         uses: actions/checkout@v6

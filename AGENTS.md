@@ -2,10 +2,12 @@
 
 ## Build
 ```bash
-make build              # → build/coraza-waf.so  (buildmode=c-shared)
-make performanceBuild   # Docker CGO cross-compile with libinjection+re2
-make lint               # golangci-lint v2, all linters enabled, gofmt+goimports
-make start-watcher      # build → docker compose up → auto-restart on .so change
+make build                 # → build/coraza-waf.so  (buildmode=c-shared)
+make buildImage            # Envoy + filter in Docker
+make performanceBuild      # Docker CGO cross-compile with libinjection+re2
+make performanceBuildImage # Envoy + perf filter in Docker
+make lint                  # golangci-lint v2, all linters enabled, gofmt+goimports
+make start-watcher         # build → docker compose up → auto-restart on .so change
 ```
 
 ## Testing — no unit tests, only integration
