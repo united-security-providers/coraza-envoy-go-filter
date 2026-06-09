@@ -78,7 +78,7 @@ jobs:
           digest="${{ steps.build.outputs.digest }}"
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
       - name: Upload digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: digests-${{ matrix.variant }}-${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/*
@@ -91,7 +91,7 @@ jobs:
           cp "${{ runner.temp }}/rootfs/etc/envoy/coraza-waf.so" \
             "${{ runner.temp }}/so/coraza-waf${suffix}-${{ matrix.arch }}.so"
       - name: Upload shared object
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coraza-waf-so-${{ matrix.variant }}-${{ matrix.arch }}
           path: ${{ runner.temp }}/so/*.so
