@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [v2.0.2] - 2026-06-09
 
 ### Changed
 - Publish the Envoy Coraza image for both amd64 and arm64 platforms. ([#109](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/109)) ([aslafy-z](https://github.com/aslafy-z))
@@ -130,6 +130,7 @@ _First release._
 ### Known Issues
 - A bug in Coraza results in a wrong HTTP status code returned, if `SecResponseBodyLimit` is reached and `SecResponseBodyLimitAction` is set to `Reject`. Coraza incorrectly returns HTTP 413 instead of HTTP 500. ([corazawaf/coraza#1377](https://github.com/corazawaf/coraza/issues/1377))
 
+[v2.0.2]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v2.0.2
 [v2.0.1]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v2.0.1
 [v2.0.0]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v2.0.0
 [v1.3.0]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v1.3.0
