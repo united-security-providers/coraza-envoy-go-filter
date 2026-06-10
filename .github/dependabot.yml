@@ -13,6 +13,10 @@ updates:
       - "daum3ns"
       - "HusseinKabbout"
       - "sh00mster"
+    labels:
+      - "dependencies"
+      - "go"
+      - "skip_changelog"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -21,6 +25,10 @@ updates:
       - "daum3ns"
       - "HusseinKabbout"
       - "sh00mster"
+    labels:
+      - "dependencies"
+      - "github_actions"
+      - "skip_changelog"
   - package-ecosystem: "docker"
     directories:
       - "/"
@@ -32,6 +40,10 @@ updates:
       - "daum3ns"
       - "HusseinKabbout"
       - "sh00mster"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "skip_changelog"
   - package-ecosystem: "docker-compose"
     directories:
       - "/"
@@ -43,3 +55,8 @@ updates:
       - "daum3ns"
       - "HusseinKabbout"
       - "sh00mster"
+    labels:
+      - "dependencies"
+      - "docker_compose"
+      - "skip_changelog"
+
