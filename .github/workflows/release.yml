@@ -111,7 +111,7 @@ jobs:
         variant: [standard, performance]
     steps:
       - name: Download digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: ${{ runner.temp }}/digests
           pattern: digests-${{ matrix.variant }}-*
@@ -156,7 +156,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v6
       - name: Download shared objects
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: build
           pattern: coraza-waf-so-*
