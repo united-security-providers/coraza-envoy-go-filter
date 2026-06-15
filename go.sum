@@ -46,8 +46,8 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/ebitengine/purego v0.10.0 h1:QIw4xfpWT6GWTzaW5XEKy3HXoqrJGx1ijYHzTF0/ISU=
 github.com/ebitengine/purego v0.10.0/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
-github.com/envoyproxy/envoy v1.38.1 h1:hELl+eid7HokDbAhG2dJxIjGlGMpHFLdmW9URt/kxLQ=
-github.com/envoyproxy/envoy v1.38.1/go.mod h1:hFED6oPoV8wTEWuBDOFztqomXEriB6I09ielVdcShRc=
+github.com/envoyproxy/envoy v1.38.2 h1:xl16D6OetiYTK0W7ZOODw+mZ+gJMnGQmaR0zIKEawDY=
+github.com/envoyproxy/envoy v1.38.2/go.mod h1:hFED6oPoV8wTEWuBDOFztqomXEriB6I09ielVdcShRc=
 github.com/envoyproxy/protoc-gen-validate v1.3.0 h1:TvGH1wof4H33rezVKWSpqKz5NXWg5VPuZ0uONDT6eb4=
 github.com/envoyproxy/protoc-gen-validate v1.3.0/go.mod h1:HvYl7zwPa5mffgyeTUHA9zHIH36nmrm7oCbo4YKoSWA=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
