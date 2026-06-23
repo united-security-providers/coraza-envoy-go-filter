@@ -37,13 +37,13 @@ plugin_config:
     directives:
       waf1:
         simple_directives:
-          - "Include @coraza-lts"
-          - "Include @crs-setup-lts"
+          - "Include @coraza-setup"
+          - "Include @crs-setup"
           - "SecDefaultAction \"phase:3,log,auditlog,pass\""
           - "SecDefaultAction \"phase:4,log,auditlog,pass\""
           - "SecDefaultAction \"phase:5,log,auditlog,pass\""
           - "SecDebugLogLevel 3"
-          - "Include @owasp_crs_lts/*.conf"
+          - "Include @owasp_crs/*.conf"
       off:
         simple_directives:
           - "SecRuleEngine Off"
@@ -99,23 +99,23 @@ plugin_config:
 
 Loading some pieces of the ruleset:
 ```yaml
-                    plugin_config:
-                      "@type": type.googleapis.com/xds.type.v3.TypedStruct
-                      value:
-                        directives:
-                          waf1:
-                            simple_directives:
-                              - "Include @coraza-setup"
-                              - "SecDebugLogLevel 9"
-                              - "SecRuleEngine On"
-                              - "Include @crs-setup"
-                              - "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
-                        default_directive: "waf1"
+plugin_config:
+  "@type": type.googleapis.com/xds.type.v3.TypedStruct
+  value:
+    directives:
+      waf1:
+        simple_directives:
+          - "Include @coraza-setup"
+          - "SecDebugLogLevel 9"
+          - "SecRuleEngine On"
+          - "Include @crs-setup"
+          - "Include @owasp_crs/REQUEST-901-INITIALIZATION.conf"
+    default_directive: "waf1"
 ```
 
 #### Recommendations using CRS with Envoy Go
 
-- In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./src/rules/crs-setup.conf.example)).
+- In order to mitigate as much as possible malicious requests (or connections open) sent upstream, it is recommended to keep the [CRS Early Blocking](https://coreruleset.org/20220302/the-case-for-early-blocking/) feature enabled (SecAction [`900120`](./internal/config/coreruleset/crs-setup.conf)).
 
 #### FTW configuration files
 
@@ -137,7 +137,7 @@ For example to load a file myrule.conf, we can first mount it into the container
 docker run -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./myrule.conf:/etc/envoy/myrule.conf ghcr.io/united-security-providers/envoy-coraza:v2.0.0
 ```
 
-*If you run encoy directly this is of course not needed, simply put it somewhere on the filesystem*
+*If you run envoy directly this is of course not needed, simply put it somewhere on the filesystem*
 
 And in the envoy config we can include the file:
 
@@ -149,11 +149,11 @@ plugin_config:
     directives:
       waf1:
         simple_directives:
-          - "Include @coraza-latest"
+          - "Include @coraza-setup"
           - "SecDebugLogLevel 9"
           - "SecRuleEngine On"
-          - "Include @crs-setup-latest"
-          - "Include @owasp_crs_latest/*.conf"
+          - "Include @crs-setup"
+          - "Include @owasp_crs/*.conf"
           - "Include /etc/envoy/myrule.conf"
     default_directive: "waf1"
 [...]
@@ -179,12 +179,12 @@ plugin_config:
     directives:
       waf1:
         simple_directives:
-          - "Include @coraza-latest"
+          - "Include @coraza-setup"
           - "SecDebugLogLevel 9"
           - "SecRuleEngine On"
-          - "Include @crs-setup-latest"
-          - "Include @owasp_crs_latest/*.conf"
-          - "SecRule REMOTE_ADDR \"@ipMatchFromFile /etc/envoy/blocklist.txt\" \"id:200003,phase:1,deny,status:403,msg:'IP Blocked by Blocklist'\"
+          - "Include @crs-setup"
+          - "Include @owasp_crs/*.conf"
+          - "SecRule REMOTE_ADDR \"@ipMatchFromFile /etc/envoy/blocklist.txt\" \"id:200003,phase:1,deny,status:403,msg:'IP Blocked by Blocklist'\""
     default_directive: "waf1"
 [...]
 ```
@@ -194,7 +194,7 @@ plugin_config:
 Example loading CRS 4.22 (assuming you have the rules locally):
 
 ```bash
-docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./cureruleset-4.22:/etc/envoy/crs-4.22  ghcr.io/united-security-providers/envoy-coraza:v2.0.0
+docker run  -v ./envoy.yaml:/etc/envoy/envoy.yaml -v ./coreruleset-4.22:/etc/envoy/crs-4.22  ghcr.io/united-security-providers/envoy-coraza:v2.0.0
 ```
 
 And in the envoy config load the ruleset:
@@ -207,7 +207,7 @@ plugin_config:
     directives:
       waf1:
         simple_directives:
-          - "Include @coraza-latest"
+          - "Include @coraza-setup"
           - "SecDebugLogLevel 9"
           - "SecRuleEngine On"
           - "Include /etc/envoy/crs-4.22/crs-setup.conf.example"
@@ -218,9 +218,9 @@ plugin_config:
 
 ### Log format
 
-By the dafault the filter writes plain text logs.
+By default the filter writes plain text logs.
 
-The log format can be changed to json using the `log_format` configuraion option:
+The log format can be changed to json using the `log_format` configuration option:
 
 ```yaml
 plugin_config:
@@ -400,23 +400,13 @@ You can enable this behavior through the configuration. For example:
 
 ### Running go-ftw (CRS Regression tests)
 
-The following command runs the [go-ftw](https://github.com/coreruleset/go-ftw) test suite two times against the filter with the CRS lts/latest fully loaded.
+The following command runs the [go-ftw](https://github.com/coreruleset/go-ftw) test suite against the filter with the CRS fully loaded.
 
 ```bash
 make ftw
 ```
 
-It's also possible to run tests against a specific CRS version:
-
-```bash
-# run ftw tests against lts CRS
-make ftw-lts
-
-# run ftw tests against latest CRS
-make ftw-latest
-```
-
-Take a look at the config files [ftw-lts.yml](./tests/ftw/ftw-lts.yml), [overrides-lts.yml](./tests/ftw/overrides-lts.yml) and [ftw-latest.yml](./tests/ftw/ftw-latest.yml), [overrides-latest.yml](./tests/ftw/overrides-latest.yml) for details about tests currently excluded and overridden.
+Take a look at the config files [ftw.yml](./tests/ftw/ftw.yml) and [overrides.yml](./tests/ftw/overrides.yml) for details about tests currently excluded and overridden.
 
 One can also run a single test by executing:
 
