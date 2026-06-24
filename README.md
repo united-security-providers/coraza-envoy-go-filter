@@ -296,6 +296,12 @@ spec:
 
 3. Enable the plugin with an EnvoyPatchPolicy:
 
+> **Note:** The correct `path` in the JSONPatch depends on the listener protocol. Envoy Gateway uses
+> `default_filter_chain` for HTTP listeners and `filter_chains/0` for HTTPS listeners (which use
+> SNI-based filter chain matching). Using the wrong path will cause the patch to fail to apply.
+
+For an **HTTPS** listener:
+
 ```yaml
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyPatchPolicy
@@ -315,7 +321,8 @@ spec:
     operation:
       op: add
       ## Needs to be added as the first item in the 'http_filters' array
-      path: "/default_filter_chain/filters/0/typed_config/http_filters/0"
+      ## HTTPS listeners use filter_chains/0; HTTP listeners use default_filter_chain
+      path: "/filter_chains/0/filters/0/typed_config/http_filters/0"
       value:
         name: envoy.filters.http.golang
         typed_config:
@@ -344,6 +351,15 @@ spec:
               host_directive_map:
                 "foo.example.com": "off"
                 "bar.example.com": "default"
+```
+
+For an **HTTP** listener, replace the `name` and `path` fields accordingly:
+
+```yaml
+    name: envoy-gateway-system/eg/http
+    operation:
+      op: add
+      path: "/default_filter_chain/filters/0/typed_config/http_filters/0"
 ```
 
 ## Compilation
