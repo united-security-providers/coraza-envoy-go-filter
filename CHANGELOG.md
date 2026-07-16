@@ -1,5 +1,12 @@
 # Changelog
 
+## [UNRELEASED] - UPCOMING
+
+### Changed
+
+- Update envoy to version 1.39.0 ([kabbohus](https://github.com/kabbohus))
+- Update CRS to version 4.25.1 ([kabbohus](https://github.com/kabbohus))
+
 ## [v2.0.2] - 2026-06-09
 
 ### Changed
