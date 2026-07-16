@@ -3,6 +3,8 @@ name: Vulnerability Scan and Testbench
 on:
   pull_request:
   push:
+    branches:
+      - main
 
 jobs:
   vulnerability_scan:
