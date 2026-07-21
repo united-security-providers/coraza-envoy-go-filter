@@ -1,6 +1,6 @@
 # Copyright 2022 The OWASP Coraza contributors
 # SPDX-License-Identifier: Apache-2.0
-ARG CRS_VERSION=4.25.0
+ARG CRS_VERSION=4.25.1
 ARG FTW_VERSION=2.4.0
 
 FROM ghcr.io/coreruleset/go-ftw:${FTW_VERSION}
