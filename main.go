@@ -20,6 +20,7 @@ func filterFactory(c any, callbacks api.FilterCallbackHandler) api.StreamFilter 
 	return &filter.Filter{
 		Callbacks: callbacks,
 		Config:    *config,
+		Logger:    logging.GetLogger(),
 	}
 }
 

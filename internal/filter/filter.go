@@ -39,7 +39,7 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 	if id, exist := headerMap.Get("x-request-id"); exist {
 		requestId = id
 	}
-	f.Logger = logging.GetLogger().With("request-id", requestId)
+	f.Logger = f.Logger.With("request-id", requestId)
 	logger := f.Logger.With("phase", "DecodeHeaders")
 	f.connection = connectionStateHttp
 	host := headerMap.Host()
@@ -124,7 +124,7 @@ func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) a
 }
 
 func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	logger := logging.GetLogger().With("phase", "DecodeData")
+	logger := f.Logger.With("phase", "DecodeData")
 	if f.wasInterrupted {
 		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(http.StatusForbidden, "", map[string][]string{}, 0, "interruption-already-handled")
 		return api.LocalReply
@@ -172,7 +172,7 @@ func (f *Filter) DecodeData(buffer api.BufferInstance, endStream bool) api.Statu
 }
 
 func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) api.StatusType {
-	logger := logging.GetLogger().With("phase", "EncodeHeaders")
+	logger := f.Logger.With("phase", "EncodeHeaders")
 	if f.wasInterrupted {
 		logger.Debug("Interruption already handled, sending downstream the local response")
 		return api.Continue
@@ -232,7 +232,7 @@ func (f *Filter) EncodeHeaders(headerMap api.ResponseHeaderMap, endStream bool) 
 }
 
 func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	logger := logging.GetLogger().With("phase", "EncodeData")
+	logger := f.Logger.With("phase", "EncodeData")
 	// the nil check here MUST NEVER be removed
 	// there are cases (e.g. malformed HTTP request) where envoy will automatically
 	// jump from the decoding phase to the encoding phase
@@ -290,7 +290,7 @@ func (f *Filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 }
 
 func (f *Filter) OnDestroy(reason api.DestroyReason) {
-	logger := logging.GetLogger().With("phase", "OnDestroy")
+	logger := f.Logger.With("phase", "OnDestroy")
 	if f.tx == nil {
 		return
 	}

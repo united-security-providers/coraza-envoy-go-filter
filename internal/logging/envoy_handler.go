@@ -11,6 +11,8 @@ import (
 	api "github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
 
+const requestIDKey = "request-id"
+
 type groupOrAttr struct {
 	attrs []slog.Attr
 	group string
@@ -43,12 +45,27 @@ func (h *envoyHandler) Handle(ctx context.Context, r slog.Record) error {
 		inner = slog.NewTextHandler(&builder, h.opts)
 	}
 
+	var requestID slog.Attr
+	found := false
 	for _, o := range h.groupOrAttr {
 		if o.group != "" {
 			inner = inner.WithGroup(o.group)
-		} else {
-			inner = inner.WithAttrs(o.attrs)
+			continue
 		}
+		attrs := make([]slog.Attr, 0, len(o.attrs))
+		for _, a := range o.attrs {
+			if a.Key == requestIDKey {
+				requestID, found = a, true
+				continue
+			}
+			attrs = append(attrs, a)
+		}
+		inner = inner.WithAttrs(attrs)
+	}
+
+	// Re-append request-id so it is emitted as the last attribute on the line.
+	if found {
+		r.AddAttrs(requestID)
 	}
 
 	if err := inner.Handle(ctx, r); err != nil {
