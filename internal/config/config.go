@@ -134,11 +134,6 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any,
 	logger := logging.GetLogger().With("phase", "config-parsing")
 	// read log format
 	if logFormatString, ok := v.AsMap()["log_format"].(string); ok {
-		if strings.ToLower(logFormatString) == "plain" {
-			logFormatString = logging.FormatText.String()
-			logger.Warn("DEPRECATION: 'plain' has been changed to 'text'")
-		}
-
 		switch format := logging.LogFormat(strings.ToLower(logFormatString)); format {
 		case logging.FormatJson, logging.FormatText, logging.FormatFtw:
 			config.LogFormat = format

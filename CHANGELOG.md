@@ -6,6 +6,7 @@
 
 - Update envoy to version 1.39.0 ([#135](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/135)) ([kabbohus](https://github.com/kabbohus))
 - Update CRS to version 4.25.1 ([#135](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/135)) ([kabbohus](https://github.com/kabbohus))
+- **Breaking:** The Deprecate log format "plain" is not supported anymore. Please use "text". ([kabbohus](https://github.com/kabbohus))
 
 ## [v2.0.2] - 2026-06-09
 
