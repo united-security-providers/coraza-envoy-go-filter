@@ -131,7 +131,7 @@ func (p Parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (any,
 	}
 
 	logging.Init(logging.FormatText)
-	logger := logging.GetLogger()
+	logger := logging.GetLogger().With("phase", "config-parsing")
 	// read log format
 	if logFormatString, ok := v.AsMap()["log_format"].(string); ok {
 		if strings.ToLower(logFormatString) == "plain" {
@@ -223,7 +223,7 @@ func errorCallback(error ctypes.MatchedRule) {
 		"hostname", error.ServerIPAddress(),
 		"uri", error.URI(),
 		"client", error.ClientIPAddress(),
-		"request_id", xReqID,
+		"request-id", xReqID,
 	)
 	logger = logger.WithGroup("crs").With(
 		"version", rule.Version(),
