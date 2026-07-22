@@ -31,7 +31,7 @@ type Filter struct {
 	httpProtocol   string
 	connection     connectionState
 
-	Logger          logging.Logger
+	Logger logging.Logger
 }
 
 func (f *Filter) DecodeHeaders(headerMap api.RequestHeaderMap, endStream bool) api.StatusType {
