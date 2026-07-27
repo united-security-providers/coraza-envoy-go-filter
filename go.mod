@@ -5,7 +5,7 @@ go 1.26.5
 require (
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5
 	github.com/corazawaf/coraza-wasilibs v0.2.0
-	github.com/corazawaf/coraza/v3 v3.7.0
+	github.com/corazawaf/coraza/v3 v3.7.1-0.20260721094831-27979790f671
 	github.com/envoyproxy/envoy v1.39.0
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
