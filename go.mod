@@ -1,6 +1,6 @@
 module coraza-waf
 
-go 1.26.6
+go 1.26.7
 
 require (
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5
