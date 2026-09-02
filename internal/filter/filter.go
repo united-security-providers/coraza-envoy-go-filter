@@ -383,11 +383,16 @@ func (f *Filter) handleInterruption(logger logging.Logger, phase phase, interrup
 		"status", interruption.Status,
 	)
 
+	headers := map[string][]string{}
+	if interruption.Action == "redirect" && interruption.Data != "" {
+		headers["Location"] = []string{interruption.Data}
+	}
+
 	switch phase {
 	case PhaseRequestHeader, PhaseRequestBody:
-		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", headers, 0, "")
 	case PhaseResponseHeader, PhaseResponseBody:
-		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", headers, 0, "")
 	}
 }
 
