@@ -1,4 +1,5 @@
 ARG BUILD_TAGS=coraza.rule.multiphase_evaluation
+# github.com/libinjection/libinjection/releases/tag/v4.0.0
 ARG LIBINJECTION_VERSION=211782219663f889f471650150df12b623c5766e
 
 FROM envoyproxy/envoy:contrib-v1.39.1 AS envoy
