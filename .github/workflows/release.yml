@@ -164,7 +164,7 @@ jobs:
       - name: Generate Release Notes
         id: notes
         if: ${{ !contains(github.ref_name, '-') }}
-        uses: theory/changelog-version-notes-action@v0.1.3
+        uses: theory/changelog-version-notes-action@v0.1.4
       - name: Deploy Release Candidate
         uses: softprops/action-gh-release@v3
         if: ${{ contains(github.ref_name, '-') }}
