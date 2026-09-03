@@ -61,7 +61,6 @@ static_resources:
                                   simple_directives:
                                     - "Include @coraza-setup"
                                     - "Include @crs-setup"
-                                    # - "SecRuleEngine On"
                                     - "SecDefaultAction \"phase:1,log,auditlog,pass\""
                                     - "SecDefaultAction \"phase:2,log,auditlog,pass\""
                                     - "SecDefaultAction \"phase:3,log,auditlog,pass\""
