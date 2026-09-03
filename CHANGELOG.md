@@ -6,6 +6,10 @@
 - Location header in redirect termination
 - e2e test for redirect termination
 
+### Changed
+
+- Update libinjection to version 4.0.0 ([#148](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/148)) ([kabbohus](https://github.com/kabbohus))
+
 ## [v3.0.0] - 2026-07-30
 
 ### Changed
