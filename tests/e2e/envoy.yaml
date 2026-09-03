@@ -57,7 +57,19 @@ static_resources:
                                     - "SecRule REQUEST_BODY \"@rx maliciouspayload\" \"id:102,phase:2,t:lowercase,deny\""
                                     - "SecRule RESPONSE_HEADERS::status \"@rx 406\" \"id:103,phase:3,t:lowercase,deny\""
                                     - "SecRule RESPONSE_BODY \"@contains responsebodycode\" \"id:104,phase:4,t:lowercase,deny\""
-                                waf3:
+                                waf-redirect:
+                                  simple_directives:
+                                    - "Include @coraza-setup"
+                                    - "Include @crs-setup"
+                                    # - "SecRuleEngine On"
+                                    - "SecDefaultAction \"phase:1,log,auditlog,pass\""
+                                    - "SecDefaultAction \"phase:2,log,auditlog,pass\""
+                                    - "SecDefaultAction \"phase:3,log,auditlog,pass\""
+                                    - "SecDefaultAction \"phase:4,log,auditlog,pass\""
+                                    - "SecDefaultAction \"phase:5,log,auditlog,pass\""
+                                    - "SecDebugLogLevel 3"
+                                    - "Include @owasp_crs/*.conf"
+                                    - "SecRule REQUEST_URI \"@streq /test-redirect\" \"id:101,phase:1,t:none,redirect:/redirected/\""                                waf3:
                                   simple_directives:
                                     - "Include @coraza-setup"
                                     - "Include @crs-setup"
@@ -108,6 +120,7 @@ static_resources:
                                 "no-waf.example.com": "no-waf"
                                 "sse.example.com": "sse-response-body-off"
                                 "custom.example.com": "custom-rules"
+                                "redirect.example.com": "waf-redirect"
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
