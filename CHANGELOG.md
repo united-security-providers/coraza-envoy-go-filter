@@ -2,6 +2,10 @@
 
 ## [UNRELEASED] - UPCOMING
 
+### Changed
+
+- Update libinjection to version 4.0.0 ([kabbohus](https://github.com/kabbohus))
+
 ## [v3.0.0] - 2026-07-30
 
 ### Changed
