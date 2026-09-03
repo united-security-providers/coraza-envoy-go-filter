@@ -1,11 +1,14 @@
 ARG BUILD_TAGS=coraza.rule.multiphase_evaluation
+# github.com/libinjection/libinjection/releases/tag/v4.0.0
+ARG LIBINJECTION_VERSION=211782219663f889f471650150df12b623c5766e
 
 FROM envoyproxy/envoy:contrib-v1.39.1 AS envoy
 ARG BUILD_TAGS
+ARG LIBINJECTION_VERSION
 
 RUN apt update && apt install -y libtool autoconf make libre2-dev curl tar python3 g++
 RUN mkdir /libinjection && \
-    curl -L https://github.com/libinjection/libinjection/archive/4aa3894b21d03d9d8fc364505c0617d2aca73fc1.tar.gz | tar -xz --strip-components 1 -C /libinjection && \
+    curl -L https://github.com/libinjection/libinjection/archive/$LIBINJECTION_VERSION.tar.gz | tar -xz --strip-components 1 -C /libinjection && \
     cd /libinjection && \
     autoreconf -i --force && \
     ./configure && \
