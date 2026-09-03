@@ -2,6 +2,10 @@
 
 ## [UNRELEASED] - UPCOMING
 
+### Added
+- Location header in redirect termination
+- e2e test for redirect termination
+
 ## [v3.0.0] - 2026-07-30
 
 ### Changed
