@@ -2,6 +2,9 @@
 
 ## [UNRELEASED] - UPCOMING
 
+### Added
+- Location header in redirect termination
+
 ### Changed
 
 - Update libinjection to version 4.0.0 ([#148](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/148)) ([kabbohus](https://github.com/kabbohus))

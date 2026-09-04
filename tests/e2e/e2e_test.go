@@ -460,3 +460,9 @@ func TestE2EFilesystemRuleOtherWafNotBlock(t *testing.T) {
 	checkRequest(t, "custom.example.com", envoyEndpoint+"/admin", http.MethodGet, http.StatusNotFound, false, "")
 	checkInLogs(t, http.StatusNotFound, http.MethodGet, "/admin")
 }
+
+func TestE2ERedirectLocationHeader(t *testing.T) {
+	backendLogs.Reset()
+	checkRequest(t, "redirect.example.com", envoyEndpoint+"/test-redirect", http.MethodGet, http.StatusOK, false, "", "Referer", "http://172.17.0.1:32855/test-redirect")
+	checkInLogs(t, http.StatusOK, http.MethodGet, "/anything")
+}
