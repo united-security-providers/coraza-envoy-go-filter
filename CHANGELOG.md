@@ -4,7 +4,6 @@
 
 ### Added
 - Location header in redirect termination
-- e2e test for redirect termination
 
 ### Changed
 
