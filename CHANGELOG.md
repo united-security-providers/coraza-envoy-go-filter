@@ -2,6 +2,9 @@
 
 ## [UNRELEASED] - UPCOMING
 
+### Added
+- Send a Location header when a Coraza interruption uses the redirect action with macro expansion support ([#149](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/149)) ([nevola](https://github.com/nevola))
+
 ### Changed
 
 - Update libinjection to version 4.0.0 ([#148](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/148)) ([kabbohus](https://github.com/kabbohus))

@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/corazawaf/coraza/v3/experimental/plugins/macro"
+	"github.com/corazawaf/coraza/v3/experimental/plugins/plugintypes"
 	"github.com/corazawaf/coraza/v3/types"
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 )
@@ -383,11 +385,25 @@ func (f *Filter) handleInterruption(logger logging.Logger, phase phase, interrup
 		"status", interruption.Status,
 	)
 
+	headers := map[string][]string{}
+	if interruption.Action == "redirect" && interruption.Data != "" {
+		location := interruption.Data
+		logger.Debug("Redirect macro expansion", "original", location, "action", interruption.Action)
+		if m, err := macro.NewMacro(location); err == nil {
+			if ts, ok := f.tx.(plugintypes.TransactionState); ok {
+				location = m.Expand(ts)
+			}
+			logger.Debug("Macro expansion result", "expanded", location)
+		}
+		headers["Location"] = []string{location}
+		logger.Debug("Setting Location header", "location", location)
+	}
+
 	switch phase {
 	case PhaseRequestHeader, PhaseRequestBody:
-		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+		f.Callbacks.DecoderFilterCallbacks().SendLocalReply(interruption.Status, "", headers, 0, "")
 	case PhaseResponseHeader, PhaseResponseBody:
-		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", map[string][]string{}, 0, "")
+		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", headers, 0, "")
 	}
 }
 

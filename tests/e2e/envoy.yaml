@@ -99,6 +99,16 @@ static_resources:
                                     - "SecRuleEngine On"
                                     - "Include /etc/envoy/custom_setup.conf"
                                     - "Include /etc/envoy/custom_rules/*.conf"
+                                redirect:
+                                  simple_directives:
+                                    - "Include @coraza-setup"
+                                    - "SecDefaultAction \"phase:3,log,auditlog,pass\""
+                                    - "SecDefaultAction \"phase:4,log,auditlog,pass\""
+                                    - "SecDefaultAction \"phase:5,log,auditlog,pass\""
+                                    - "SecDebugLogLevel 3"
+                                    - "SecRule REQUEST_URI \"@streq /test-redirect\" \"id:101,phase:1,redirect:/anything\""
+                                    - "SecRule REQUEST_URI \"@streq /test-expanded-redirect\" \"id:102,phase:1,redirect:/anything?uri=%{REQUEST_URI}\""
+                                    - "SecRule REQUEST_URI \"@streq /test-redirect-with-status\" \"id:103,phase:1,redirect:/anything,status:307\""
                               default_directive: "waf1"
                               host_directive_map:
                                 "foo.example.com": "waf1"
@@ -108,6 +118,7 @@ static_resources:
                                 "no-waf.example.com": "no-waf"
                                 "sse.example.com": "sse-response-body-off"
                                 "custom.example.com": "custom-rules"
+                                "redirect.example.com": "redirect"
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
