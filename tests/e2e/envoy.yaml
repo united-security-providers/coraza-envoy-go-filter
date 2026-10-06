@@ -30,9 +30,6 @@ static_resources:
                                   simple_directives:
                                     - "Include @coraza-setup"
                                     - "Include @crs-setup"
-                                    - "SecDefaultAction \"phase:3,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:4,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:5,log,auditlog,pass\""
                                     - "SecDebugLogLevel 3"
                                     - "Include @owasp_crs/*.conf"
                                     - "SecRule REQUEST_URI \"@streq /admin\" \"id:101,phase:1,t:lowercase,deny\""
@@ -43,9 +40,6 @@ static_resources:
                                   simple_directives:
                                     - "Include @coraza-setup"
                                     - "Include @crs-setup"
-                                    - "SecDefaultAction \"phase:3,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:4,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:5,log,auditlog,pass\""
                                     - "SecDebugLogLevel 3"
                                     - "Include @owasp_crs/*.conf"
                                     - "SecResponseBodyLimit 700"
@@ -61,9 +55,6 @@ static_resources:
                                   simple_directives:
                                     - "Include @coraza-setup"
                                     - "Include @crs-setup"
-                                    - "SecDefaultAction \"phase:3,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:4,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:5,log,auditlog,pass\""
                                     - "SecDebugLogLevel 3"
                                     - "Include @owasp_crs/*.conf"
                                     - "SecResponseBodyLimit 70"
@@ -75,9 +66,6 @@ static_resources:
                                   simple_directives:
                                     - "Include @coraza-setup"
                                     - "Include @crs-setup"
-                                    - "SecDefaultAction \"phase:3,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:4,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:5,log,auditlog,pass\""
                                     - "SecDebugLogLevel 3"
                                     - "Include @owasp_crs/*.conf"
                                     - "SecResponseBodyAccess Off"
@@ -88,9 +76,6 @@ static_resources:
                                   simple_directives:
                                     - "Include @coraza-setup"
                                     - "Include @crs-setup"
-                                    - "SecDefaultAction \"phase:3,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:4,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:5,log,auditlog,pass\""
                                     - "SecDebugLogLevel 3"
                                     - "Include @owasp_crs/*.conf"
                                     - "SecRule RESPONSE_CONTENT_TYPE \"text/event-stream\" \"id:1001,phase:3,log,allow,ctl:responseBodyAccess=Off\""
@@ -102,9 +87,6 @@ static_resources:
                                 redirect:
                                   simple_directives:
                                     - "Include @coraza-setup"
-                                    - "SecDefaultAction \"phase:3,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:4,log,auditlog,pass\""
-                                    - "SecDefaultAction \"phase:5,log,auditlog,pass\""
                                     - "SecDebugLogLevel 3"
                                     - "SecRule REQUEST_URI \"@streq /test-redirect\" \"id:101,phase:1,redirect:/anything\""
                                     - "SecRule REQUEST_URI \"@streq /test-expanded-redirect\" \"id:102,phase:1,redirect:/anything?uri=%{REQUEST_URI}\""

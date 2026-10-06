@@ -11,6 +11,7 @@
 - Update envoy to version 1.39.2 ([#150](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/150), [#152](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/152)) ([kabbohus](https://github.com/kabbohus))
 - Update coraza to version 3.8.1 ([#151](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/151)) ([kabbohus](https://github.com/kabbohus))
 - Update CRS to version 4.25.2 ([#153](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/153)) ([kabbohus](https://github.com/kabbohus))
+- **Breaking:** `@crs-setup` now defines `SecDefaultAction` for phases 3, 4 and 5. Remove these directives from configurations that set them after `Include @crs-setup` ([#153](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/153)) ([kabbohus](https://github.com/kabbohus))
 
 ## [v3.0.0] - 2026-07-30
 
