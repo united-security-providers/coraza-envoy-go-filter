@@ -204,23 +204,15 @@ test_overrides:
 
   # other Envoy specific
   - rule_id: 920100
-    test_ids: [4]
+    test_ids: [4,6]
     reason: |
-       Envoy sets the CONNECT target in to the :authority header, thats why no route is found.
-       Rule 920100 matches with "Invalid HTTP Request Line"
+       Envoy sets the CONNECT target in to the :authority header and leaves :path empty.
+       The empty URI fails to parse, so rule 200009 denies the request before CRS runs.
     output:
-      status: 404
+      status: 400
       log:
-        expect_ids: [920100]
-  - rule_id: 920100
-    test_ids: [6]
-    reason: |
-       Rule 920100 matches with "Invalid HTTP Request Line"
-       Envoy sets the CONNECT target in to the :authority header, thats why no route is found.
-    output:
-      status: 404
-      log:
-        expect_ids: [920100]
+        expect_ids: [200009]
+        no_expect_ids: [920100]
   - rule_id: 920100
     test_ids: [16]
     reason: |
