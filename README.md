@@ -39,9 +39,6 @@ plugin_config:
         simple_directives:
           - "Include @coraza-setup"
           - "Include @crs-setup"
-          - "SecDefaultAction \"phase:3,log,auditlog,pass\""
-          - "SecDefaultAction \"phase:4,log,auditlog,pass\""
-          - "SecDefaultAction \"phase:5,log,auditlog,pass\""
           - "SecDebugLogLevel 3"
           - "Include @owasp_crs/*.conf"
       off:
