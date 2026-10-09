@@ -2,7 +2,7 @@ ARG BUILD_TAGS=coraza.rule.multiphase_evaluation
 # github.com/libinjection/libinjection/releases/tag/v4.0.0
 ARG LIBINJECTION_VERSION=211782219663f889f471650150df12b623c5766e
 
-FROM envoyproxy/envoy:contrib-v1.39.2 AS envoy
+FROM envoyproxy/envoy:contrib-v1.39.3 AS envoy
 ARG BUILD_TAGS
 ARG LIBINJECTION_VERSION
 
@@ -24,7 +24,7 @@ COPY main.go go.mod go.sum .
 RUN /usr/lib/go-1.24/bin/go build -o coraza-waf.so -buildmode=c-shared -tags=$BUILD_TAGS .
 ENTRYPOINT ["/usr/bin/cp", "/src/coraza-waf.so", "/build"]
 
-FROM envoyproxy/envoy:contrib-v1.39.2 AS envoy-coraza
+FROM envoyproxy/envoy:contrib-v1.39.3 AS envoy-coraza
 COPY --from=build /usr/local/lib/libinjection.so* /usr/local/lib/
 COPY --from=build /src/coraza-waf.so /etc/envoy/coraza-waf.so
 COPY ./example/envoy.docker.yaml /etc/envoy/envoy.yaml
