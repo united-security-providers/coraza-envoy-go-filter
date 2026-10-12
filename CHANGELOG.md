@@ -9,6 +9,13 @@
 
 - Update libinjection to version 4.0.0 ([#148](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/148)) ([kabbohus](https://github.com/kabbohus))
 
+## [v3.0.1] - 2026-10-12
+
+### Changed
+
+- Update envoy to version 1.39.3 ([#144](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/144)) ([#145](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/145)) ([#150](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/150)) ([#152](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/152)) ([#154](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/154)) ([#155](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/155))
+- Update coraza to version 3.8.1. This includes security fixes that change how request bodies, JSON keys, cookies and duplicate `Content-Type` headers are parsed, which may affect custom rules ([#151](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/151))
+
 ## [v3.0.0] - 2026-07-30
 
 ### Changed
@@ -147,6 +154,7 @@ _First release._
 ### Known Issues
 - A bug in Coraza results in a wrong HTTP status code returned, if `SecResponseBodyLimit` is reached and `SecResponseBodyLimitAction` is set to `Reject`. Coraza incorrectly returns HTTP 413 instead of HTTP 500. ([corazawaf/coraza#1377](https://github.com/corazawaf/coraza/issues/1377))
 
+[v3.0.1]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v3.0.1
 [v3.0.0]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v3.0.0
 [v2.0.2]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v2.0.2
 [v2.0.1]: https://github.com/united-security-providers/coraza-envoy-go-filter/releases/tag/v2.0.1
