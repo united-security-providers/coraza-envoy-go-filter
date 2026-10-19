@@ -8,7 +8,7 @@
 ### Changed
 
 - Update libinjection to version 4.0.0 ([#148](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/148)) ([kabbohus](https://github.com/kabbohus))
-- Update envoy to version 1.39.4 ([#157](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/157)) ([#156](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/156))
+- Update envoy to version 1.40.0 ([#159](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/159)) ([#158](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/158)) ([#157](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/157)) ([#156](https://github.com/united-security-providers/coraza-envoy-go-filter/pull/156))
 
 ## [v3.0.1] - 2026-10-12
 
