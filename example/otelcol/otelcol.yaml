@@ -1,0 +1,21 @@
+# OpenTelemetry Collector for local testing of the OTel access log.
+# Receives OTLP logs from Envoy over gRPC (port 4317) and prints them to stdout.
+# Inspect with: docker compose logs -f otelcol
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors: {}
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: []
+      exporters: [debug]

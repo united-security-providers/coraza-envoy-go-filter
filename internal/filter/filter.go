@@ -23,6 +23,11 @@ import (
 
 const HOSTPOSTSEPARATOR string = ":"
 
+// metadataNamespace is the dynamic metadata namespace under which WAF interruption
+// details are published. Envoy access logs (e.g. the OpenTelemetry access logger)
+// can reference them via %DYNAMIC_METADATA(coraza-waf:<key>)%.
+const metadataNamespace = "coraza-waf"
+
 type Filter struct {
 	api.PassThroughStreamFilter
 
@@ -384,6 +389,10 @@ func (f *Filter) handleInterruption(logger logging.Logger, phase phase, interrup
 		"action", interruption.Action,
 		"status", interruption.Status,
 	)
+	// Publish interruption details as dynamic metadata before sending the local reply,
+	// so that access logs (e.g. OpenTelemetry) written at stream completion can report
+	// them via %DYNAMIC_METADATA(coraza-waf:<key>)%.
+	f.setWAFMetadata(phase, interruption)
 
 	headers := map[string][]string{}
 	if interruption.Action == "redirect" && interruption.Data != "" {
@@ -405,6 +414,39 @@ func (f *Filter) handleInterruption(logger logging.Logger, phase phase, interrup
 	case PhaseResponseHeader, PhaseResponseBody:
 		f.Callbacks.EncoderFilterCallbacks().SendLocalReply(interruption.Status, "", headers, 0, "")
 	}
+}
+
+// setWAFMetadata writes the interruption details of the transaction as dynamic
+// metadata under the metadataNamespace namespace. Only set when a rule fires, so
+// for passed requests the corresponding %DYNAMIC_METADATA(coraza-waf:<key>)% format
+// entries expand to the formatter's default unspecified value ("-").
+func (f *Filter) setWAFMetadata(phase phase, interruption *types.Interruption) {
+	md := f.Callbacks.StreamInfo().DynamicMetadata()
+	md.Set(metadataNamespace, "rule_id", strconv.Itoa(interruption.RuleID))
+	md.Set(metadataNamespace, "action", interruption.Action)
+	md.Set(metadataNamespace, "status", strconv.Itoa(interruption.Status))
+	md.Set(metadataNamespace, "phase", phase.String())
+	if mr := f.matchedRuleFor(interruption.RuleID); mr != nil {
+		// Message is the macro-expanded message of the matching rule
+		md.Set(metadataNamespace, "message", mr.Message())
+	}
+}
+
+// matchedRuleFor returns the matched rule that caused the given interruption, i.e.
+// the one whose ID matches the interruption's rule ID. Multiple rules can match
+// before a deny action (e.g. CRS chain rules), so we must not blindly take the last
+// matched rule. Falls back to the last matched rule when no exact match is found.
+func (f *Filter) matchedRuleFor(ruleID int) types.MatchedRule {
+	matched := f.tx.MatchedRules()
+	for _, mr := range matched {
+		if mr.Rule().ID() == ruleID {
+			return mr
+		}
+	}
+	if len(matched) > 0 {
+		return matched[len(matched)-1]
+	}
+	return nil
 }
 
 func (f *Filter) splitHostPort(hostPortCombination string) (string, int, error) {

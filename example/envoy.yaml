@@ -15,6 +15,50 @@ static_resources:
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
+                access_log:
+                  - name: envoy.access_loggers.open_telemetry
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: otel_collector
+                      resource_attributes:
+                        values:
+                          - key: service.name
+                            value:
+                              string_value: coraza-envoy-waf
+                      attributes:
+                        values:
+                          - key: http.status_code
+                            value:
+                              string_value: "%RESPONSE_CODE%"
+                          - key: http.response_flags
+                            value:
+                              string_value: "%RESPONSE_FLAGS%"
+                          - key: http.method
+                            value:
+                              string_value: "%REQ(:METHOD)%"
+                          - key: http.path
+                            value:
+                              string_value: "%REQ(:PATH)%"
+                          - key: http.request_id
+                            value:
+                              string_value: "%REQ(X-REQUEST-ID)%"
+                          - key: waf.action
+                            value:
+                              string_value: "%DYNAMIC_METADATA(coraza-waf:action)%"
+                          - key: waf.rule_id
+                            value:
+                              string_value: "%DYNAMIC_METADATA(coraza-waf:rule_id)%"
+                          - key: waf.message
+                            value:
+                              string_value: "%DYNAMIC_METADATA(coraza-waf:message)%"
+                          - key: waf.status
+                            value:
+                              string_value: "%DYNAMIC_METADATA(coraza-waf:status)%"
+                          - key: waf.phase
+                            value:
+                              string_value: "%DYNAMIC_METADATA(coraza-waf:phase)%"
                 http_filters:
                   - name: envoy.filters.http.golang
                     typed_config:
@@ -66,6 +110,23 @@ static_resources:
                             cluster: service_gin
 
   clusters:
+    - name: otel_collector
+      type: LOGICAL_DNS
+      dns_lookup_family: V4_ONLY
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: otel_collector
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: otelcol
+                      port_value: 4317
     - name: service_gin
       type: LOGICAL_DNS
       # Comment out the following line to test on v6 networks

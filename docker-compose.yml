@@ -1,4 +1,9 @@
 services:
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    command: ["--config=/etc/otelcol/otelcol.yaml"]
+    volumes:
+      - ./example/otelcol/otelcol.yaml:/etc/otelcol/otelcol.yaml:ro
   backend:
     image: mccutchen/go-httpbin:2.26.0
     environment:
@@ -8,6 +13,7 @@ services:
   envoy:
     depends_on:
       - backend
+      - otelcol
     image: coraza-waf-envoy
     build:
       context: .
