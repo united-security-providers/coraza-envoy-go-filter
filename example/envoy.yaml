@@ -15,35 +15,28 @@ static_resources:
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
+                tracing:
+                  spawn_upstream_span: true
+                  provider:
+                    name: envoy.tracers.opentelemetry
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                      service_name: sidecar-proxy
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: otel_collector
                 access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                   - name: envoy.access_loggers.open_telemetry
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
                       grpc_service:
                         envoy_grpc:
                           cluster_name: otel_collector
-                      resource_attributes:
-                        values:
-                          - key: service.name
-                            value:
-                              string_value: coraza-envoy-waf
                       attributes:
                         values:
-                          - key: http.status_code
-                            value:
-                              string_value: "%RESPONSE_CODE%"
-                          - key: http.response_flags
-                            value:
-                              string_value: "%RESPONSE_FLAGS%"
-                          - key: http.method
-                            value:
-                              string_value: "%REQ(:METHOD)%"
-                          - key: http.path
-                            value:
-                              string_value: "%REQ(:PATH)%"
-                          - key: http.request_id
-                            value:
-                              string_value: "%REQ(X-REQUEST-ID)%"
                           - key: waf.action
                             value:
                               string_value: "%DYNAMIC_METADATA(coraza-waf:action)%"
